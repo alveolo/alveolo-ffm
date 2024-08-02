@@ -1,0 +1,115 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="
+http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
+">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.alveolo.ffm</groupId>
+    <artifactId>alveolo-ffm-parent</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>alveolo-ffm-benchmark</artifactId>
+  <name>Alveolo FFM - JMH Benchmark</name>
+
+  <properties>
+    <jmh.version>1.37</jmh.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.alveolo.ffm</groupId>
+      <artifactId>alveolo-ffm-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>${jmh.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna-platform</artifactId>
+      <version>5.14.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-ffi</artifactId>
+      <version>2.2.16</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>${jmh.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven.compiler.plugin.version}</version>
+        <configuration>
+          <compilerArgs>
+            <arg>-J--enable-preview</arg>
+          </compilerArgs>
+          <showWarnings>true</showWarnings>
+          <enablePreview>true</enablePreview>
+          <fork>true</fork>
+          <forceJavacCompilerUse>true</forceJavacCompilerUse>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.alveolo.ffm</groupId>
+              <artifactId>alveolo-ffm-processor</artifactId>
+              <version>0.0.2-SNAPSHOT</version>
+            </path>
+            <path>
+              <groupId>org.openjdk.jmh</groupId>
+              <artifactId>jmh-generator-annprocess</artifactId>
+              <version>${jmh.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <finalName>${uberjar.name}</finalName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>org.openjdk.jmh.Main</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+              </transformers>
+              <filters>
+                <filter>
+<!-- Shading signed JARs will fail without this.
+http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar
+-->
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

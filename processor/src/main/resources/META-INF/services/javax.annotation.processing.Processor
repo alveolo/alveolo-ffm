@@ -1,0 +1,3 @@
+org.alveolo.ffm.processor.ForeignInterfaceProcessor
+org.alveolo.ffm.processor.ForeignMemoryProcessor
+org.alveolo.ffm.processor.ForeignValueProcessor

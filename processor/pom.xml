@@ -1,0 +1,44 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="
+http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
+">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.alveolo.ffm</groupId>
+    <artifactId>alveolo-ffm-parent</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>alveolo-ffm-processor</artifactId>
+  <name>Alveolo FFM - APT Processor</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.alveolo.ffm</groupId>
+      <artifactId>alveolo-ffm-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.10.3</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven.compiler.plugin.version}</version>
+        <configuration>
+          <enablePreview>true</enablePreview>
+          <proc>none</proc>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
