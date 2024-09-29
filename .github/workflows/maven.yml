@@ -37,8 +37,11 @@ jobs:
         java-version: '22'
         distribution: 'temurin'
         cache: maven
-        server-id: ossrh
-        server-username: ${{ secrets.OSSRH_USERNAME }}
-        server-password: ${{ secrets.OSSRH_PASSWORD }}
+        server-id: 'ossrh'
+        server-username: OSSRH_USERNAME
+        server-password: OSSRH_PASSWORD
     - name: Deploy to Sonatype OSSRH
+      env:
+        OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
       run: mvn -B deploy --file pom.xml
