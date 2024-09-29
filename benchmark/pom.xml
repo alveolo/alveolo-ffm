@@ -17,6 +17,8 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
 
   <properties>
     <jmh.version>1.37</jmh.version>
+    <jna.version>5.14.0</jna.version>
+    <jnr.version>2.2.16</jnr.version>
   </properties>
 
   <dependencies>
@@ -32,18 +34,12 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna-platform</artifactId>
-      <version>5.14.0</version>
+      <version>${jna.version}</version>
     </dependency>
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-ffi</artifactId>
-      <version>2.2.16</version>
-    </dependency>
-    <dependency>
-      <groupId>org.openjdk.jmh</groupId>
-      <artifactId>jmh-generator-annprocess</artifactId>
-      <version>${jmh.version}</version>
-      <scope>provided</scope>
+      <version>${jnr.version}</version>
     </dependency>
   </dependencies>
 
@@ -52,13 +48,8 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
         <configuration>
-          <compilerArgs>
-            <arg>-J--enable-preview</arg>
-          </compilerArgs>
           <showWarnings>true</showWarnings>
-          <enablePreview>true</enablePreview>
           <fork>true</fork>
           <forceJavacCompilerUse>true</forceJavacCompilerUse>
           <annotationProcessorPaths>
@@ -78,7 +69,6 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.1</version>
         <executions>
           <execution>
             <phase>package</phase>

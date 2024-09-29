@@ -13,13 +13,8 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
         <configuration>
-          <compilerArgs>
-            <arg>-J--enable-preview</arg>
-          </compilerArgs>
           <showWarnings>true</showWarnings>
-          <enablePreview>true</enablePreview>
           <fork>true</fork>
           <forceJavacCompilerUse>true</forceJavacCompilerUse>
           <annotationProcessorPaths>
@@ -38,7 +33,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.1</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -69,15 +63,9 @@
       </plugin>
     </plugins>
   </build>
-  <dependencies>
-    <dependency>
-      <groupId>org.openjdk.jmh</groupId>
-      <artifactId>jmh-generator-annprocess</artifactId>
-      <version>1.37</version>
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
   <properties>
     <jmh.version>1.37</jmh.version>
+    <jnr.version>2.2.16</jnr.version>
+    <jna.version>5.14.0</jna.version>
   </properties>
 </project>

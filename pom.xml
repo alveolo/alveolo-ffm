@@ -5,14 +5,42 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
 ">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.alveolo.ffm</groupId>
-  <artifactId>alveolo-ffm-aggregate</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <parent>
+    <groupId>org.alveolo.ffm</groupId>
+    <artifactId>alveolo-ffm-parent</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+    <relativePath>parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>alveolo-ffm-root</artifactId>
   <packaging>pom</packaging>
   <name>Alveolo FFM - Root</name>
+  <description>Alveolo FFM - Root</description>
+  <url>https://github.com/alveolo/alveolo-ffm</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Igor Malinin</name>
+      <email>igorzep@gmail.com</email>
+      <organization>Alveolo</organization>
+      <organizationUrl>https://github.com/alveolo/</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/alveolo/alveolo-ffm.git</connection>
+    <developerConnection>scm:git:ssh://github.com:alveolo/alveolo-ffm.git</developerConnection>
+    <url>https://github.com/alveolo/alveolo-ffm/tree/main</url>
+  </scm>
 
   <properties>
-    <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -27,11 +55,16 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.12.1</version>
+        <artifactId>maven-deploy-plugin</artifactId>
         <configuration>
-          <enablePreview>true</enablePreview>
-          <proc>none</proc>
+            <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-install-plugin</artifactId>
+        <configuration>
+            <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>

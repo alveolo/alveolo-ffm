@@ -14,23 +14,4 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
 
   <artifactId>alveolo-ffm-core</artifactId>
   <name>Alveolo FFM - Core</name>
-
-  <properties>
-    <maven.compiler.release>21</maven.compiler.release>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
-        <configuration>
-          <enablePreview>true</enablePreview>
-          <proc>none</proc>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>
