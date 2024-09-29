@@ -37,11 +37,6 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
       </dependency>
 -->
       <dependency>
-        <groupId>org.glavo</groupId>
-        <artifactId>classfile</artifactId>
-        <version>0.5.0</version>
-      </dependency>
-      <dependency>
         <groupId>org.alveolo.ffm</groupId>
         <artifactId>alveolo-ffm-core</artifactId>
         <version>0.0.2-SNAPSHOT</version>
