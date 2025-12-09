@@ -65,7 +65,7 @@
   </build>
   <properties>
     <jmh.version>1.37</jmh.version>
-    <jnr.version>2.2.16</jnr.version>
-    <jna.version>5.14.0</jna.version>
+    <jnr.version>2.2.18</jnr.version>
+    <jna.version>5.18.1</jna.version>
   </properties>
 </project>

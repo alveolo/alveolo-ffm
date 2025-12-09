@@ -75,6 +75,7 @@ public class ForeignValueProcessor extends AbstractProcessor {
 
       out.write("""
           import java.lang.foreign.*;
+          import java.lang.invoke.*;
 
           @javax.annotation.processing.Generated("<generator>")
           public final class <name> {
@@ -96,7 +97,7 @@ public class ForeignValueProcessor extends AbstractProcessor {
       String toMemorySegmentFields = rcGens.stream()
           .map(VariableGenerator::name)
           .map(name -> "<name>(ms, from.<name>());".replace("<name>", name))
-          .collect(joining("\n    ", "", "  "));
+          .collect(joining("\n    ", "", ""));
 
       String fromMemorySegmentFields = rcGens.stream()
           .map(VariableGenerator::name)
@@ -176,7 +177,7 @@ public class ForeignValueProcessor extends AbstractProcessor {
       throws IOException {
     out.write("""
           public static final java.lang.invoke.VarHandle FM$VH$<name> =
-            FM$LAYOUT.varHandle(FM$PE$<name>);
+            MethodHandles.insertCoordinates(FM$LAYOUT.varHandle(FM$PE$<name>), 1, 0L);
 
           public static <type> <name>(MemorySegment ms) {
             return (<type>) FM$VH$<name>.get(ms);
