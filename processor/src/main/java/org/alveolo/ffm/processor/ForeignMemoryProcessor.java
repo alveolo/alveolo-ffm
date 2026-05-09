@@ -1,7 +1,7 @@
 package org.alveolo.ffm.processor;
 
 import static java.util.Arrays.stream;
-import static javax.lang.model.SourceVersion.RELEASE_21;
+import static javax.lang.model.SourceVersion.RELEASE_25;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,9 +27,11 @@ import org.alveolo.ffm.ForeignUnion;
 
 @SupportedAnnotationTypes({
   "org.alveolo.ffm.ForeignStruct",
+  "org.alveolo.ffm.ForeignStruct.List",
   "org.alveolo.ffm.ForeignUnion",
+  "org.alveolo.ffm.ForeignUnion.List",
 })
-@SupportedSourceVersion(RELEASE_21)
+@SupportedSourceVersion(RELEASE_25)
 public class ForeignMemoryProcessor extends AbstractProcessor {
   @Override
   public boolean process(
@@ -253,7 +255,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .replace("<Type>", capType)
         .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
         .replace("<buffer>", type.equals("byte")
-            ? "" : "as" + capType + "Buffer()")
+            ? "" : ".as" + capType + "Buffer()")
         .replace("<size>", Long.toString(size)));
   }
 

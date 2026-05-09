@@ -1,0 +1,16 @@
+package pkg;
+
+import org.alveolo.ffm.*;
+
+@ForeignInterface
+public interface LibC {
+  int abs(int number);
+
+  default int skip() { return abs(0); }
+  static int ignore() { return 0; }
+
+  @ForeignName("abs")
+  int renamed(int number);
+
+  div_t div(int numerator, int denominator);
+}

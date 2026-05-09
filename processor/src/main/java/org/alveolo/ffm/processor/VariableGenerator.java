@@ -56,7 +56,7 @@ class VariableGenerator extends TypeGenerator {
     if (hasAnnotation(Address.class)) return name() + ".ms";
 
     if (typeName().equals("java.lang.String"))
-      return "ff$arena.allocateUtf8String(" + name() + ")";
+      return "ff$arena.allocateFrom(" + name() + ")";
 
     if (!hasAnnotation(ForeignValue.class)) {
       var type = processingEnv.getTypeUtils().asElement(typeMirror);

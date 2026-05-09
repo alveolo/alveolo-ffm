@@ -1,7 +1,7 @@
 package org.alveolo.ffm.processor;
 
 import static java.util.stream.Collectors.joining;
-import static javax.lang.model.SourceVersion.RELEASE_21;
+import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
 
 import java.io.IOException;
@@ -17,7 +17,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 
 @SupportedAnnotationTypes("org.alveolo.ffm.ForeignValue")
-@SupportedSourceVersion(RELEASE_21)
+@SupportedSourceVersion(RELEASE_25)
 public class ForeignValueProcessor extends AbstractProcessor {
   @Override
   public boolean process(
@@ -55,7 +55,7 @@ public class ForeignValueProcessor extends AbstractProcessor {
 
   private void writeFile(TypeElement type) throws IOException {
     if (type.getKind() != ElementKind.RECORD)
-      throw new IllegalArgumentException("@Value is not allowed here");
+      throw new IllegalArgumentException("@ForeignValue is not allowed here");
 
     String srcClassName = type.getQualifiedName().toString();
     String packageName = null;
@@ -177,7 +177,8 @@ public class ForeignValueProcessor extends AbstractProcessor {
       throws IOException {
     out.write("""
           public static final java.lang.invoke.VarHandle FM$VH$<name> =
-            MethodHandles.insertCoordinates(FM$LAYOUT.varHandle(FM$PE$<name>), 1, 0L);
+            MethodHandles.insertCoordinates(
+                FM$LAYOUT.varHandle(FM$PE$<name>), 1, 0L);
 
           public static <type> <name>(MemorySegment ms) {
             return (<type>) FM$VH$<name>.get(ms);
@@ -247,7 +248,7 @@ public class ForeignValueProcessor extends AbstractProcessor {
         .replace("<Type>", capType)
         .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
         .replace("<buffer>", type.equals("byte")
-            ? "" : "as" + capType + "Buffer()")
+            ? "" : ".as" + capType + "Buffer()")
         .replace("<size>", Long.toString(size)));
   }
 

@@ -81,7 +81,7 @@ class ExecutableGenerator {
     var stream = Stream.concat(
         isVoid ? Stream.empty() : Stream.of(returnGenerator),
         parameterGenerators.stream()
-            .filter(pg -> pg.typeMirror.toString() != SEGMENT_ALLOCATOR));
+            .filter(pg -> !SEGMENT_ALLOCATOR.equals(pg.typeMirror.toString())));
 
     String prefix = isVoid
         ? "FunctionDescriptor.ofVoid("
@@ -113,9 +113,12 @@ class ExecutableGenerator {
 
     String newLine = "\n          ";
 
-    String params = parameterGenerators.stream()
-        .map(VariableGenerator::invoke)
-        .collect(joining("," + newLine, newLine, ""));
+    var paramsList = Stream.concat(
+        Stream.ofNullable(returnGenerator.needsAllocator()
+            ? "(SegmentAllocator) ff$arena" : null),
+        parameterGenerators.stream().map(VariableGenerator::invoke));
+
+    var params = paramsList.collect(joining("," + newLine, newLine, ""));
 
     if (returnGenerator.needsAllocator()) {
       var type = (TypeElement) processingEnv
@@ -123,8 +126,7 @@ class ExecutableGenerator {
 
       return "return " + foreignClassName(type)
           + ".fromMemorySegment((MemorySegment) " + methodHandleName
-          + ".invokeExact(" + newLine
-          + "(SegmentAllocator) ff$arena, " + params + "));";
+          + ".invokeExact(" + params + "));";
     }
 
     if (returnType.getKind() != TypeKind.VOID)

@@ -1,6 +1,6 @@
 package org.alveolo.ffm.processor;
 
-import static javax.lang.model.SourceVersion.RELEASE_21;
+import static javax.lang.model.SourceVersion.RELEASE_25;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -20,7 +20,7 @@ import org.alveolo.ffm.macos.Framework;
 import org.alveolo.ffm.macos.Frameworks;
 
 @SupportedAnnotationTypes("org.alveolo.ffm.ForeignInterface")
-@SupportedSourceVersion(RELEASE_21)
+@SupportedSourceVersion(RELEASE_25)
 public class ForeignInterfaceProcessor extends AbstractProcessor {
   @Override
   public boolean process(
