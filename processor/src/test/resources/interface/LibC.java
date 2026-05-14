@@ -13,4 +13,9 @@ public interface LibC {
   int renamed(int number);
 
   div_t div(int numerator, int denominator);
+
+  // TODO support use of size_t
+  long strlen(String utf8z);
+
+//  String l64a (long n);
 }

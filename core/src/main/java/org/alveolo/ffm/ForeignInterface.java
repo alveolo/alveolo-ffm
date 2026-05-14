@@ -6,6 +6,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+/// Marks an interface for use as a Foreign Function API wrapper
 @Target(TYPE)
 @Retention(SOURCE)
 public @interface ForeignInterface {}

@@ -1,66 +1,91 @@
 package org.alveolo.ffm.processor;
 
-import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
 import static javax.lang.model.SourceVersion.RELEASE_25;
+import static javax.lang.model.element.Modifier.ABSTRACT;
+import static javax.lang.model.element.Modifier.DEFAULT;
+import static javax.lang.model.element.Modifier.STATIC;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.MirroredTypeException;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
-import org.alveolo.ffm.Element;
 import org.alveolo.ffm.ForeignStruct;
 import org.alveolo.ffm.ForeignUnion;
+import org.alveolo.ffm.Sequence;
 
 @SupportedAnnotationTypes({
   "org.alveolo.ffm.ForeignStruct",
-  "org.alveolo.ffm.ForeignStruct.List",
   "org.alveolo.ffm.ForeignUnion",
-  "org.alveolo.ffm.ForeignUnion.List",
 })
 @SupportedSourceVersion(RELEASE_25)
 public class ForeignMemoryProcessor extends AbstractProcessor {
+  private static final Set<String> NIO_BUFFER_TYPES = Set.of(
+      "java.nio.ByteBuffer", "java.nio.ShortBuffer",
+      "java.nio.CharBuffer",
+      "java.nio.IntBuffer", "java.nio.LongBuffer",
+      "java.nio.FloatBuffer", "java.nio.DoubleBuffer");
+
+  /// Represents a struct field inferred from accessor methods.
+  static record StructField(
+      String name, TypeMirror typeMirror, long sequence, Element errorElement
+  ) {}
+
   @Override
   public boolean process(
-      Set<? extends TypeElement> annotations,
-      RoundEnvironment roundEnv) {
+      Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     var messager = processingEnv.getMessager();
-
-    messager.printNote("StructProcessor process...");
-    messager.printNote("RoundEnvironment"
-        + ": processingOver = " + roundEnv.processingOver()
-        + ", rootElements = " + roundEnv.getRootElements());
 
     if (roundEnv.processingOver()) return true;
 
     for (var annotation : annotations) {
-      messager.printNote("Annotation: " + annotation);
-
-      var elements = roundEnv.getElementsAnnotatedWith(annotation);
-
-      for (var element : elements) {
-        messager.printNote("Annotated Element: " + element);
-
-        if (element instanceof PackageElement pkg) {
-          try {
-            writeFiles(pkg);
-          } catch (Throwable e) {
-            var sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            messager.printError(sw.toString(), pkg);
+      for (var element : roundEnv.getElementsAnnotatedWith(annotation)) {
+        if (element instanceof TypeElement type) {
+          switch (type.getKind()) {
+            case INTERFACE:
+            case RECORD:
+              try {
+                if (type.getAnnotation(ForeignStruct.class) != null) {
+                  writeFile(type, "structLayout");
+                }
+                if (type.getAnnotation(ForeignUnion.class) != null) {
+                  if (type.getKind() == ElementKind.RECORD) {
+                    messager.printError("@" + annotation.getSimpleName()
+                        + " can only be applied to an interface, not "
+                        + ElementKind.RECORD, type);
+                  } else {
+                    writeFile(type, "unionLayout");
+                  }
+                }
+              } catch (Throwable e) {
+                var sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                messager.printError(sw.toString(), type);
+              }
+              break;
+            case ElementKind kind:
+              messager.printError("@"
+                  + annotation.getSimpleName()
+                  + " can only be applied to an interface, not " + kind, type);
           }
         }
       }
@@ -69,141 +94,428 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return true;
   }
 
-  private void writeFiles(PackageElement pkg) throws IOException {
-    for (var struct : pkg.getAnnotationsByType(ForeignStruct.class)) {
-      writeFile(pkg, "structLayout", struct.name(), struct.elements());
-    }
-
-    for (var union : pkg.getAnnotationsByType(ForeignUnion.class)) {
-      writeFile(pkg, "unionLayout", union.name(), union.elements());
-    }
-  }
-
-  private void writeFile(PackageElement pkg, String memoryLayout,
-      String simpleClassName, Element[] elements) throws IOException {
-    String packageName = pkg.getQualifiedName().toString();
-    String className = packageName + "." + simpleClassName;
-
-    var file = processingEnv.getFiler().createSourceFile(className, pkg);
-
-    try (var out = file.openWriter()) {
-      if (packageName != null) {
-        out.write("package " + packageName + ";\n\n");
-      }
-
-      out.write("""
-          import java.lang.foreign.*;
-
-          @javax.annotation.processing.Generated("<generator>")
-          //@org.alveolo.ffm.Value
-          public final class <name> {
-            public final MemorySegment ms;
-
-            public <name>(MemorySegment ms) {
-              this.ms = ms;
-            }
-
-            public static final MemoryLayout FM$LAYOUT =
-              MemoryLayout.<layout>(
-                org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
-          """
-          .replace("<generator>", getClass().getCanonicalName())
-          .replace("<name>", simpleClassName)
-          .replace("<layout>", memoryLayout));
-
-      var elementGens = stream(elements)
-          .map(e -> variableGenerator(pkg, e))
+  /// Infer struct fields from interface accessor methods.
+  private List<StructField> inferFields(TypeElement iface) {
+    if (iface.getKind() == ElementKind.RECORD) {
+      var rcGens = iface.getRecordComponents().stream()
+          .map(rc -> new VariableGenerator(processingEnv, rc))
           .toList();
 
-      var layoutGen = new MemoryLayoutGenerator(processingEnv, elementGens);
+      return rcGens.stream()
+          .map(v -> new StructField(v.name,
+              v.typeMirror, v.sequence, v.element))
+          .toList();
+    }
 
-      out.write(layoutGen.layout());
+    // Group methods by name
+    Map<String, List<ExecutableElement>> methodsByName = new LinkedHashMap<>();
+    for (var enc : iface.getEnclosedElements()) {
+      if (enc instanceof ExecutableElement exe
+          && enc.getModifiers().contains(ABSTRACT)
+          && !enc.getModifiers().contains(STATIC)
+          && !enc.getModifiers().contains(DEFAULT)) {
+        String name = exe.getSimpleName().toString();
+        methodsByName.computeIfAbsent(name, k -> new ArrayList<>()).add(exe);
+      }
+    }
 
-      out.write("""
-                }));
+    var fields = new ArrayList<StructField>();
+    for (var entry : methodsByName.entrySet()) {
+      String fieldName = entry.getKey();
+      var methods = entry.getValue();
 
-            public static <name> allocate(SegmentAllocator allocator) {
-              return new <name>(allocator.allocate(
-                FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment()));
+      ExecutableElement accessor = null;
+
+      for (var m : methods) {
+        var params = m.getParameters();
+        if (params.isEmpty() && m.getReturnType().getKind() != TypeKind.VOID) {
+          accessor = m;
+        } else if (params.size() == 1
+            && m.getReturnType().getKind() == TypeKind.DECLARED) {
+              // TODO check if setter signature
+            } else {
+              processingEnv.getMessager().printError(
+                  "Unsupported accessor signature for field '"
+                      + fieldName + "': " + m,
+                  m);
             }
-          """
-          .replace("<name>", simpleClassName));
-
-      for (var e : elements) {
-        writeAccessors(out, e);
       }
 
+      if (accessor == null) {
+        continue;
+      }
+
+      // Determine type from accessor return or setter parameter
+      var fieldType = accessor.getReturnType();
+
+      // Determine sequence length
+      if (fieldType.getKind() == TypeKind.ARRAY) {
+        // TODO error suggesting to use corresponding Buffer class
+        // // Check for @Sequence on the getter/setter method
+        // ExecutableElement sourceMethod = getter != null ? getter : setter;
+        // sequence = getSequenceFromMethod(sourceMethod);
+        // // Use component type for layout, strip annotations
+        // TypeMirror componentType = ((ArrayType)
+        // fieldType).getComponentType();
+        // fieldType = processingEnv.getTypeUtils().erasure(componentType);
+      }
+
+      long sequence = 1;
+      if (isNioBufferType(fieldType)) {
+        // NIO Buffer type — extract element type
+        sequence = getSequenceFromMethod(accessor);
+        fieldType = extractBufferElementType(fieldType);
+      }
+
+      fields.add(new StructField(fieldName, fieldType, sequence, accessor));
+    }
+
+    return fields;
+  }
+
+  /// Get @Sequence value from a method annotation, defaulting to 1.
+  private long getSequenceFromMethod(ExecutableElement method) {
+    var seq = method.getAnnotation(Sequence.class);
+    return seq != null ? seq.value() : 1;
+  }
+
+  private boolean isNioBufferType(TypeMirror type) {
+    String erased = processingEnv.getTypeUtils().erasure(type).toString();
+    return NIO_BUFFER_TYPES.contains(erased);
+  }
+
+  /// Extract the element type from a NIO Buffer type.
+  private TypeMirror extractBufferElementType(TypeMirror bufferType) {
+    var typeUtils = processingEnv.getTypeUtils();
+    String bufName = typeUtils.erasure(bufferType).toString();
+    String primitiveName = switch (bufName) {
+      case "java.nio.ByteBuffer" -> "byte";
+      case "java.nio.CharBuffer" -> "char";
+      case "java.nio.ShortBuffer" -> "short";
+      case "java.nio.IntBuffer" -> "int";
+      case "java.nio.LongBuffer" -> "long";
+      case "java.nio.FloatBuffer" -> "float";
+      case "java.nio.DoubleBuffer" -> "double";
+      default -> "byte";
+    };
+
+    // Get primitive TypeMirror via the corresponding wrapper class
+    String wrapperClass = switch (primitiveName) {
+      case "byte" -> "java.lang.Byte";
+      case "short" -> "java.lang.Short";
+      case "int" -> "java.lang.Integer";
+      case "long" -> "java.lang.Long";
+      case "float" -> "java.lang.Float";
+      case "double" -> "java.lang.Double";
+      case "char" -> "java.lang.Character";
+      default -> "java.lang.Byte";
+    };
+
+    var wrapperType = processingEnv.getElementUtils()
+        .getTypeElement(wrapperClass).asType();
+
+    return typeUtils.unboxedType(wrapperType);
+  }
+
+  private void writeFile(TypeElement iface, String layoutKind)
+      throws IOException {
+    String packageName = processingEnv.getElementUtils()
+        .getPackageOf(iface).getQualifiedName().toString();
+    String className = foreignClassName(iface);
+    int lastDot = className.lastIndexOf('.');
+    String simpleClassName = className.substring(lastDot + 1);
+    String ifaceName = iface.getSimpleName().toString();
+
+    var fields = inferFields(iface);
+
+    var file = processingEnv.getFiler().createSourceFile(className, iface);
+
+    try (var out = file.openWriter()) {
+      writeClassHeader(out, packageName, simpleClassName, iface);
+      writeLayout(out, fields, layoutKind);
+      writePathElements(out, simpleClassName, fields);
+      writeVarHandles(out, simpleClassName, fields);
+      writeAllocate(out, simpleClassName);
+      switch (iface.getKind()) {
+        case INTERFACE:
+          writeConstructors(out, simpleClassName, ifaceName);
+          writeFieldAccessors(out, simpleClassName, fields);
+          break;
+        case RECORD:
+          writeRecordConverters(out, ifaceName, fields, iface);
+          writeStaticAccessors(out, simpleClassName, fields);
+          break;
+        case ElementKind k:
+          throw new IllegalArgumentException(
+              "Unexpected value: " + k);
+      }
       out.write("}\n");
     }
   }
 
-  private VariableGenerator variableGenerator(
-      PackageElement pkg, Element element) {
-    var typeMirror = getTypeMirror(element, Element::type);
-    long sequence = element.sequence();
-    if (sequence > 1) {
-      typeMirror = processingEnv.getTypeUtils().getArrayType(typeMirror);
+  private void writeClassHeader(Writer out, String packageName,
+      String className, TypeElement srcType) throws IOException {
+    if (!packageName.isEmpty()) {
+      out.append("package ").append(packageName).append(";\n\n");
     }
 
-    return new VariableGenerator(processingEnv,
-        typeMirror, sequence, element.name(), pkg);
+    String declaration = switch (srcType.getKind()) {
+      case INTERFACE -> className + " implements "
+          + srcType.getSimpleName().toString();
+      case RECORD -> className;
+      case ElementKind k -> throw new IllegalArgumentException(
+          "Unexpected value: " + k);
+    };
+
+    out.write("""
+        import java.lang.foreign.*;
+
+        @javax.annotation.processing.Generated(
+            "<generator>")
+        public final class <declaration> {
+        """
+        .replace("<generator>", getClass().getCanonicalName())
+        .replace("<declaration>", declaration));
   }
 
-  private void writeAccessors(Writer out, Element element) throws IOException {
-    String name = element.name();
+  private void writeLayout(Writer out, List<StructField> fields,
+      String layoutKind) throws IOException {
+    out.write("""
+          public static final MemoryLayout FM$LAYOUT =
+              MemoryLayout.<layout>(
+                  org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+        """
+        .replace("<layout>", layoutKind));
+
+    var layoutFields = fields.stream()
+        .map(f -> {
+          var typeGen = new TypeGenerator(processingEnv,
+              f.typeMirror(), f.sequence());
+
+          return new MemoryLayoutGenerator.LayoutField(f.name(),
+              typeGen.layout(), typeGen.typeName(), f.errorElement());
+        })
+        .toList();
+
+    var layoutGen = new MemoryLayoutGenerator(processingEnv, layoutFields);
+    out.write(layoutGen.layout());
+
+    out.write("      }));\n");
+  }
+
+  private void writeAllocate(Writer out, String className) throws IOException {
+    out.write("""
+
+          public static MemorySegment allocate(SegmentAllocator allocator) {
+            return allocator.allocate(
+              FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+          }
+        """);
+  }
+
+  private void writeRecordConverters(Writer out, String srcClassName,
+      List<StructField> fields, TypeElement type) throws IOException {
+    var rcGens = type.getRecordComponents().stream()
+        .map(rc -> new VariableGenerator(processingEnv, rc))
+        .toList();
+
+    String toMemorySegmentFields = rcGens.stream()
+        .map(VariableGenerator::name)
+        .map(name -> "<name>(ms, from.<name>());".replace("<name>", name))
+        .collect(joining("\n    ", "", ""));
+
+    String fromMemorySegmentFields = rcGens.stream()
+        .map(VariableGenerator::name)
+        .map(name -> "<name>(ms)".replace("<name>", name))
+        .collect(joining(",\n        ", "\n        ", ""));
 
     out.write("""
 
-          private static final MemoryLayout.PathElement FM$PE$<name> =
-            MemoryLayout.PathElement.groupElement("<name>");
+          public static void toMemorySegment(<src> from, MemorySegment ms) {
+            <toMemorySegmentFields>
+          }
 
+          public static MemorySegment toMemorySegment(
+              SegmentAllocator allocator, <src> from) {
+            var ms = allocate(allocator);
+            toMemorySegment(from, ms);
+            return ms;
+          }
+
+          public static <src> fromMemorySegment(MemorySegment ms) {
+            return new <src>(<fromMemorySegmentFields>);
+          }
         """
-        .replace("<name>", name));
+        .replace("<src>", srcClassName)
+        .replace("<toMemorySegmentFields>", toMemorySegmentFields)
+        .replace("<fromMemorySegmentFields>", fromMemorySegmentFields));
+  }
 
-    var typeMirror = getTypeMirror(element, Element::type);
-    String type = typeMirror.toString();
+  private void writeConstructors(Writer out,
+      String className, String ifaceName) throws IOException {
+    out.write("""
 
-    var sequence = element.sequence();
-    if (sequence > 1) {
-      writeAccessorsBuffer(out, name, type, sequence);
+          public final MemorySegment ms;
+
+          public <class>(SegmentAllocator allocator) {
+            this(allocate(allocator));
+          }
+
+          public <class>(MemorySegment ms) {
+            this.ms = ms;
+          }
+        """
+        .replace("<class>", className)
+        .replace("<iface>", ifaceName));
+  }
+
+  private void writePathElements(Writer out, String className,
+      List<StructField> fields) throws IOException {
+    for (var field : fields) {
+      out.write("""
+
+            public static final MemoryLayout.PathElement FM$PE$<name> =
+                MemoryLayout.PathElement.groupElement("<name>");
+          """
+          .replace("<name>", field.name()));
+    }
+  }
+
+  private void writeVarHandles(Writer out, String className,
+      List<StructField> fields) throws IOException {
+    for (var field : fields) {
+      if (isNested(field)) {
+        continue; // TODO complex/structured/indexed accessors
+      }
+
+      out.write("""
+
+            public static final java.lang.invoke.VarHandle FM$VH$<name> =
+          """
+          .replace("<name>", field.name()));
+
+      if (field.sequence() > 1) {
+        out.write("""
+                  FM$LAYOUT.varHandle(FM$PE$<name>);
+            """
+            .replace("<name>", field.name()));
+      } else {
+        out.write("""
+                  java.lang.invoke.MethodHandles.insertCoordinates(
+                      FM$LAYOUT.varHandle(FM$PE$<name>), 1, 0L);
+            """
+            .replace("<name>", field.name()));
+      }
+    }
+  }
+
+  private void writeStaticAccessors(Writer out, String className,
+      List<StructField> fields) throws IOException {
+    for (var field : fields) {
+      if (field.sequence() > 1) {
+        writeStaticAccessorsBuffer(out, field);
+      } else {
+        writeStaticAccessorsSimple(out, className, field);
+      }
+    }
+  }
+
+  private void writeStaticAccessorsSimple(Writer out, String className,
+      StructField field) throws IOException {
+    String name = field.name();
+    String type = field.typeMirror().toString();
+
+    if (isNested(field)) {
+      // TODO accessors for nested records
     } else {
-      writeAccessorsSimple(out, type, name);
+      out.write("""
+
+            public static <type> <name>(MemorySegment ms) {
+              return (<type>) FM$VH$<name>.get(ms);
+            }
+
+            public static void <name>(MemorySegment ms, <type> value) {
+              FM$VH$<name>.set(ms, value);
+            }
+          """
+          .replace("<name>", name)
+          .replace("<type>", type));
     }
   }
 
-  private static <T extends Annotation> TypeMirror getTypeMirror(
-      T annotation, Function<T, Class<?>> getter) {
-    try {
-      getter.apply(annotation);
-      return null;
-    } catch (MirroredTypeException mte) {
-      return mte.getTypeMirror();
-    }
-  }
-
-  private void writeAccessorsSimple(Writer out, String type, String name)
+  private void writeStaticAccessorsBuffer(Writer out, StructField field)
       throws IOException {
-    out.write("""
-          public static final java.lang.invoke.VarHandle FM$VH$<name> =
-            FM$LAYOUT.varHandle(FM$PE$<name>);
-
-          public <type> <name>() {
-            return (<type>) FM$VH$<name>.get(ms);
-          }
-
-          public void <name>(<type> value) {
-            FM$VH$<name>.set(ms, value);
-          }
-        """
-        .replace("<name>", name)
-        .replace("<type>", type));
+    // TODO accessors for array/buffer types in records
   }
 
-  private void writeAccessorsBuffer(
-      Writer out, String name, String type, long size) throws IOException {
-    var capType = capitalize(type);
+  private void writeFieldAccessors(Writer out, String className,
+      List<StructField> fields) throws IOException {
+    for (var field : fields) {
+      if (field.sequence() > 1) {
+        writeAccessorsBuffer(out, field);
+      } else {
+        writeAccessorsSimple(out, className, field);
+      }
+    }
+  }
+
+  private void writeAccessorsSimple(Writer out, String className,
+      StructField field) throws IOException {
+    String name = field.name();
+    String type = field.typeMirror().toString();
+
+    if (isNested(field)) {
+      var typeEl = (TypeElement) processingEnv.getTypeUtils()
+          .asElement(field.typeMirror());
+
+      String foreignClassName = ProcessorUtils.foreignClassName(typeEl);
+      String interfaceName = typeEl.getQualifiedName().toString();
+
+      out.write("""
+
+            public <type> <name>() {
+              return new <type>(ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>),
+                  FM$LAYOUT.select(FM$PE$<name>).byteSize()));
+            }
+
+            public void <name>(<type> value) {
+              var layout = FM$LAYOUT.select(FM$PE$<name>);
+              var slice = ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+              MemorySegment.copy(value.ms, 0, slice, 0, layout.byteSize());
+            }
+          """
+          .replace("<name>", name)
+          .replace("<type>", foreignClassName)
+          .replace("<type>", interfaceName));
+    } else {
+      out.write("""
+
+            public <type> <name>() {
+              return (<type>) FM$VH$<name>.get(ms);
+            }
+
+            public <class> <name>(<type> value) {
+              FM$VH$<name>.set(ms, value);
+              return this;
+            }
+          """
+          .replace("<class>", className)
+          .replace("<name>", name)
+          .replace("<type>", type));
+    }
+  }
+
+  private void writeAccessorsBuffer(Writer out, StructField field)
+      throws IOException {
+    String name = field.name();
+    String type = field.typeMirror().toString();
+    String capType = capitalize(type);
+    long size = field.sequence();
 
     out.write("""
+
           public static final long FM$OFFSET$<name> =
               FM$LAYOUT.byteOffset(FM$PE$<name>);
 
@@ -218,6 +530,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             }
             return FM$MS$<name>;
           }
+        """
+        .replace("<name>", name));
+
+    out.write("""
 
           private java.nio.<Type>Buffer FM$BB$<name>;
 
@@ -227,14 +543,21 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             }
             return FM$BB$<name>;
           }
+        """
+        .replace("<name>", name)
+        .replace("<Type>", capType)
+        .replace("<buffer>", type.equals("byte")
+            ? "" : ".as" + capType + "Buffer()"));
 
-          /** get element at offset */
+    out.write("""
+
+          /** get element at index */
           public <type> <name>(int index) {
             return <name>$MemorySegment()
               .getAtIndex(ValueLayout.JAVA_<TYPE>, index);
           }
 
-          /** set element at offset */
+          /** set element at index */
           public void <name>(int index, <type> value) {
             <name>$MemorySegment()
               .setAtIndex(ValueLayout.JAVA_<TYPE>, index, value);
@@ -243,20 +566,25 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           /** replace values from array */
           public void <name>(<type>[] value) {
             if (value.length != <size>) {
-              throw new IllegalArgumentException(); // TODO message
+              throw new IllegalArgumentException();
             }
-
             MemorySegment.copy(value, 0,
                 <name>$MemorySegment(), ValueLayout.JAVA_<TYPE>, 0, <size>);
           }
         """
         .replace("<name>", name)
         .replace("<type>", type)
-        .replace("<Type>", capType)
         .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
-        .replace("<buffer>", type.equals("byte")
-            ? "" : ".as" + capType + "Buffer()")
         .replace("<size>", Long.toString(size)));
+  }
+
+  private boolean isNested(StructField field) {
+    var typeEl = (TypeElement) processingEnv.getTypeUtils()
+        .asElement(field.typeMirror());
+
+    return typeEl != null
+        && (typeEl.getAnnotation(ForeignStruct.class) != null
+            || typeEl.getAnnotation(ForeignUnion.class) != null);
   }
 
   private String capitalize(String name) {

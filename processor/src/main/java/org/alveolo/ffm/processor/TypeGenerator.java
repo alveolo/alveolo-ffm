@@ -13,8 +13,10 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 import org.alveolo.ffm.Address;
-import org.alveolo.ffm.ForeignValue;
+import org.alveolo.ffm.ForeignStruct;
+import org.alveolo.ffm.ForeignUnion;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.Value;
 
 class TypeGenerator {
   public static String VALUE_LAYOUT_NOT_SUPPORTED = "((ValueLayout) null)";
@@ -37,6 +39,7 @@ class TypeGenerator {
     this.sequence = sequence;
   }
 
+  /// Java type name
   String typeName() {
     if (typeMirror instanceof DeclaredType dt)
       return processingEnv.getElementUtils()
@@ -45,17 +48,29 @@ class TypeGenerator {
     return typeMirror.toString();
   }
 
+  /// MemoryLayout type such as:
+  /// * `ValueLayout.JAVA_INT` for primitive types
+  /// * `Nested.FM$LAYOUT` for nested structs/unions
+  /// * `ValueLayout.ADDRESS` for reference types
+  /// * `MemoryLayout.sequenceLayout(5, ValueLayout.JAVA_INT)` for
+  ///   primitive arrays
+  // TODO support nested struct/union and reference arrays
   String layout() {
     var element = (TypeElement) processingEnv
         .getTypeUtils().asElement(typeMirror);
 
     if (element != null) {
-      if (element.getKind() == ElementKind.RECORD
-          && element.getAnnotation(ForeignValue.class) != null)
+      if (element.getKind() == ElementKind.RECORD)
         return foreignClassName(element) + ".FM$LAYOUT";
 
+      if (element.getKind() == ElementKind.INTERFACE) {
+        if (element.getAnnotation(ForeignStruct.class) != null
+            || element.getAnnotation(ForeignUnion.class) != null)
+          return foreignClassName(element) + ".FM$LAYOUT";
+      }
+
       if (element.getKind() == ElementKind.CLASS) {
-        boolean hasValue = hasAnnotation(ForeignValue.class);
+        boolean hasValue = hasAnnotation(Value.class);
         boolean hasAddress = hasAnnotation(Address.class);
 
         // TODO report correct error
@@ -64,7 +79,7 @@ class TypeGenerator {
         if (hasValue) return foreignClassName(element) + ".FM$LAYOUT";
         if (hasAddress) return "ValueLayout.ADDRESS";
 
-        hasValue = element.getAnnotation(ForeignValue.class) != null;
+        hasValue = element.getAnnotation(Value.class) != null;
         hasAddress = element.getAnnotation(Address.class) != null;
 
         // TODO report correct error
@@ -76,6 +91,7 @@ class TypeGenerator {
     }
 
     return switch (typeName()) {
+      case "boolean" -> "ValueLayout.JAVA_BOOLEAN";
       case "byte" -> "ValueLayout.JAVA_BYTE";
       case "char" -> "ValueLayout.JAVA_CHAR";
       case "short" -> "ValueLayout.JAVA_SHORT";
@@ -102,7 +118,6 @@ class TypeGenerator {
       case "double[]", "java.nio.DoubleBuffer" -> "MemoryLayout.sequenceLayout("
           + sequence + ", ValueLayout.JAVA_DOUBLE)";
 
-      // TODO nesting structures
       // TODO more custom structures
 
       default -> VALUE_LAYOUT_NOT_SUPPORTED;
@@ -128,6 +143,7 @@ class TypeGenerator {
     // throw new IllegalArgumentException("Missing @Sequence annotation");
   }
 
+  /// Check if the declaring type has annotation
   boolean hasAnnotation(Class<? extends Annotation> annotation) {
     for (var annotationMirror : typeMirror.getAnnotationMirrors()) {
       if (annotationMirror.getAnnotationType().toString()
@@ -138,14 +154,22 @@ class TypeGenerator {
     return false;
   }
 
+  /// Checks if using the type in a call needs allocator.
+  ///
+  /// `true` for non-primitive types passed by value
   boolean needsAllocator() {
-    var element = processingEnv.getTypeUtils().asElement(typeMirror);
-    if (element == null) return false;
+    return !typeMirror.getKind().isPrimitive();
 
-    var kind = element.getKind();
-    if (kind == ElementKind.RECORD)
-      return element.getAnnotation(ForeignValue.class) != null;
-
-    return typeName().equals("java.lang.String");
+    // var element = processingEnv.getTypeUtils().asElement(typeMirror);
+    // if (element == null) return false;
+    //
+    // var kind = element.getKind();
+    // if (kind == ElementKind.RECORD)
+    // return element.getAnnotation(ForeignValue.class) != null;
+    //
+    // if (kind == ElementKind.INTERFACE)
+    // return element.getAnnotation(ForeignStruct.class) != null;
+    //
+    // return typeName().equals("java.lang.String");
   }
 }

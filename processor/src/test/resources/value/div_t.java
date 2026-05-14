@@ -2,5 +2,5 @@ package pkg;
 
 import org.alveolo.ffm.*;
 
-@ForeignValue
+@ForeignStruct
 public record div_t(int quot, int rem) {}

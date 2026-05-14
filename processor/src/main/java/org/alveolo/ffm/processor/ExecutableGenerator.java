@@ -16,7 +16,7 @@ import javax.lang.model.type.TypeKind;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.ForeignName;
-import org.alveolo.ffm.ForeignValue;
+import org.alveolo.ffm.Value;
 
 class ExecutableGenerator {
   public static final String SEGMENT_ALLOCATOR =
@@ -62,7 +62,7 @@ class ExecutableGenerator {
         .replace("<name>", name(element))
         .replace("<descriptor>", descriptor())
         .replace("<signature>", signature())
-        .replace("<allocator>", allocator())
+        .replace("<allocator>", allocatorDefinition())
         .replace("<invoke>", invoke());
   }
 
@@ -104,8 +104,16 @@ class ExecutableGenerator {
         .collect(joining("," + newLine, prefix + newLine, ")"));
   }
 
-  private String allocator() {
-    return needsAllocator() ? "(var ff$arena = Arena.ofConfined()) " : "";
+  private String allocatorDefinition() {
+    if (!needsAllocator() || hasAllocatorParameter()) return "";
+
+    return "(var ff$arena = Arena.ofConfined()) ";
+  }
+
+  private String allocatorName() {
+    return hasAllocatorParameter()
+        ? parameterGenerators.getFirst().name()
+        : "ff$arena";
   }
 
   private String invoke() {
@@ -124,9 +132,13 @@ class ExecutableGenerator {
       var type = (TypeElement) processingEnv
           .getTypeUtils().asElement(returnType);
 
-      return "return " + foreignClassName(type)
-          + ".fromMemorySegment((MemorySegment) " + methodHandleName
-          + ".invokeExact(" + params + "));";
+      return type.getKind() == ElementKind.RECORD
+          ? "return " + foreignClassName(type)
+              + ".fromMemorySegment((MemorySegment) " + methodHandleName
+              + ".invokeExact(" + params + "));"
+          : "return new " + foreignClassName(type)
+              + "((MemorySegment) " + methodHandleName
+              + ".invokeExact(" + params + "));";
     }
 
     if (returnType.getKind() != TypeKind.VOID)
@@ -142,6 +154,11 @@ class ExecutableGenerator {
             .anyMatch(VariableGenerator::needsAllocator);
   }
 
+  boolean hasAllocatorParameter() {
+    return !parameterGenerators.isEmpty()
+        && SEGMENT_ALLOCATOR.equals(parameterGenerators.getFirst().toString());
+  }
+
   /**
    * @return true if any of the method parameters has unsupported type
    */
@@ -153,9 +170,9 @@ class ExecutableGenerator {
 
     boolean expectSegmentAllocator = returnElement != null
         && returnElement.getKind() == ElementKind.CLASS
-        && (returnGenerator.hasAnnotation(ForeignValue.class)
+        && (returnGenerator.hasAnnotation(Value.class)
             || !returnGenerator.hasAnnotation(Address.class)
-                && returnElement.getAnnotation(ForeignValue.class) != null);
+                && returnElement.getAnnotation(Value.class) != null);
 
     for (var paramGen : parameterGenerators) {
       var typeMirror = paramGen.typeMirror;

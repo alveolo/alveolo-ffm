@@ -3,4 +3,4 @@ package org.alveolo.ffm.benchmark.affm;
 import org.alveolo.ffm.ForeignStruct;
 
 @ForeignStruct
-public record IntWrapper(int value) {}
+public record ldiv_t_R(long quot, long rem) {}

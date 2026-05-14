@@ -3,30 +3,40 @@ package org.alveolo.ffm.processor;
 import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 
+/**
+ * Generates the padded array of layout expressions for a struct/union.
+ */
 class MemoryLayoutGenerator {
   final ProcessingEnvironment processingEnv;
-  final List<VariableGenerator> variableGenerators;
+  final List<LayoutField> fields;
+
+  /**
+   * Lightweight descriptor for a layout field.
+   */
+  record LayoutField(
+      String name, String layout,
+      String typeName, Element errorElement
+  ) {}
 
   MemoryLayoutGenerator(ProcessingEnvironment processingEnv,
-      List<VariableGenerator> variableGenerators) {
+      List<LayoutField> fields) {
     this.processingEnv = processingEnv;
-    this.variableGenerators = variableGenerators;
+    this.fields = fields;
   }
 
   String layout() {
     var buf = new StringBuilder();
 
-    for (var gen : variableGenerators) {
-      var layout = gen.layout();
-
-      if (layout == VariableGenerator.VALUE_LAYOUT_NOT_SUPPORTED) {
+    for (var field : fields) {
+      if (field.layout() == TypeGenerator.VALUE_LAYOUT_NOT_SUPPORTED) {
         processingEnv.getMessager().printError(
-            "Type is not supported: " + gen.typeName(), gen.element);
+            "Type is not supported: " + field.typeName(), field.errorElement());
       }
 
-      buf.append("        ").append(layout)
-          .append(".withName(\"<field>\"),\n".replace("<field>", gen.name()));
+      buf.append("        ").append(field.layout())
+          .append(".withName(\"").append(field.name()).append("\"),\n");
     }
 
     return buf.toString();

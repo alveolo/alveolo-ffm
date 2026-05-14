@@ -59,7 +59,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     var messager = processingEnv.getMessager();
 
     if (type.getKind() != ElementKind.INTERFACE) {
-      messager.printError("@FFM is only allowed on interfaces", type);
+      messager.printError("@ForeignInterface is only allowed on interfaces",
+          type);
       return;
     }
 

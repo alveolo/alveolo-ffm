@@ -1,27 +1,21 @@
 package org.alveolo.ffm;
 
-import static java.lang.annotation.ElementType.PACKAGE;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/**
- * @see Element
- * @see ForeignStruct
- */
-@Target(PACKAGE)
+/// Marks an interface as a C union definition. Fields are inferred from
+/// accessor methods.
+///
+/// @see ForeignStruct
+/// @see Sequence
+@Target(TYPE)
 @Retention(SOURCE)
-@Repeatable(ForeignUnion.List.class)
 public @interface ForeignUnion {
-  String name();
-
-  Element[] elements();
-
-  @Target(PACKAGE)
-  @Retention(SOURCE)
-  @interface List {
-    ForeignUnion[] value();
-  }
+  /**
+   * Override the generated class name. Defaults to interface name + "FM".
+   */
+  String name() default "";
 }

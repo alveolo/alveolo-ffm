@@ -62,4 +62,35 @@ public final class LibCFFM implements LibC {
       throw new AssertionError(ff$t);
     }
   }
+
+  // TODO support and use FF$LINKER.canonicalLayouts().get("size_t")
+  // and how invokeExact would work with different size data?
+  private static final MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
+      FF$LOOKUP.find("strlen").get(),
+      FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+  public long strlen(java.lang.String utf8z) {
+    try (var ff$arena = Arena.ofConfined()) {
+      return (long) FF$MH$5.invokeExact(ff$arena.allocateFrom(utf8z));
+    } catch (RuntimeException|Error ff$e) {
+      throw ff$e;
+    } catch (Throwable ff$t) {
+      throw new AssertionError(ff$t);
+    }
+  }
+
+//  private static final MethodHandle FF$MH$6 = FF$LINKER.downcallHandle(
+//      FF$LOOKUP.find("l64a").get(),
+//      FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+//
+//  public java.lang.String l64a(long n) {
+//    try {
+//      return ((MemorySegment) FF$MH$6.invokeExact(n))
+//          .reinterpret(Long.MAX_VALUE).getString(0L);
+//    } catch (RuntimeException|Error ff$e) {
+//      throw ff$e;
+//    } catch (Throwable ff$t) {
+//      throw new AssertionError(ff$t);
+//    }
+//  }
 }
