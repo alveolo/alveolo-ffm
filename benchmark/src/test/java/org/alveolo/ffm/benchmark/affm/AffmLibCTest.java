@@ -2,7 +2,8 @@ package org.alveolo.ffm.benchmark.affm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.Disabled;
+import java.lang.foreign.Arena;
+
 import org.junit.jupiter.api.Test;
 
 class AffmLibCTest {
@@ -25,12 +26,13 @@ class AffmLibCTest {
     assertEquals(1L, ldiv.rem());
   }
 
-  @Disabled // TODO
   @Test
   void returnsInterface() {
-    var div = affm.div_s(7, 3);
-    assertEquals(2, div.quot());
-    assertEquals(1, div.rem());
+    try (var arena = Arena.ofConfined()) {
+      var div = affm.div_s(arena, 7, 3);
+      assertEquals(2, div.quot());
+      assertEquals(1, div.rem());
+    }
 
     // var ldiv = affm.ldiv_s(7L, 3L);
     // assertEquals(2L, ldiv.quot());

@@ -6,13 +6,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.RecordComponentElement;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-
-import org.alveolo.ffm.Address;
-import org.alveolo.ffm.ForeignStruct;
-import org.alveolo.ffm.ForeignUnion;
-import org.alveolo.ffm.Value;
 
 class VariableGenerator extends TypeGenerator {
   final Element element;
@@ -45,52 +39,25 @@ class VariableGenerator extends TypeGenerator {
   }
 
   /// Source code for passing an argument to a native function
-  /// * `argX` for primitive types
+  /// * `argX` for primitive types or directly passed `MemorySegment` or
+  ///   `SegmentAllocator`
   /// * `argX.ms` for struct/union implementation passed by reference
   /// * `((StructFM) argX).ms` for struct/union interface passed by reference
   /// * `ff$arena.allocateFrom(argX)` for Java `String` to C `char*` conversion
   /// * `StructFM.toMemorySegment(ff$arena, argX)` for records conversion
   String invoke() {
-    if (hasAnnotation(Address.class)) {
-      // Check if the underlying type is a
-      // @ForeignStruct/@ForeignUnion interface
-      var type = processingEnv.getTypeUtils().asElement(typeMirror);
-      if (type instanceof TypeElement typeEl
-          && typeEl.getKind() == ElementKind.INTERFACE
-          && (typeEl.getAnnotation(ForeignStruct.class) != null
-              || typeEl.getAnnotation(ForeignUnion.class) != null))
-        return "((" + ProcessorUtils.foreignClassName(typeEl) + ")"
-            + name() + ").ms";
-      return name() + ".ms";
-    }
+    if (isPrimitive() || isMemorySegment() || isSegmentAllocator())
+      return name();
 
-    if (typeName().equals("java.lang.String"))
+    if (isString())
       return "ff$arena.allocateFrom(" + name() + ")";
 
-    if (!hasAnnotation(Value.class)) {
-      var type = processingEnv.getTypeUtils().asElement(typeMirror);
-
-      if (type != null && type.getKind() == ElementKind.CLASS
-          && type.getAnnotation(Value.class) == null)
-        return name() + ".ms";
-
-      // Check for @ForeignStruct/@ForeignUnion interface (non-@Address)
-      if (type instanceof TypeElement typeEl
-          && typeEl.getKind() == ElementKind.INTERFACE
-          && (typeEl.getAnnotation(ForeignStruct.class) != null
-              || typeEl.getAnnotation(ForeignUnion.class) != null))
-        return "((" + ProcessorUtils.foreignClassName(typeEl) + ")"
-            + name() + ").ms";
-    }
-
-    if (needsAllocator()) {
-      var type = (TypeElement) processingEnv
-          .getTypeUtils().asElement(typeMirror);
-
-      return foreignClassName(type)
+    if (isRecord())
+      return foreignClassName(typeElement)
           + ".toMemorySegment(ff$arena, " + name() + ")";
-    }
 
-    return name();
+    return (typeElement.getKind() == ElementKind.INTERFACE)
+        ? "((" + foreignClassName(typeElement) + ")" + name() + ").ms"
+        : name() + ".ms";
   }
 }

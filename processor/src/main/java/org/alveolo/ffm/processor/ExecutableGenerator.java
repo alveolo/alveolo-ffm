@@ -1,29 +1,28 @@
 package org.alveolo.ffm.processor;
 
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
 import static org.alveolo.ffm.processor.TypeGenerator.VALUE_LAYOUT_NOT_SUPPORTED;
 
-import java.lang.foreign.SegmentAllocator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.util.Types;
 
-import org.alveolo.ffm.Address;
 import org.alveolo.ffm.ForeignName;
-import org.alveolo.ffm.Value;
 
 class ExecutableGenerator {
-  public static final String SEGMENT_ALLOCATOR =
-      SegmentAllocator.class.getCanonicalName();
-
   final ProcessingEnvironment processingEnv;
+  final Types types;
+  final Messager messager;
   final ExecutableElement element;
+  final boolean hasErrors;
   final String methodHandleName;
   final TypeGenerator returnGenerator;
   final List<VariableGenerator> parameterGenerators;
@@ -31,6 +30,8 @@ class ExecutableGenerator {
   ExecutableGenerator(ProcessingEnvironment processingEnv,
       ExecutableElement element, String methodHandleName) {
     this.processingEnv = processingEnv;
+    types = processingEnv.getTypeUtils();
+    messager = processingEnv.getMessager();
     this.element = element;
     this.methodHandleName = methodHandleName;
 
@@ -39,9 +40,20 @@ class ExecutableGenerator {
     parameterGenerators = element.getParameters().stream()
         .map(param -> new VariableGenerator(processingEnv, param))
         .toList();
+
+    hasErrors = checkParameterTypes();
   }
 
   String method() {
+    if (hasErrors)
+      return """
+
+          <signature> {
+            throw new RuntimeException("Check compile errors!");
+          }
+          """
+          .replace("<signature>", signature());
+
     return """
 
           private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
@@ -80,8 +92,7 @@ class ExecutableGenerator {
 
     var stream = Stream.concat(
         isVoid ? Stream.empty() : Stream.of(returnGenerator),
-        parameterGenerators.stream()
-            .filter(pg -> !SEGMENT_ALLOCATOR.equals(pg.typeMirror.toString())));
+        parameterGenerators.stream());
 
     String prefix = isVoid
         ? "FunctionDescriptor.ofVoid("
@@ -89,7 +100,9 @@ class ExecutableGenerator {
 
     String newLine = "\n          ";
 
-    return stream.map(TypeGenerator::layout)
+    return stream
+        .filter(not(TypeGenerator::isSegmentAllocator))
+        .map(TypeGenerator::layout)
         .collect(joining("," + newLine, prefix + newLine, ")"));
   }
 
@@ -105,15 +118,7 @@ class ExecutableGenerator {
   }
 
   private String allocatorDefinition() {
-    if (!needsAllocator() || hasAllocatorParameter()) return "";
-
-    return "(var ff$arena = Arena.ofConfined()) ";
-  }
-
-  private String allocatorName() {
-    return hasAllocatorParameter()
-        ? parameterGenerators.getFirst().name()
-        : "ff$arena";
+    return needsConfinedArena() ? "(var ff$arena = Arena.ofConfined()) " : "";
   }
 
   private String invoke() {
@@ -121,72 +126,66 @@ class ExecutableGenerator {
 
     String newLine = "\n          ";
 
+    boolean needsLocalAllocator = returnGenerator.isRecord();
+
     var paramsList = Stream.concat(
-        Stream.ofNullable(returnGenerator.needsAllocator()
+        Stream.ofNullable(needsLocalAllocator
             ? "(SegmentAllocator) ff$arena" : null),
         parameterGenerators.stream().map(VariableGenerator::invoke));
 
     var params = paramsList.collect(joining("," + newLine, newLine, ""));
 
-    if (returnGenerator.needsAllocator()) {
-      var type = (TypeElement) processingEnv
-          .getTypeUtils().asElement(returnType);
+    var type = (TypeElement) types.asElement(returnType);
 
-      return type.getKind() == ElementKind.RECORD
-          ? "return " + foreignClassName(type)
-              + ".fromMemorySegment((MemorySegment) " + methodHandleName
-              + ".invokeExact(" + params + "));"
-          : "return new " + foreignClassName(type)
-              + "((MemorySegment) " + methodHandleName
-              + ".invokeExact(" + params + "));";
-    }
+    if (returnGenerator.isPrimitive())
+      return "return (" + returnType + ") " + methodHandleName
+          + ".invokeExact(" + params + ");";
 
-    if (returnType.getKind() != TypeKind.VOID)
-      return "return (" + returnType + ") "
-          + methodHandleName + ".invokeExact(" + params + ");";
+    if (returnGenerator.isRecord())
+      return "return " + foreignClassName(type)
+          + ".fromMemorySegment((MemorySegment) " + methodHandleName
+          + ".invokeExact(" + params + "));";
 
+    if (returnGenerator.isString())
+      return "return " + methodHandleName + ".invokeExact(" + params + ");"; // TODO
+
+    if (returnGenerator.isValue())
+      return "return new " + foreignClassName(type)
+          + "((MemorySegment) " + methodHandleName
+          + ".invokeExact(" + params + "));";
+
+    // returnType.getKind() == TypeKind.VOID
     return methodHandleName + ".invokeExact(" + params + ");";
   }
 
-  boolean needsAllocator() {
-    return returnGenerator.needsAllocator()
+  boolean needsConfinedArena() {
+    return returnGenerator.isRecord()
         || parameterGenerators.stream()
-            .anyMatch(VariableGenerator::needsAllocator);
-  }
-
-  boolean hasAllocatorParameter() {
-    return !parameterGenerators.isEmpty()
-        && SEGMENT_ALLOCATOR.equals(parameterGenerators.getFirst().toString());
+            .anyMatch(p -> p.isRecord() || p.isString());
   }
 
   /**
    * @return true if any of the method parameters has unsupported type
    */
   boolean checkParameterTypes() {
-    var types = processingEnv.getTypeUtils();
-    var returnType = element.getReturnType();
-    var returnElement = (TypeElement) types.asElement(returnType);
     boolean hasUnsupported = false;
 
-    boolean expectSegmentAllocator = returnElement != null
-        && returnElement.getKind() == ElementKind.CLASS
-        && (returnGenerator.hasAnnotation(Value.class)
-            || !returnGenerator.hasAnnotation(Address.class)
-                && returnElement.getAnnotation(Value.class) != null);
+    boolean needsSegmentAllocator = !returnGenerator.isPrimitive()
+        && !returnGenerator.isRecord() && returnGenerator.isValue();
+
+    if (needsSegmentAllocator) {
+      if (parameterGenerators.isEmpty()
+          || !parameterGenerators.get(0).isSegmentAllocator()) {
+        processingEnv.getMessager().printError(
+            "SegmentAllocator is expected as first parameter",
+            element);
+        return true;
+      }
+    }
 
     for (var paramGen : parameterGenerators) {
-      var typeMirror = paramGen.typeMirror;
-
-      if (expectSegmentAllocator) {
-        expectSegmentAllocator = false;
-
-        if (!SEGMENT_ALLOCATOR.equals(typeMirror.toString())) {
-          processingEnv.getMessager().printError(
-              "SegmentAllocator is expected in place of " + typeMirror,
-              paramGen.element);
-          return true;
-        }
-
+      if (needsSegmentAllocator) {
+        needsSegmentAllocator = false;
         continue;
       }
 
@@ -196,7 +195,7 @@ class ExecutableGenerator {
         hasUnsupported = true;
 
         processingEnv.getMessager().printError(
-            "Type is not supported: " + typeMirror, paramGen.element);
+            "Type is not supported: " + paramGen.typeMirror, paramGen.element);
       }
     }
 

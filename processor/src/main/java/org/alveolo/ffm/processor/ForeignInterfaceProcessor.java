@@ -3,6 +3,8 @@ package org.alveolo.ffm.processor;
 import static javax.lang.model.SourceVersion.RELEASE_25;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +48,9 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           try {
             writeFile(type);
           } catch (Throwable e) {
-            messager.printError(e.getMessage(), ffm);
+            var sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            messager.printError(sw.toString(), type);
           }
         }
       }
@@ -119,14 +123,13 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       int index = 0;
       for (var member : type.getEnclosedElements()) {
         if (member instanceof ExecutableElement method) {
-          var generator = new ExecutableGenerator(
-              processingEnv, method, "FF$MH$" + index++);
-
           if (method.getKind() != ElementKind.METHOD || method.isDefault()
-              || method.getModifiers().contains(Modifier.STATIC)
-              || generator.checkParameterTypes()) {
+              || method.getModifiers().contains(Modifier.STATIC)) {
             continue;
           }
+
+          var generator = new ExecutableGenerator(
+              processingEnv, method, "FF$MH$" + index++);
 
           out.write(generator.method());
         }

@@ -1,6 +1,7 @@
 package pkg;
 
 import org.alveolo.ffm.*;
+import java.lang.foreign.*;
 
 @ForeignInterface
 public interface LibC {
@@ -13,6 +14,7 @@ public interface LibC {
   int renamed(int number);
 
   div_t div(int numerator, int denominator);
+  ldiv_t ldiv(SegmentAllocator allocator, long numerator, long denominator);
 
   // TODO support use of size_t
   long strlen(String utf8z);

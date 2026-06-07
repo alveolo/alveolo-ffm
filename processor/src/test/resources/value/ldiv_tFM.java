@@ -4,7 +4,7 @@ import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class div_tFM {
+public final class ldiv_tFM implements ldiv_t {
   public static final MemoryLayout FM$LAYOUT =
       MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
@@ -31,35 +31,31 @@ public final class div_tFM {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static void toMemorySegment(div_t from, MemorySegment ms) {
-    quot(ms, from.quot());
-    rem(ms, from.rem());
+  public final MemorySegment ms;
+
+  public ldiv_tFM(SegmentAllocator allocator) {
+    this(allocate(allocator));
   }
 
-  public static MemorySegment toMemorySegment(
-      SegmentAllocator allocator, div_t from) {
-    var ms = allocate(allocator);
-    toMemorySegment(from, ms);
-    return ms;
+  public ldiv_tFM(MemorySegment ms) {
+    this.ms = ms;
   }
 
-  public static div_t fromMemorySegment(MemorySegment ms) {
-    return new div_t(quot(ms), rem(ms));
-  }
-
-  public static int quot(MemorySegment ms) {
+  public int quot() {
     return (int) FM$VH$quot.get(ms);
   }
 
-  public static void quot(MemorySegment ms, int value) {
+  public ldiv_tFM quot(int value) {
     FM$VH$quot.set(ms, value);
+    return this;
   }
 
-  public static int rem(MemorySegment ms) {
+  public int rem() {
     return (int) FM$VH$rem.get(ms);
   }
 
-  public static void rem(MemorySegment ms, int value) {
+  public ldiv_tFM rem(int value) {
     FM$VH$rem.set(ms, value);
+    return this;
   }
 }

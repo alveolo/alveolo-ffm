@@ -2,7 +2,8 @@ package org.alveolo.ffm.processor;
 
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
 
-import java.lang.annotation.Annotation;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SegmentAllocator;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
@@ -11,6 +12,7 @@ import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.ForeignStruct;
@@ -21,29 +23,40 @@ import org.alveolo.ffm.Value;
 class TypeGenerator {
   public static String VALUE_LAYOUT_NOT_SUPPORTED = "((ValueLayout) null)";
 
+  public static final String MEMORY_SEGMENT =
+      MemorySegment.class.getCanonicalName();
+
+  public static final String SEGMENT_ALLOCATOR =
+      SegmentAllocator.class.getCanonicalName();
+
+  public static final String STRING =
+      String.class.getCanonicalName();
+
   final ProcessingEnvironment processingEnv;
+  final Elements elements;
   final TypeMirror typeMirror;
+  final TypeElement typeElement;
   final long sequence;
 
   TypeGenerator(ProcessingEnvironment processingEnv,
       TypeMirror typeMirror) {
-    this.processingEnv = processingEnv;
-    this.typeMirror = typeMirror;
-    sequence = sequence(typeMirror);
+    this(processingEnv, typeMirror, sequence(typeMirror));
   }
 
   TypeGenerator(ProcessingEnvironment processingEnv,
       TypeMirror typeMirror, long sequence) {
     this.processingEnv = processingEnv;
+    elements = processingEnv.getElementUtils();
     this.typeMirror = typeMirror;
+    typeElement = (TypeElement) processingEnv
+        .getTypeUtils().asElement(typeMirror);
     this.sequence = sequence;
   }
 
   /// Java type name
   String typeName() {
     if (typeMirror instanceof DeclaredType dt)
-      return processingEnv.getElementUtils()
-          .getBinaryName((TypeElement) dt.asElement()).toString();
+      return elements.getBinaryName((TypeElement) dt.asElement()).toString();
 
     return typeMirror.toString();
   }
@@ -56,36 +69,33 @@ class TypeGenerator {
   ///   primitive arrays
   // TODO support nested struct/union and reference arrays
   String layout() {
-    var element = (TypeElement) processingEnv
-        .getTypeUtils().asElement(typeMirror);
+    if (typeElement != null) {
+      if (typeElement.getKind() == ElementKind.RECORD)
+        return foreignClassName(typeElement) + ".FM$LAYOUT";
 
-    if (element != null) {
-      if (element.getKind() == ElementKind.RECORD)
-        return foreignClassName(element) + ".FM$LAYOUT";
-
-      if (element.getKind() == ElementKind.INTERFACE) {
-        if (element.getAnnotation(ForeignStruct.class) != null
-            || element.getAnnotation(ForeignUnion.class) != null)
-          return foreignClassName(element) + ".FM$LAYOUT";
+      if (typeElement.getKind() == ElementKind.INTERFACE) {
+        if (typeElement.getAnnotation(ForeignStruct.class) != null
+            || typeElement.getAnnotation(ForeignUnion.class) != null)
+          return foreignClassName(typeElement) + ".FM$LAYOUT";
       }
 
-      if (element.getKind() == ElementKind.CLASS) {
-        boolean hasValue = hasAnnotation(Value.class);
-        boolean hasAddress = hasAnnotation(Address.class);
+      if (typeElement.getKind() == ElementKind.CLASS) {
+        boolean hasValue = typeMirror.getAnnotation(Value.class) != null;
+        boolean hasAddress = typeMirror.getAnnotation(Address.class) != null;
 
         // TODO report correct error
         if (hasValue && hasAddress) return VALUE_LAYOUT_NOT_SUPPORTED;
 
-        if (hasValue) return foreignClassName(element) + ".FM$LAYOUT";
+        if (hasValue) return foreignClassName(typeElement) + ".FM$LAYOUT";
         if (hasAddress) return "ValueLayout.ADDRESS";
 
-        hasValue = element.getAnnotation(Value.class) != null;
-        hasAddress = element.getAnnotation(Address.class) != null;
+        hasValue = typeElement.getAnnotation(Value.class) != null;
+        hasAddress = typeElement.getAnnotation(Address.class) != null;
 
         // TODO report correct error
         if (hasValue && hasAddress) return VALUE_LAYOUT_NOT_SUPPORTED;
 
-        if (hasValue) return foreignClassName(element) + ".FM$LAYOUT";
+        if (hasValue) return foreignClassName(typeElement) + ".FM$LAYOUT";
         if (hasAddress) return "ValueLayout.ADDRESS";
       }
     }
@@ -143,33 +153,62 @@ class TypeGenerator {
     // throw new IllegalArgumentException("Missing @Sequence annotation");
   }
 
-  /// Check if the declaring type has annotation
-  boolean hasAnnotation(Class<? extends Annotation> annotation) {
-    for (var annotationMirror : typeMirror.getAnnotationMirrors()) {
-      if (annotationMirror.getAnnotationType().toString()
-          .equals(annotation.getCanonicalName()))
-        return true;
-    }
+  // /// Checks if using the type in a call needs allocator.
+  // ///
+  // /// @return
+  // /// - `true` for non-primitive types passed by value
+  // /// - `false` for primitive types or complex types passes as address
+  // boolean needsAllocator() {
+  // return !isPrimitive() && (isRecord() || isString() || isValue());
+  // }
 
+  boolean isPrimitive() {
+    return typeMirror.getKind().isPrimitive();
+  }
+
+  boolean isRecord() {
+    return typeElement != null && typeElement.getKind() == ElementKind.RECORD;
+  }
+
+  boolean isString() {
+    return typeName().equals(STRING);
+  }
+
+  boolean isMemorySegment() {
+    return typeName().equals(MEMORY_SEGMENT);
+  }
+
+  boolean isSegmentAllocator() {
+    return typeName().equals(SEGMENT_ALLOCATOR);
+  }
+
+  boolean isAddress() {
+    if (isPrimitive()) return false;
+
+    // type use
+    if (typeMirror.getAnnotation(Address.class) != null) return true;
+    if (typeMirror.getAnnotation(Value.class) != null) return false;
+
+    // type
+    if (typeElement.getAnnotation(Address.class) != null) return true;
+    if (typeElement.getAnnotation(Value.class) != null) return false;
+
+    // default
     return false;
   }
 
-  /// Checks if using the type in a call needs allocator.
-  ///
-  /// `true` for non-primitive types passed by value
-  boolean needsAllocator() {
-    return !typeMirror.getKind().isPrimitive();
+  boolean isValue() {
+    if (isPrimitive()) return true;
 
-    // var element = processingEnv.getTypeUtils().asElement(typeMirror);
-    // if (element == null) return false;
-    //
-    // var kind = element.getKind();
-    // if (kind == ElementKind.RECORD)
-    // return element.getAnnotation(ForeignValue.class) != null;
-    //
-    // if (kind == ElementKind.INTERFACE)
-    // return element.getAnnotation(ForeignStruct.class) != null;
-    //
-    // return typeName().equals("java.lang.String");
+    // type use
+    if (typeMirror.getAnnotation(Address.class) != null) return false;
+    if (typeMirror.getAnnotation(Value.class) != null) return true;
+
+    // type
+    if (typeElement.getAnnotation(Address.class) != null) return false;
+    if (typeElement.getAnnotation(Value.class) != null) return true;
+
+    // default
+    return true;
   }
 }

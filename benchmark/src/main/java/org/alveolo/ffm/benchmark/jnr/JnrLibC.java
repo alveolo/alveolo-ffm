@@ -11,4 +11,6 @@ public interface JnrLibC {
   public static final Runtime RUNTIME = Runtime.getRuntime(INSTANCE);
 
   int abs(int value);
+
+  long strlen(String str);
 }

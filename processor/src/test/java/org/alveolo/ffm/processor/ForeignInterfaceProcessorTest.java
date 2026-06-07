@@ -27,10 +27,12 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
 
   @Test
   void generatesBasicFFM() {
-    var c = compile("interface/LibC.java", "value/div_t.java");
+    var c = compile("interface/LibC.java",
+        "value/div_t.java", "value/ldiv_t.java");
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.LibCFFM", "interface/LibCFFM.java");
     assertGenerated(c, "pkg.div_tFM", "value/div_tFM.java");
+    assertGenerated(c, "pkg.ldiv_tFM", "value/ldiv_tFM.java");
   }
 
   @Test
@@ -47,6 +49,56 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.MultiFrameworkFFM",
         "interface/MultiFrameworkFFM.java");
+  }
+
+  @Test
+  void failsWhenMemorySegmentWrapperReturnHasNoAllocator() {
+    var struct = forSourceString("test.Div", """
+        package test;
+        @org.alveolo.ffm.ForeignStruct
+        public interface Div {
+          int quot();
+          int rem();
+        }
+        """);
+
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          @org.alveolo.ffm.ForeignName("div")
+          Div div(int numerator, int denominator);
+        }
+        """);
+
+    var c = compile(struct, lib);
+
+    assertThat(c).hadErrorContaining("SegmentAllocator is expected");
+  }
+
+  @Test
+  void usesSeparateAllocatorsForWrapperReturnAndConvertedParameters() {
+    var struct = forSourceString("test.Div", """
+        package test;
+        @org.alveolo.ffm.ForeignStruct
+        public interface Div {
+          int quot();
+          int rem();
+        }
+        """);
+
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          @org.alveolo.ffm.ForeignName("div")
+          Div div(java.lang.foreign.SegmentAllocator allocator, String label);
+        }
+        """);
+
+    var c = compile(struct, lib);
+
+    assertThat(c).succeeded();
   }
 
   @Test
