@@ -44,6 +44,14 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesLibraryFFM() {
+    var c = compile("interface/NativeTest.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.NativeTestFFM",
+        "interface/NativeTestFFM.java");
+  }
+
+  @Test
   void generatesMultiMacFrameworkFFM() {
     var c = compile("interface/MultiFramework.java");
     assertThat(c).succeeded();

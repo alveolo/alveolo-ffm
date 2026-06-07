@@ -18,6 +18,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
+import org.alveolo.ffm.Library;
 import org.alveolo.ffm.macos.Framework;
 import org.alveolo.ffm.macos.Frameworks;
 
@@ -78,6 +79,14 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     String className = srcClassName + "FFM";
     String simpleClassName = className.substring(lastDot + 1);
 
+    var frameworks = frameworks(type);
+    var library = type.getAnnotation(Library.class);
+    if (library != null && !frameworks.isEmpty()) {
+      messager.printError("@Library cannot be combined with @Framework",
+          type);
+      return;
+    }
+
     var file = processingEnv.getFiler().createSourceFile(className, type);
 
     try (var out = file.openWriter()) {
@@ -101,7 +110,9 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           .replace("<name>", simpleClassName)
           .replace("<interface>", srcSimpleClassName));
 
-      var frameworks = frameworks(type);
+      if (library != null) {
+        out.write("    System.loadLibrary(\"" + library.value() + "\");\n");
+      }
       for (var f : frameworks) {
         writeLoadLibraries(out, f);
       }
@@ -114,7 +125,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           """);
 
       out.write("  private static final SymbolLookup FF$LOOKUP =");
-      if (frameworks.isEmpty()) {
+      if (frameworks.isEmpty() && library == null) {
         out.write(" FF$LINKER.defaultLookup();\n");
       } else {
         out.write(" SymbolLookup.loaderLookup();\n");

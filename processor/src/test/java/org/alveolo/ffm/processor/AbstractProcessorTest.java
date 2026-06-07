@@ -18,6 +18,7 @@ import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.ForeignName;
 import org.alveolo.ffm.ForeignStruct;
 import org.alveolo.ffm.ForeignUnion;
+import org.alveolo.ffm.Library;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.macos.Framework;
 import org.alveolo.ffm.macos.Frameworks;
@@ -30,6 +31,7 @@ abstract class AbstractProcessorTest {
     ForeignName.class,
     ForeignStruct.class,
     ForeignUnion.class,
+    Library.class,
     Address.class,
     Sequence.class,
     Framework.class,
