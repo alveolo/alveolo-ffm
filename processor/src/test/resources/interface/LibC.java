@@ -14,6 +14,7 @@ public interface LibC {
   int renamed(int number);
 
   div_t div(int numerator, int denominator);
+  @Value
   ldiv_t ldiv(SegmentAllocator allocator, long numerator, long denominator);
 
   // TODO support use of size_t

@@ -126,8 +126,11 @@ class ExecutableGenerator {
 
     String newLine = "\n          ";
 
-    boolean needsLocalAllocator = returnGenerator.isRecord();
-
+    boolean needsLocalAllocator =
+        returnGenerator.isRecord() && returnGenerator.isValue();
+    // SegmentAllocator parameters are part of the downcall argument list only
+    // when an external allocator is required. Keep validation in sync so an
+    // allocator parameter is rejected unless it is passed here.
     var paramsList = Stream.concat(
         Stream.ofNullable(needsLocalAllocator
             ? "(SegmentAllocator) ff$arena" : null),
@@ -135,31 +138,49 @@ class ExecutableGenerator {
 
     var params = paramsList.collect(joining("," + newLine, newLine, ""));
 
-    var type = (TypeElement) types.asElement(returnType);
-
     if (returnGenerator.isPrimitive())
       return "return (" + returnType + ") " + methodHandleName
           + ".invokeExact(" + params + ");";
 
-    if (returnGenerator.isRecord())
+    if (returnGenerator.isMemorySegment())
+      return "return (MemorySegment) " + methodHandleName
+          + ".invokeExact(" + params + ");";
+
+    if (returnGenerator.isRecord()) {
+      var type = (TypeElement) types.asElement(returnType);
+      if (returnGenerator.isValue())
+        return "return " + foreignClassName(type)
+            + ".fromMemorySegment((MemorySegment) " + methodHandleName
+            + ".invokeExact(" + params + "));";
+
       return "return " + foreignClassName(type)
-          + ".fromMemorySegment((MemorySegment) " + methodHandleName
-          + ".invokeExact(" + params + "));";
+          + ".fromMemorySegment(((MemorySegment) " + methodHandleName
+          + ".invokeExact(" + params + ")).reinterpret("
+          + foreignClassName(type) + ".FM$LAYOUT.byteSize()));";
+    }
 
     if (returnGenerator.isString())
       return "return " + methodHandleName + ".invokeExact(" + params + ");"; // TODO
 
-    if (returnGenerator.isValue())
+    if (returnGenerator.isForeignMemory()) {
+      var type = (TypeElement) types.asElement(returnType);
+      if (returnGenerator.isValue())
+        return "return new " + foreignClassName(type)
+            + "((MemorySegment) " + methodHandleName
+            + ".invokeExact(" + params + "));";
+
       return "return new " + foreignClassName(type)
-          + "((MemorySegment) " + methodHandleName
-          + ".invokeExact(" + params + "));";
+          + "(((MemorySegment) " + methodHandleName
+          + ".invokeExact(" + params + ")).reinterpret("
+          + foreignClassName(type) + ".FM$LAYOUT.byteSize()));";
+    }
 
     // returnType.getKind() == TypeKind.VOID
     return methodHandleName + ".invokeExact(" + params + ");";
   }
 
   boolean needsConfinedArena() {
-    return returnGenerator.isRecord()
+    return returnGenerator.isRecord() && returnGenerator.isValue()
         || parameterGenerators.stream()
             .anyMatch(p -> p.isRecord() || p.isString());
   }
@@ -170,10 +191,10 @@ class ExecutableGenerator {
   boolean checkParameterTypes() {
     boolean hasUnsupported = false;
 
-    boolean needsSegmentAllocator = !returnGenerator.isPrimitive()
+    boolean needsExternalAllocator = returnGenerator.isForeignMemory()
         && !returnGenerator.isRecord() && returnGenerator.isValue();
 
-    if (needsSegmentAllocator) {
+    if (needsExternalAllocator) {
       if (parameterGenerators.isEmpty()
           || !parameterGenerators.get(0).isSegmentAllocator()) {
         processingEnv.getMessager().printError(
@@ -183,9 +204,18 @@ class ExecutableGenerator {
       }
     }
 
+    boolean skipExternalAllocator = needsExternalAllocator;
     for (var paramGen : parameterGenerators) {
-      if (needsSegmentAllocator) {
-        needsSegmentAllocator = false;
+      if (skipExternalAllocator) {
+        skipExternalAllocator = false;
+        continue;
+      }
+
+      if (paramGen.isSegmentAllocator()) {
+        hasUnsupported = true;
+
+        processingEnv.getMessager().printError(
+            "SegmentAllocator is not expected", paramGen.element);
         continue;
       }
 
@@ -197,6 +227,14 @@ class ExecutableGenerator {
         processingEnv.getMessager().printError(
             "Type is not supported: " + paramGen.typeMirror, paramGen.element);
       }
+    }
+
+    if (element.getReturnType().getKind() != TypeKind.VOID
+        && returnGenerator.layout() == VALUE_LAYOUT_NOT_SUPPORTED) {
+      hasUnsupported = true;
+
+      processingEnv.getMessager().printError(
+          "Type is not supported: " + returnGenerator.typeMirror, element);
     }
 
     return hasUnsupported;

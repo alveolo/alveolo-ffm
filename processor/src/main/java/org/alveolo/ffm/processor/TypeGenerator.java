@@ -70,36 +70,29 @@ class TypeGenerator {
   // TODO support nested struct/union and reference arrays
   String layout() {
     if (typeElement != null) {
-      if (typeElement.getKind() == ElementKind.RECORD)
-        return foreignClassName(typeElement) + ".FM$LAYOUT";
-
-      if (typeElement.getKind() == ElementKind.INTERFACE) {
-        if (typeElement.getAnnotation(ForeignStruct.class) != null
-            || typeElement.getAnnotation(ForeignUnion.class) != null)
-          return foreignClassName(typeElement) + ".FM$LAYOUT";
+      if (isForeignMemory()) {
+        if (hasConflictingPassModeAnnotations()) return VALUE_LAYOUT_NOT_SUPPORTED;
+        return isValue()
+            ? foreignClassName(typeElement) + ".FM$LAYOUT"
+            : "ValueLayout.ADDRESS";
       }
 
       if (typeElement.getKind() == ElementKind.CLASS) {
-        boolean hasValue = typeMirror.getAnnotation(Value.class) != null;
-        boolean hasAddress = typeMirror.getAnnotation(Address.class) != null;
+        if (hasConflictingPassModeAnnotations()) return VALUE_LAYOUT_NOT_SUPPORTED;
 
-        // TODO report correct error
-        if (hasValue && hasAddress) return VALUE_LAYOUT_NOT_SUPPORTED;
+        if (!hasTypeUseAddress() && !hasTypeUseValue()
+            && !hasTypeAddress() && !hasTypeValue())
+          return primitiveLayout();
 
-        if (hasValue) return foreignClassName(typeElement) + ".FM$LAYOUT";
-        if (hasAddress) return "ValueLayout.ADDRESS";
-
-        hasValue = typeElement.getAnnotation(Value.class) != null;
-        hasAddress = typeElement.getAnnotation(Address.class) != null;
-
-        // TODO report correct error
-        if (hasValue && hasAddress) return VALUE_LAYOUT_NOT_SUPPORTED;
-
-        if (hasValue) return foreignClassName(typeElement) + ".FM$LAYOUT";
-        if (hasAddress) return "ValueLayout.ADDRESS";
+        if (isValue()) return foreignClassName(typeElement) + ".FM$LAYOUT";
+        if (isAddress()) return "ValueLayout.ADDRESS";
       }
     }
 
+    return primitiveLayout();
+  }
+
+  private String primitiveLayout() {
     return switch (typeName()) {
       case "boolean" -> "ValueLayout.JAVA_BOOLEAN";
       case "byte" -> "ValueLayout.JAVA_BYTE";
@@ -185,13 +178,14 @@ class TypeGenerator {
   boolean isAddress() {
     if (isPrimitive()) return false;
 
-    // type use
-    if (typeMirror.getAnnotation(Address.class) != null) return true;
-    if (typeMirror.getAnnotation(Value.class) != null) return false;
+    if (hasTypeUseAddress()) return true;
+    if (hasTypeUseValue()) return false;
 
-    // type
-    if (typeElement.getAnnotation(Address.class) != null) return true;
-    if (typeElement.getAnnotation(Value.class) != null) return false;
+    if (hasTypeAddress()) return true;
+    if (hasTypeValue()) return false;
+
+    if (isForeignMemory())
+      return typeElement.getKind() == ElementKind.INTERFACE;
 
     // default
     return false;
@@ -200,15 +194,44 @@ class TypeGenerator {
   boolean isValue() {
     if (isPrimitive()) return true;
 
-    // type use
-    if (typeMirror.getAnnotation(Address.class) != null) return false;
-    if (typeMirror.getAnnotation(Value.class) != null) return true;
+    if (hasTypeUseAddress()) return false;
+    if (hasTypeUseValue()) return true;
 
-    // type
-    if (typeElement.getAnnotation(Address.class) != null) return false;
-    if (typeElement.getAnnotation(Value.class) != null) return true;
+    if (hasTypeAddress()) return false;
+    if (hasTypeValue()) return true;
+
+    if (isForeignMemory())
+      return typeElement.getKind() == ElementKind.RECORD;
 
     // default
     return true;
+  }
+
+  boolean isForeignMemory() {
+    return typeElement != null
+        && (typeElement.getAnnotation(ForeignStruct.class) != null
+            || typeElement.getAnnotation(ForeignUnion.class) != null);
+  }
+
+  boolean hasConflictingPassModeAnnotations() {
+    return (hasTypeUseAddress() && hasTypeUseValue())
+        || (!hasTypeUseAddress() && !hasTypeUseValue()
+            && hasTypeAddress() && hasTypeValue());
+  }
+
+  private boolean hasTypeUseAddress() {
+    return typeMirror.getAnnotation(Address.class) != null;
+  }
+
+  private boolean hasTypeUseValue() {
+    return typeMirror.getAnnotation(Value.class) != null;
+  }
+
+  private boolean hasTypeAddress() {
+    return typeElement != null && typeElement.getAnnotation(Address.class) != null;
+  }
+
+  private boolean hasTypeValue() {
+    return typeElement != null && typeElement.getAnnotation(Value.class) != null;
   }
 }

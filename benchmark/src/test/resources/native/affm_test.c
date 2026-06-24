@@ -11,6 +11,14 @@ typedef struct pair {
   int right;
 } pair;
 
+typedef struct pair_box_value {
+  pair pair;
+} pair_box_value;
+
+typedef struct pair_box_ptr {
+  pair* pair;
+} pair_box_ptr;
+
 EXPORT int add_ints(int left, int right) {
   return left + right;
 }
@@ -30,4 +38,16 @@ EXPORT pair make_pair(int left, int right) {
 
 EXPORT int pair_sum(pair value) {
   return value.left + value.right;
+}
+
+EXPORT int pair_ptr_sum(const pair* value) {
+  return value->left + value->right;
+}
+
+EXPORT int pair_box_value_sum(pair_box_value value) {
+  return pair_sum(value.pair);
+}
+
+EXPORT int pair_box_ptr_sum(pair_box_ptr value) {
+  return pair_ptr_sum(value.pair);
 }

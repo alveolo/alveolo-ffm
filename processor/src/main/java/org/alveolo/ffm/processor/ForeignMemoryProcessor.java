@@ -319,9 +319,17 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .map(rc -> new VariableGenerator(processingEnv, rc))
         .toList();
 
+    boolean needsAllocator = fields.stream()
+        .anyMatch(f -> isNestedAddress(f) && isRecord(f));
+
     String toMemorySegmentFields = rcGens.stream()
-        .map(VariableGenerator::name)
-        .map(name -> "<name>(ms, from.<name>());".replace("<name>", name))
+        .map(v -> {
+          String name = v.name();
+          if (needsAllocator(v))
+            return "<name>(ms, ff$allocator, from.<name>());"
+                .replace("<name>", name);
+          return "<name>(ms, from.<name>());".replace("<name>", name);
+        })
         .collect(joining("\n    ", "", ""));
 
     String fromMemorySegmentFields = rcGens.stream()
@@ -334,11 +342,33 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           public static void toMemorySegment(<src> from, MemorySegment ms) {
             <toMemorySegmentFields>
           }
+        """
+        .replace("<src>", srcClassName)
+        .replace("<toMemorySegmentFields>", needsAllocator
+            ? """
+            try (var ff$arena = Arena.ofConfined()) {
+              toMemorySegment(from, ms, ff$arena);
+            }"""
+            : toMemorySegmentFields));
+
+    if (needsAllocator) {
+      out.write("""
+
+          private static void toMemorySegment(
+              <src> from, MemorySegment ms, SegmentAllocator ff$allocator) {
+            <toMemorySegmentFields>
+          }
+        """
+          .replace("<src>", srcClassName)
+          .replace("<toMemorySegmentFields>", toMemorySegmentFields));
+    }
+
+    out.write("""
 
           public static MemorySegment toMemorySegment(
               SegmentAllocator allocator, <src> from) {
             var ms = allocate(allocator);
-            toMemorySegment(from, ms);
+            <toMemorySegment>
             return ms;
           }
 
@@ -347,7 +377,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           }
         """
         .replace("<src>", srcClassName)
-        .replace("<toMemorySegmentFields>", toMemorySegmentFields)
+        .replace("<toMemorySegment>", needsAllocator
+            ? "toMemorySegment(from, ms, allocator);"
+            : "toMemorySegment(from, ms);")
         .replace("<fromMemorySegmentFields>", fromMemorySegmentFields));
   }
 
@@ -384,7 +416,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeVarHandles(Writer out, String className,
       List<StructField> fields) throws IOException {
     for (var field : fields) {
-      if (isNested(field)) {
+      if (isNestedValue(field)) {
         continue; // TODO complex/structured/indexed accessors
       }
 
@@ -423,10 +455,87 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeStaticAccessorsSimple(Writer out, String className,
       StructField field) throws IOException {
     String name = field.name();
-    String type = field.typeMirror().toString();
+    String type = typeName(field);
 
-    if (isNested(field)) {
-      // TODO accessors for nested records
+    if (isNestedValue(field)) {
+      var typeEl = (TypeElement) processingEnv.getTypeUtils()
+          .asElement(field.typeMirror());
+      String foreignClassName = ProcessorUtils.foreignClassName(typeEl);
+
+      if (typeEl.getKind() == ElementKind.RECORD) {
+        out.write("""
+
+            public static <type> <name>(MemorySegment ms) {
+              return <foreignClassName>.fromMemorySegment(ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>),
+                  FM$LAYOUT.select(FM$PE$<name>).byteSize()));
+            }
+
+            public static void <name>(MemorySegment ms, <type> value) {
+              var layout = FM$LAYOUT.select(FM$PE$<name>);
+              var slice = ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+              <foreignClassName>.toMemorySegment(value, slice);
+            }
+          """
+          .replace("<foreignClassName>", foreignClassName)
+          .replace("<name>", name)
+          .replace("<type>", type));
+      } else {
+        out.write("""
+
+            public static <type> <name>(MemorySegment ms) {
+              return new <foreignClassName>(ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>),
+                  FM$LAYOUT.select(FM$PE$<name>).byteSize()));
+            }
+
+            public static void <name>(MemorySegment ms, <type> value) {
+              var layout = FM$LAYOUT.select(FM$PE$<name>);
+              var slice = ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+              MemorySegment.copy(((<foreignClassName>)value).ms, 0,
+                  slice, 0, layout.byteSize());
+            }
+          """
+          .replace("<foreignClassName>", foreignClassName)
+          .replace("<name>", name)
+          .replace("<type>", type));
+      }
+    } else if (isNestedAddress(field)) {
+      var typeEl = (TypeElement) processingEnv.getTypeUtils()
+          .asElement(field.typeMirror());
+      String foreignClassName = ProcessorUtils.foreignClassName(typeEl);
+
+      out.write("""
+
+            public static <type> <name>(MemorySegment ms) {
+              return <getter>;
+            }
+
+            public static void <name>(MemorySegment ms, <type> value) {
+              FM$VH$<name>.set(ms, <address>);
+            }
+          """
+          .replace("<getter>", nestedAddressGetter(field, "ms"))
+          .replace("<address>", nestedAddressValue(field, "value"))
+          .replace("<foreignClassName>", foreignClassName)
+          .replace("<name>", name)
+          .replace("<type>", type));
+
+      if (isRecord(field)) {
+        out.write("""
+
+            public static void <name>(
+                MemorySegment ms, SegmentAllocator allocator, <type> value) {
+              FM$VH$<name>.set(ms,
+                  <foreignClassName>.toMemorySegment(allocator, value));
+            }
+          """
+            .replace("<foreignClassName>", foreignClassName)
+            .replace("<name>", name)
+            .replace("<type>", type));
+      }
     } else {
       out.write("""
 
@@ -462,33 +571,75 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeAccessorsSimple(Writer out, String className,
       StructField field) throws IOException {
     String name = field.name();
-    String type = field.typeMirror().toString();
+    String type = typeName(field);
 
-    if (isNested(field)) {
+    if (isNestedValue(field)) {
       var typeEl = (TypeElement) processingEnv.getTypeUtils()
           .asElement(field.typeMirror());
 
       String foreignClassName = ProcessorUtils.foreignClassName(typeEl);
-      String interfaceName = typeEl.getQualifiedName().toString();
 
-      out.write("""
+      if (typeEl.getKind() == ElementKind.RECORD) {
+        out.write("""
 
             public <type> <name>() {
-              return new <type>(ms.asSlice(
+              return <foreignClassName>.fromMemorySegment(ms.asSlice(
                   FM$LAYOUT.byteOffset(FM$PE$<name>),
                   FM$LAYOUT.select(FM$PE$<name>).byteSize()));
             }
 
-            public void <name>(<type> value) {
+            public <class> <name>(<type> value) {
               var layout = FM$LAYOUT.select(FM$PE$<name>);
               var slice = ms.asSlice(
                   FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-              MemorySegment.copy(value.ms, 0, slice, 0, layout.byteSize());
+              <foreignClassName>.toMemorySegment(value, slice);
+              return this;
             }
           """
+          .replace("<class>", className)
+          .replace("<foreignClassName>", foreignClassName)
           .replace("<name>", name)
-          .replace("<type>", foreignClassName)
-          .replace("<type>", interfaceName));
+          .replace("<type>", type));
+      } else {
+        out.write("""
+
+            public <type> <name>() {
+              return new <foreignClassName>(ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>),
+                  FM$LAYOUT.select(FM$PE$<name>).byteSize()));
+            }
+
+            public <class> <name>(<type> value) {
+              var layout = FM$LAYOUT.select(FM$PE$<name>);
+              var slice = ms.asSlice(
+                  FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+              MemorySegment.copy(((<foreignClassName>)value).ms, 0,
+                  slice, 0, layout.byteSize());
+              return this;
+            }
+          """
+          .replace("<class>", className)
+          .replace("<foreignClassName>", foreignClassName)
+          .replace("<name>", name)
+          .replace("<type>", type));
+      }
+    } else if (isNestedAddress(field)) {
+      out.write("""
+
+            public <type> <name>() {
+              return <getter>;
+            }
+
+            public <class> <name>(<type> value) {
+              FM$VH$<name>.set(ms, <address>);
+              return this;
+            }
+          """
+          .replace("<class>", className)
+          .replace("<name>", name)
+          .replace("<type>", type)
+          .replace("<getter>", nestedAddressGetter(field, "ms"))
+          .replace("<address>", nestedAddressValue(field, "value")));
     } else {
       out.write("""
 
@@ -585,6 +736,60 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return typeEl != null
         && (typeEl.getAnnotation(ForeignStruct.class) != null
             || typeEl.getAnnotation(ForeignUnion.class) != null);
+  }
+
+  private boolean isNestedValue(StructField field) {
+    return isNested(field)
+        && new TypeGenerator(processingEnv, field.typeMirror(), field.sequence())
+            .isValue();
+  }
+
+  private boolean isNestedAddress(StructField field) {
+    return isNested(field)
+        && new TypeGenerator(processingEnv, field.typeMirror(), field.sequence())
+            .isAddress();
+  }
+
+  private boolean isRecord(StructField field) {
+    var typeEl = (TypeElement) processingEnv.getTypeUtils()
+        .asElement(field.typeMirror());
+    return typeEl != null && typeEl.getKind() == ElementKind.RECORD;
+  }
+
+  private boolean needsAllocator(VariableGenerator variable) {
+    return variable.isRecord() && variable.isAddress();
+  }
+
+  private String typeName(StructField field) {
+    return new TypeGenerator(processingEnv, field.typeMirror(), field.sequence())
+        .typeName();
+  }
+
+  private String nestedAddressGetter(StructField field, String segment) {
+    var typeEl = (TypeElement) processingEnv.getTypeUtils()
+        .asElement(field.typeMirror());
+    String foreignClassName = ProcessorUtils.foreignClassName(typeEl);
+    String name = field.name();
+    String address = "((MemorySegment) FM$VH$" + name + ".get(" + segment
+        + ")).reinterpret(" + foreignClassName + ".FM$LAYOUT.byteSize())";
+
+    if (typeEl.getKind() == ElementKind.RECORD)
+      return foreignClassName + ".fromMemorySegment(" + address + ")";
+
+    return "new " + foreignClassName + "(" + address + ")";
+  }
+
+  private String nestedAddressValue(StructField field, String value) {
+    if (isRecord(field)) {
+      var typeEl = (TypeElement) processingEnv.getTypeUtils()
+          .asElement(field.typeMirror());
+      return ProcessorUtils.foreignClassName(typeEl)
+          + ".toMemorySegment(Arena.ofAuto(), " + value + ")";
+    }
+
+    var typeEl = (TypeElement) processingEnv.getTypeUtils()
+        .asElement(field.typeMirror());
+    return "((" + ProcessorUtils.foreignClassName(typeEl) + ")" + value + ").ms";
   }
 
   private String capitalize(String name) {

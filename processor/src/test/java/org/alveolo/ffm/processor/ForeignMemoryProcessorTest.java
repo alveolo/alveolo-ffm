@@ -41,6 +41,16 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesPassModeFields() {
+    var c = compile("memory/passmode/FieldModes.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.FieldModesFM",
+        "memory/passmode/FieldModesFM.java");
+    assertGenerated(c, "pkg.FieldModeAccessorsFM",
+        "memory/passmode/FieldModeAccessorsFM.java");
+  }
+
+  @Test
   void failsForeignStructOnEnum() {
     var source = forSourceString("test.BadEnum", """
         package test;

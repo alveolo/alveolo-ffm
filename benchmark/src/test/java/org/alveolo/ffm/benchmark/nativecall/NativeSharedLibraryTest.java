@@ -17,12 +17,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class NativeSharedLibraryTest {
-  private static final String LIBRARY_NAME = "alveolo_native_test";
+  private static final String LIBRARY_NAME = "affm_test";
 
   @BeforeAll
   static void compileNativeLibrary() throws Exception {
     var source = Path.of(NativeSharedLibraryTest.class
-        .getResource("/native/alveolo_native_test.c").toURI());
+        .getResource("/native/affm_test.c").toURI());
     var outputDir = Path.of(System.getProperty("user.dir"),
         "target", "native-test");
     Files.createDirectories(outputDir);
@@ -46,35 +46,91 @@ class NativeSharedLibraryTest {
 
   @Test
   void callsPrimitiveFunction() {
-    assertEquals(42, NativeTestLibFFM.INSTANCE.add_ints(19, 23));
+    assertEquals(42, AffmTestFFM.INSTANCE.add_ints(19, 23));
   }
 
   @Test
   void passesUtf8String() {
-    assertEquals(0L, NativeTestLibFFM.INSTANCE.utf8_bytes(""));
-    assertEquals(6L, NativeTestLibFFM.INSTANCE.utf8_bytes("ASCII!"));
-    assertEquals(12L, NativeTestLibFFM.INSTANCE.utf8_bytes("Юникод"));
+    assertEquals(0L, AffmTestFFM.INSTANCE.utf8_bytes(""));
+    assertEquals(6L, AffmTestFFM.INSTANCE.utf8_bytes("ASCII!"));
+    assertEquals(12L, AffmTestFFM.INSTANCE.utf8_bytes("Юникод"));
   }
 
   @Test
   void returnsRecordStructByValue() {
-    var pair = NativeTestLibFFM.INSTANCE.make_pair_record(7, 11);
+    var pair = AffmTestFFM.INSTANCE.make_pair_record(7, 11);
     assertEquals(7, pair.left());
     assertEquals(11, pair.right());
   }
 
   @Test
   void passesRecordStructByValue() {
-    assertEquals(18, NativeTestLibFFM.INSTANCE
-        .pair_sum(new NativePairRecord(7, 11)));
+    assertEquals(18, AffmTestFFM.INSTANCE
+        .pair_sum(new PairR(7, 11)));
+  }
+
+  @Test
+  void passesRecordStructByAddress() {
+    assertEquals(18, AffmTestFFM.INSTANCE
+        .pair_ptr_sum_record(new PairR(7, 11)));
   }
 
   @Test
   void returnsInterfaceStructWithAllocator() {
     try (var arena = Arena.ofConfined()) {
-      var pair = NativeTestLibFFM.INSTANCE.make_pair(arena, 7, 11);
+      var pair = AffmTestFFM.INSTANCE.make_pair(arena, 7, 11);
       assertEquals(7, pair.left());
       assertEquals(11, pair.right());
+    }
+  }
+
+  @Test
+  void passesInterfaceStructByValue() {
+    try (var arena = Arena.ofConfined()) {
+      var pair = new PairSFM(arena).left(7).right(11);
+      assertEquals(18, AffmTestFFM.INSTANCE
+          .pair_sum_interface_value(pair));
+    }
+  }
+
+  @Test
+  void passesInterfaceStructByAddress() {
+    try (var arena = Arena.ofConfined()) {
+      var pair = new PairSFM(arena).left(7).right(11);
+      assertEquals(18, AffmTestFFM.INSTANCE
+          .pair_ptr_sum_interface(pair));
+    }
+  }
+
+  @Test
+  void passesNestedRecordStructByValue() {
+    assertEquals(18, AffmTestFFM.INSTANCE
+        .pair_box_record_value_sum(
+            new PairBoxRV(new PairR(7, 11))));
+  }
+
+  @Test
+  void passesNestedRecordStructByAddress() {
+    assertEquals(18, AffmTestFFM.INSTANCE
+        .pair_box_record_address_sum(
+            new PairBoxRA(new PairR(7, 11))));
+  }
+
+  @Test
+  void passesNestedInterfaceStructByAddress() {
+    try (var arena = Arena.ofConfined()) {
+      var pair = new PairSFM(arena).left(7).right(11);
+      assertEquals(18, AffmTestFFM.INSTANCE
+          .pair_box_interface_address_sum(new PairBoxIA(pair)));
+    }
+  }
+
+  @Test
+  void passesNestedInterfaceStructByValue() {
+    try (var arena = Arena.ofConfined()) {
+      var pair = new PairSFM(arena).left(7).right(11);
+      assertEquals(18, AffmTestFFM.INSTANCE
+          .pair_box_interface_value_sum(new PairBoxIV(pair)));
     }
   }
 

@@ -4,6 +4,7 @@ import java.lang.foreign.SegmentAllocator;
 
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.ForeignName;
+import org.alveolo.ffm.Value;
 
 @ForeignInterface
 public interface AffmLibC {
@@ -18,7 +19,8 @@ public interface AffmLibC {
   ldiv_t_R ldiv_r(long numerator, long denominator);
 
   @ForeignName("div")
-  div_t_S div_s(SegmentAllocator allocator, int numerator, int denominator);
+  @Value div_t_S div_s(
+      SegmentAllocator allocator, int numerator, int denominator);
 
   long strlen(String str);
 

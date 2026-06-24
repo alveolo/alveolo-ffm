@@ -11,11 +11,11 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   @Test
   void x() {
     Linker.nativeLinker().canonicalLayouts()
-        .forEach((name, value) -> System.out
-            .println("type: " + name + ",\tvalue: " + value.toString()
-                + ",\tbyteSize: " + value.byteSize()
-                + ",\tbyteAlignment: " + value.byteAlignment()
-                + ",\tbyteOffset: " + value.byteOffset()));
+        .forEach((name, value) -> IO.println("type: " + name
+            + ",\tvalue: " + value.toString()
+            + ",\tbyteSize: " + value.byteSize()
+            + ",\tbyteAlignment: " + value.byteAlignment()
+            + ",\tbyteOffset: " + value.byteOffset()));
   }
 
   @Test
@@ -33,6 +33,14 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
     assertGenerated(c, "pkg.LibCFFM", "interface/LibCFFM.java");
     assertGenerated(c, "pkg.div_tFM", "value/div_tFM.java");
     assertGenerated(c, "pkg.ldiv_tFM", "value/ldiv_tFM.java");
+  }
+
+  @Test
+  void generatesPassModeFFM() {
+    var c = compile("interface/passmode/PassMode.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.PassModeFFM",
+        "interface/passmode/PassModeFFM.java");
   }
 
   @Test
@@ -75,7 +83,7 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         @org.alveolo.ffm.ForeignInterface
         public interface Lib {
           @org.alveolo.ffm.ForeignName("div")
-          Div div(int numerator, int denominator);
+          @org.alveolo.ffm.Value Div div(int numerator, int denominator);
         }
         """);
 
@@ -100,11 +108,28 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         @org.alveolo.ffm.ForeignInterface
         public interface Lib {
           @org.alveolo.ffm.ForeignName("div")
-          Div div(java.lang.foreign.SegmentAllocator allocator, String label);
+          @org.alveolo.ffm.Value Div div(
+              java.lang.foreign.SegmentAllocator allocator, String label);
         }
         """);
 
     var c = compile(struct, lib);
+
+    assertThat(c).succeeded();
+  }
+
+  @Test
+  void supportsMemorySegmentAddressReturn() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          @org.alveolo.ffm.ForeignName("strchr")
+          java.lang.foreign.MemorySegment strchr(String string, int ch);
+        }
+        """);
+
+    var c = compile(lib);
 
     assertThat(c).succeeded();
   }

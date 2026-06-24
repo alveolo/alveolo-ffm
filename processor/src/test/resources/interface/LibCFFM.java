@@ -3,14 +3,14 @@ package pkg;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 
-@javax.annotation.processing.Generated(
-    "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
+@javax.annotation.processing.Generated("org.alveolo.ffm.processor.ForeignInterfaceProcessor")
 public final class LibCFFM implements LibC {
   public static final LibCFFM INSTANCE = new LibCFFM();
 
   private LibCFFM() {}
 
-  static {}
+  static {
+  }
 
   private static final Linker FF$LINKER = Linker.nativeLinker();
 
@@ -18,12 +18,15 @@ public final class LibCFFM implements LibC {
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.find("abs").get(),
-      FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_INT,
+          ValueLayout.JAVA_INT));
 
   public int abs(
       int number) {
     try {
-      return (int) FF$MH$0.invokeExact(number);
+      return (int) FF$MH$0.invokeExact(
+          number);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -33,11 +36,15 @@ public final class LibCFFM implements LibC {
 
   private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
       FF$LOOKUP.find("abs").get(),
-      FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_INT,
+          ValueLayout.JAVA_INT));
 
-  public int renamed(int number) {
+  public int renamed(
+      int number) {
     try {
-      return (int) FF$MH$1.invokeExact(number);
+      return (int) FF$MH$1.invokeExact(
+          number);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -52,10 +59,14 @@ public final class LibCFFM implements LibC {
           ValueLayout.JAVA_INT,
           ValueLayout.JAVA_INT));
 
-  public pkg.div_t div(int numerator, int denominator) {
+  public pkg.div_t div(
+      int numerator,
+      int denominator) {
     try (var ff$arena = Arena.ofConfined()) {
       return pkg.div_tFM.fromMemorySegment((MemorySegment) FF$MH$2.invokeExact(
-          (SegmentAllocator) ff$arena, numerator, denominator));
+          (SegmentAllocator) ff$arena,
+          numerator,
+          denominator));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -70,7 +81,7 @@ public final class LibCFFM implements LibC {
           ValueLayout.JAVA_LONG,
           ValueLayout.JAVA_LONG));
 
-  public pkg.ldiv_t ldiv(
+  public pkg.@org.alveolo.ffm.Value ldiv_t ldiv(
       java.lang.foreign.SegmentAllocator allocator,
       long numerator,
       long denominator) {
@@ -90,11 +101,15 @@ public final class LibCFFM implements LibC {
   // and how invokeExact would work with different size data?
   private static final MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
       FF$LOOKUP.find("strlen").get(),
-      FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_LONG,
+          ValueLayout.ADDRESS));
 
-  public long strlen(java.lang.String utf8z) {
+  public long strlen(
+      java.lang.String utf8z) {
     try (var ff$arena = Arena.ofConfined()) {
-      return (long) FF$MH$4.invokeExact(ff$arena.allocateFrom(utf8z));
+      return (long) FF$MH$4.invokeExact(
+          ff$arena.allocateFrom(utf8z));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
