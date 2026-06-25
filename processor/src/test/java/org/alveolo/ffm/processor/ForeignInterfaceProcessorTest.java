@@ -52,11 +52,35 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesCFStringFFM() {
+    var c = compile("interface/CoreStrings.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.CoreStringsFFM",
+        "interface/CoreStringsFFM.java");
+  }
+
+  @Test
   void generatesLibraryFFM() {
     var c = compile("interface/NativeTest.java");
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.NativeTestFFM",
         "interface/NativeTestFFM.java");
+  }
+
+  @Test
+  void generatesLibraryLookupFFM() {
+    var c = compile("interface/NativeLookupTest.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.NativeLookupTestFFM",
+        "interface/NativeLookupTestFFM.java");
+  }
+
+  @Test
+  void generatesRepeatableLibraryFFM() {
+    var c = compile("interface/MultiLibrary.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.MultiLibraryFFM",
+        "interface/MultiLibraryFFM.java");
   }
 
   @Test
@@ -116,6 +140,38 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
     var c = compile(struct, lib);
 
     assertThat(c).succeeded();
+  }
+
+  @Test
+  void failsWhenCFStringIsUsedOnNonString() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.macos.CFString int value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@CFString is only supported on java.lang.String");
+  }
+
+  @Test
+  void failsWhenOwnedCFStringIsUsedOnParameter() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.macos.CFString(owned = true) String value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@CFString(owned = true) is only supported on return types");
   }
 
   @Test

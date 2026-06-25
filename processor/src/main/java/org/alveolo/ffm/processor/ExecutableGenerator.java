@@ -61,20 +61,23 @@ class ExecutableGenerator {
               <descriptor>);
 
           <signature> {
-            try <allocator>{
-              <invoke>
+          <cfStringDeclarations>    try <allocator>{
+          <cfStringInitializers>      <invoke>
             } catch (RuntimeException|Error ff$e) {
               throw ff$e;
             } catch (Throwable ff$t) {
               throw new AssertionError(ff$t);
-            }
+            }<cfStringFinally>
           }
         """
         .replace("<mh>", methodHandleName)
         .replace("<name>", name(element))
         .replace("<descriptor>", descriptor())
         .replace("<signature>", signature())
+        .replace("<cfStringDeclarations>", cfStringDeclarations())
         .replace("<allocator>", allocatorDefinition())
+        .replace("<cfStringInitializers>", cfStringInitializers())
+        .replace("<cfStringFinally>", cfStringFinally())
         .replace("<invoke>", invoke());
   }
 
@@ -107,7 +110,7 @@ class ExecutableGenerator {
   }
 
   private String signature() {
-    String prefix = "public " + element.getReturnType()
+    String prefix = "public " + returnTypeName()
         + " " + element.getSimpleName() + "(";
 
     String newLine = "\n      ";
@@ -115,6 +118,12 @@ class ExecutableGenerator {
     return parameterGenerators.stream()
         .map(VariableGenerator::signature)
         .collect(joining("," + newLine, prefix + newLine, ")"));
+  }
+
+  private String returnTypeName() {
+    if (returnGenerator.isCFString()) return returnGenerator.typeName();
+
+    return element.getReturnType().toString();
   }
 
   private String allocatorDefinition() {
@@ -159,6 +168,25 @@ class ExecutableGenerator {
           + foreignClassName(type) + ".FM$LAYOUT.byteSize()));";
     }
 
+    if (returnGenerator.isCFString()) {
+      var result = "(MemorySegment) " + methodHandleName
+          + ".invokeExact(" + params + ")";
+
+      if (!returnGenerator.isOwnedCFString())
+        return "return org.alveolo.ffm.macos.CFStringSupport.toJavaString("
+            + result + ");";
+
+      return """
+          var ff$CFString$r = <result>;
+                try {
+                  return org.alveolo.ffm.macos.CFStringSupport
+                      .toJavaString(ff$CFString$r);
+                } finally {
+                  org.alveolo.ffm.macos.CFStringSupport.release(ff$CFString$r);
+                }"""
+          .replace("<result>", result);
+    }
+
     if (returnGenerator.isString())
       return "return " + methodHandleName + ".invokeExact(" + params + ");"; // TODO
 
@@ -182,7 +210,46 @@ class ExecutableGenerator {
   boolean needsConfinedArena() {
     return returnGenerator.isRecord() && returnGenerator.isValue()
         || parameterGenerators.stream()
-            .anyMatch(p -> p.isRecord() || p.isString());
+            .anyMatch(VariableGenerator::needsConfinedArena);
+  }
+
+  private String cfStringDeclarations() {
+    var declarations = parameterGenerators.stream()
+        .filter(VariableGenerator::isCFString)
+        .map(p -> "MemorySegment " + p.cfStringName()
+            + " = MemorySegment.NULL;")
+        .toList();
+
+    if (declarations.isEmpty()) return "";
+
+    return declarations.stream()
+        .collect(joining("\n    ", "    ", "\n\n"));
+  }
+
+  private String cfStringInitializers() {
+    var initializers = parameterGenerators.stream()
+        .filter(VariableGenerator::isCFString)
+        .map(p -> p.cfStringName()
+            + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
+            + p.name() + ");")
+        .toList();
+
+    if (initializers.isEmpty()) return "";
+
+    return initializers.stream()
+        .collect(joining("\n      ", "      ", "\n\n"));
+  }
+
+  private String cfStringFinally() {
+    var releases = parameterGenerators.stream()
+        .filter(VariableGenerator::isCFString)
+        .map(p -> "      org.alveolo.ffm.macos.CFStringSupport.release("
+            + p.cfStringName() + ");")
+        .collect(joining("\n"));
+
+    if (releases.isEmpty()) return "";
+
+    return " finally {\n" + releases + "\n    }";
   }
 
   /**
@@ -219,6 +286,24 @@ class ExecutableGenerator {
         continue;
       }
 
+      if (paramGen.isCFString() && !paramGen.isString()) {
+        hasUnsupported = true;
+
+        processingEnv.getMessager().printError(
+            "@CFString is only supported on java.lang.String",
+            paramGen.element);
+        continue;
+      }
+
+      if (paramGen.isOwnedCFString()) {
+        hasUnsupported = true;
+
+        processingEnv.getMessager().printError(
+            "@CFString(owned = true) is only supported on return types",
+            paramGen.element);
+        continue;
+      }
+
       String layout = paramGen.layout();
 
       if (layout == VALUE_LAYOUT_NOT_SUPPORTED) {
@@ -235,6 +320,13 @@ class ExecutableGenerator {
 
       processingEnv.getMessager().printError(
           "Type is not supported: " + returnGenerator.typeMirror, element);
+    }
+
+    if (returnGenerator.isCFString() && !returnGenerator.isString()) {
+      hasUnsupported = true;
+
+      processingEnv.getMessager().printError(
+          "@CFString is only supported on java.lang.String", element);
     }
 
     return hasUnsupported;

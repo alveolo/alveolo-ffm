@@ -61,6 +61,14 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.4</version>
+        <configuration>
+          <argLine>--enable-native-access=ALL-UNNAMED
+            -Daffm.library.path=${project.build.directory}/native-test</argLine>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>

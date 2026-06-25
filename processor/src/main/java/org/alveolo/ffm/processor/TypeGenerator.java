@@ -19,6 +19,7 @@ import org.alveolo.ffm.ForeignStruct;
 import org.alveolo.ffm.ForeignUnion;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.Value;
+import org.alveolo.ffm.macos.CFString;
 
 class TypeGenerator {
   public static String VALUE_LAYOUT_NOT_SUPPORTED = "((ValueLayout) null)";
@@ -165,6 +166,19 @@ class TypeGenerator {
 
   boolean isString() {
     return typeName().equals(STRING);
+  }
+
+  boolean isCFString() {
+    return typeMirror.getAnnotation(CFString.class) != null;
+  }
+
+  boolean isOwnedCFString() {
+    var cfString = typeMirror.getAnnotation(CFString.class);
+    return cfString != null && cfString.owned();
+  }
+
+  boolean needsConfinedArena() {
+    return isRecord() || (isString() && !isCFString());
   }
 
   boolean isMemorySegment() {

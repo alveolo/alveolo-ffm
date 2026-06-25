@@ -44,10 +44,14 @@ class VariableGenerator extends TypeGenerator {
   /// * `argX.ms` for struct/union implementation passed by reference
   /// * `((StructFM) argX).ms` for struct/union interface passed by reference
   /// * `ff$arena.allocateFrom(argX)` for Java `String` to C `char*` conversion
+  /// * `ff$cfString$argX` for Java `@CFString String` conversion
   /// * `StructFM.toMemorySegment(ff$arena, argX)` for records conversion
   String invoke() {
     if (isPrimitive() || isMemorySegment() || isSegmentAllocator())
       return name();
+
+    if (isCFString())
+      return cfStringName();
 
     if (isString())
       return "ff$arena.allocateFrom(" + name() + ")";
@@ -59,5 +63,9 @@ class VariableGenerator extends TypeGenerator {
     return (typeElement.getKind() == ElementKind.INTERFACE)
         ? "((" + foreignClassName(typeElement) + ")" + name() + ").ms"
         : name() + ".ms";
+  }
+
+  String cfStringName() {
+    return "ff$cfString$" + name();
   }
 }

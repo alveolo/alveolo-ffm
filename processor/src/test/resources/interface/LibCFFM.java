@@ -3,14 +3,12 @@ package pkg;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 
-@javax.annotation.processing.Generated("org.alveolo.ffm.processor.ForeignInterfaceProcessor")
+@javax.annotation.processing.Generated(
+    "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
 public final class LibCFFM implements LibC {
   public static final LibCFFM INSTANCE = new LibCFFM();
 
   private LibCFFM() {}
-
-  static {
-  }
 
   private static final Linker FF$LINKER = Linker.nativeLinker();
 

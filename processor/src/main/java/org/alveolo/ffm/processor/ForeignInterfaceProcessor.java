@@ -19,8 +19,6 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
 import org.alveolo.ffm.Library;
-import org.alveolo.ffm.macos.Framework;
-import org.alveolo.ffm.macos.Frameworks;
 
 @SupportedAnnotationTypes("org.alveolo.ffm.ForeignInterface")
 @SupportedSourceVersion(RELEASE_25)
@@ -79,13 +77,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     String className = srcClassName + "FFM";
     String simpleClassName = className.substring(lastDot + 1);
 
-    var frameworks = frameworks(type);
-    var library = type.getAnnotation(Library.class);
-    if (library != null && !frameworks.isEmpty()) {
-      messager.printError("@Library cannot be combined with @Framework",
-          type);
-      return;
-    }
+    var libraries = libraries(type);
+    if (!validateLibraries(type, libraries)) return;
 
     var file = processingEnv.getFiler().createSourceFile(className, type);
 
@@ -98,37 +91,36 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           import java.lang.foreign.*;
           import java.lang.invoke.MethodHandle;
 
-          @javax.annotation.processing.Generated("<generator>")
+          @javax.annotation.processing.Generated(
+              "<generator>")
           public final class <name> implements <interface> {
             public static final <name> INSTANCE = new <name>();
 
             private <name>() {}
 
-            static {
           """
           .replace("<generator>", getClass().getCanonicalName())
           .replace("<name>", simpleClassName)
           .replace("<interface>", srcSimpleClassName));
 
-      if (library != null) {
-        out.write("    System.loadLibrary(\"" + library.value() + "\");\n");
-      }
-      for (var f : frameworks) {
-        writeLoadLibraries(out, f);
-      }
-
       out.write("""
-            }
-
             private static final Linker FF$LINKER = Linker.nativeLinker();
 
           """);
 
-      out.write("  private static final SymbolLookup FF$LOOKUP =");
-      if (frameworks.isEmpty() && library == null) {
-        out.write(" FF$LINKER.defaultLookup();\n");
+      if (libraries.isEmpty()) {
+        out.write("""
+              private static final SymbolLookup FF$LOOKUP =
+                  FF$LINKER.defaultLookup();
+
+            """);
       } else {
-        out.write(" SymbolLookup.loaderLookup();\n");
+        out.write("""
+              private static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
+
+            """
+        );
+        writeLookupInitializer(out, srcSimpleClassName, libraries);
       }
 
       int index = 0;
@@ -150,24 +142,138 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     }
   }
 
-  private List<Framework> frameworks(TypeElement type) {
-    var frameworks = type.getAnnotation(Frameworks.class);
-    if (frameworks != null)
-      return List.of(frameworks.value());
-
-    var framework = type.getAnnotation(Framework.class);
-    if (framework != null)
-      return List.of(framework);
-
-    return List.of();
+  private List<Library> libraries(TypeElement type) {
+    return List.of(type.getAnnotationsByType(Library.class));
   }
 
-  private void writeLoadLibraries(Writer out, Framework f) throws IOException {
-    String framework = f.value();
-    String version = f.version();
+  private boolean validateLibraries(TypeElement type, List<Library> libraries) {
+    var valid = true;
 
-    out.write("    System.load(\"/System/Library/Frameworks/"
-        + framework + ".framework/Versions/" + version + "/"
-        + framework + "\");\n");
+    for (var library : libraries) {
+      valid &= validateLibrary(type, library.kind(), library.value(),
+          library.version(), "@Library");
+
+      for (var override : library.overrides()) {
+        valid &= validateLibrary(type, override.kind(), override.value(), "",
+            "@Library.Override");
+      }
+    }
+
+    return valid;
+  }
+
+  private boolean validateLibrary(
+      TypeElement type, Library.Kind kind, String value, String version,
+      String annotation) {
+    var messager = processingEnv.getMessager();
+
+    if (value.isEmpty()) {
+      messager.printError(annotation
+          + " value is required unless kind is DEFAULT_LOOKUP", type);
+      return false;
+    }
+
+    if (kind != Library.Kind.NAME && kind != Library.Kind.FRAMEWORK
+        && !version.isEmpty()) {
+      messager.printError(annotation
+          + " version is only supported with Kind.NAME or Kind.FRAMEWORK",
+          type);
+      return false;
+    }
+
+    return true;
+  }
+
+  private void writeLookupInitializer(
+      Writer out, String sourceClassName, List<Library> libraries)
+      throws IOException {
+    out.write("""
+          private static SymbolLookup FF$LOOKUP() {
+            return org.alveolo.ffm.ForeignUtils.libraryLookup(
+                <sourceClass>.class,
+                FF$LINKER.defaultLookup(),
+        <libraries>
+            );
+          }
+
+        """
+        .replace("<sourceClass>", sourceClassName)
+        .replace("<libraries>", librarySpecs(libraries)
+            .indent(8)
+            .stripTrailing()));
+  }
+
+  private String librarySpecs(List<Library> libraries) {
+    var result = new StringBuilder();
+
+    for (var i = 0; i < libraries.size(); i++) {
+      if (i > 0) {
+        result.append(",\n");
+      }
+      result.append(librarySpec(libraries.get(i)));
+    }
+
+    return result.toString();
+  }
+
+  private String librarySpec(Library library) {
+    return """
+        new org.alveolo.ffm.ForeignUtils.LibrarySpec(
+            <value>, <version>,
+            <os>,
+            org.alveolo.ffm.Library.Kind.<kind><overrides>
+        )
+        """
+        .replace("<value>", quote(library.value()))
+        .replace("<version>", quote(library.version()))
+        .replace("<os>", osArray(library.os()))
+        .replace("<kind>", library.kind().name())
+        .replace("<overrides>", libraryOverrides(library))
+        .stripTrailing();
+  }
+
+  private String libraryOverrides(Library library) {
+    var overrides = library.overrides();
+    if (overrides.length == 0) return "";
+
+    var result = new StringBuilder();
+    for (var override : overrides) {
+      result.append(",\n")
+          .append(libraryOverride(override)
+              .indent(4)
+              .stripTrailing());
+    }
+
+    return result.toString();
+  }
+
+  private String libraryOverride(Library.Override override) {
+    return """
+        new org.alveolo.ffm.ForeignUtils.LibraryOverride(
+            <os>,
+            org.alveolo.ffm.Library.Kind.<kind>,
+            <value>
+        )
+        """
+        .replace("<os>", osArray(override.os()))
+        .replace("<kind>", override.kind().name())
+        .replace("<value>", quote(override.value()))
+        .stripTrailing();
+  }
+
+  private String osArray(Library.OS[] oses) {
+    var result = new StringBuilder("new org.alveolo.ffm.Library.OS[] {");
+    for (var i = 0; i < oses.length; i++) {
+      if (i > 0) {
+        result.append(", ");
+      }
+      result.append("org.alveolo.ffm.Library.OS.")
+          .append(oses[i].name());
+    }
+    return result.append("}").toString();
+  }
+
+  private static String quote(String value) {
+    return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
   }
 }

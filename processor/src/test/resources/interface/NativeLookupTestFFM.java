@@ -5,10 +5,10 @@ import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
-public final class CoreFrameworkFFM implements CoreFramework {
-  public static final CoreFrameworkFFM INSTANCE = new CoreFrameworkFFM();
+public final class NativeLookupTestFFM implements NativeLookupTest {
+  public static final NativeLookupTestFFM INSTANCE = new NativeLookupTestFFM();
 
-  private CoreFrameworkFFM() {}
+  private NativeLookupTestFFM() {}
 
   private static final Linker FF$LINKER = Linker.nativeLinker();
 
@@ -16,24 +16,25 @@ public final class CoreFrameworkFFM implements CoreFramework {
 
   private static SymbolLookup FF$LOOKUP() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
-        CoreFramework.class,
+        NativeLookupTest.class,
         FF$LINKER.defaultLookup(),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
-            "CoreFoundation", "A",
+            "cups", "2",
             new org.alveolo.ffm.Library.OS[] {},
-            org.alveolo.ffm.Library.Kind.FRAMEWORK));
+            org.alveolo.ffm.Library.Kind.NAME)
+    );
   }
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("CFAbsoluteTimeGetCurrent").get(),
+      FF$LOOKUP.find("add_ints").get(),
       FunctionDescriptor.of(
-          ValueLayout.JAVA_DOUBLE));
+          ValueLayout.JAVA_INT,
+          ValueLayout.JAVA_INT,
+          ValueLayout.JAVA_INT));
 
-  public double CFAbsoluteTimeGetCurrent(
-      ) {
-      try {
-        return (double) FF$MH$0.invokeExact(
-          );
+  public int add_ints(int left, int right) {
+    try {
+        return (int) FF$MH$0.invokeExact(left, right);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {

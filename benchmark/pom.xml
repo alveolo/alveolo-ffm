@@ -113,7 +113,7 @@ http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting
         <configuration>
           <argLine>
             --enable-native-access=ALL-UNNAMED
-            -Djava.library.path=${project.build.directory}/native-test
+            -Daffm.library.path=${project.build.directory}/native-test
           </argLine>
         </configuration>
       </plugin>

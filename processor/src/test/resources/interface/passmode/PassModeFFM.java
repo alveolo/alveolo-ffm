@@ -3,14 +3,12 @@ package pkg;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 
-@javax.annotation.processing.Generated("org.alveolo.ffm.processor.ForeignInterfaceProcessor")
+@javax.annotation.processing.Generated(
+    "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
 public final class PassModeFFM implements PassMode {
   public static final PassModeFFM INSTANCE = new PassModeFFM();
 
   private PassModeFFM() {}
-
-  static {
-  }
 
   private static final Linker FF$LINKER = Linker.nativeLinker();
 
@@ -22,8 +20,7 @@ public final class PassModeFFM implements PassMode {
           pkg.RecordDefaultFM.FM$LAYOUT,
           pkg.RecordDefaultFM.FM$LAYOUT));
 
-  public pkg.RecordDefault recordDefault(
-      pkg.RecordDefault value) {
+  public pkg.RecordDefault recordDefault(pkg.RecordDefault value) {
     try (var ff$arena = Arena.ofConfined()) {
       return pkg.RecordDefaultFM.fromMemorySegment((MemorySegment) FF$MH$0.invokeExact(
           (SegmentAllocator) ff$arena,
@@ -45,7 +42,8 @@ public final class PassModeFFM implements PassMode {
       pkg.RecordDefault ref) {
     try (var ff$arena = Arena.ofConfined()) {
       return pkg.RecordDefaultFM.fromMemorySegment(((MemorySegment) FF$MH$1.invokeExact(
-          pkg.RecordDefaultFM.toMemorySegment(ff$arena, ref))).reinterpret(pkg.RecordDefaultFM.FM$LAYOUT.byteSize()));
+          pkg.RecordDefaultFM.toMemorySegment(ff$arena, ref)))
+              .reinterpret(pkg.RecordDefaultFM.FM$LAYOUT.byteSize()));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -63,7 +61,8 @@ public final class PassModeFFM implements PassMode {
       pkg.InterfaceDefault ref) {
     try {
       return new pkg.InterfaceDefaultFM(((MemorySegment) FF$MH$2.invokeExact(
-          ((pkg.InterfaceDefaultFM)ref).ms)).reinterpret(pkg.InterfaceDefaultFM.FM$LAYOUT.byteSize()));
+          ((pkg.InterfaceDefaultFM)ref).ms))
+              .reinterpret(pkg.InterfaceDefaultFM.FM$LAYOUT.byteSize()));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -120,7 +119,8 @@ public final class PassModeFFM implements PassMode {
       pkg.InterfaceValue ref) {
     try {
       return new pkg.InterfaceValueFM(((MemorySegment) FF$MH$5.invokeExact(
-          ((pkg.InterfaceValueFM)ref).ms)).reinterpret(pkg.InterfaceValueFM.FM$LAYOUT.byteSize()));
+          ((pkg.InterfaceValueFM)ref).ms))
+              .reinterpret(pkg.InterfaceValueFM.FM$LAYOUT.byteSize()));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {

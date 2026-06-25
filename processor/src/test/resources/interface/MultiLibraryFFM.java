@@ -5,10 +5,10 @@ import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
-public final class MultiFrameworkFFM implements MultiFramework {
-  public static final MultiFrameworkFFM INSTANCE = new MultiFrameworkFFM();
+public final class MultiLibraryFFM implements MultiLibrary {
+  public static final MultiLibraryFFM INSTANCE = new MultiLibraryFFM();
 
-  private MultiFrameworkFFM() {}
+  private MultiLibraryFFM() {}
 
   private static final Linker FF$LINKER = Linker.nativeLinker();
 
@@ -16,15 +16,15 @@ public final class MultiFrameworkFFM implements MultiFramework {
 
   private static SymbolLookup FF$LOOKUP() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
-        MultiFramework.class,
+        MultiLibrary.class,
         FF$LINKER.defaultLookup(),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
-            "CoreFoundation", "",
+            "first", "",
             new org.alveolo.ffm.Library.OS[] {},
-            org.alveolo.ffm.Library.Kind.FRAMEWORK),
+            org.alveolo.ffm.Library.Kind.NAME),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
-            "IOKit", "",
+            "second", "",
             new org.alveolo.ffm.Library.OS[] {},
-            org.alveolo.ffm.Library.Kind.FRAMEWORK));
+            org.alveolo.ffm.Library.Kind.NAME));
   }
 }

@@ -10,9 +10,6 @@ public final class EmptyFFM implements Empty {
 
   private EmptyFFM() {}
 
-  static {
-  }
-
   private static final Linker FF$LINKER = Linker.nativeLinker();
 
   private static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
