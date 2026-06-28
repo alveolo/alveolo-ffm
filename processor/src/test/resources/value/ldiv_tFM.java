@@ -31,6 +31,10 @@ public final class ldiv_tFM implements ldiv_t {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static ldiv_tFM reinterpret(MemorySegment ms) {
+    return new ldiv_tFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public ldiv_tFM(SegmentAllocator allocator) {

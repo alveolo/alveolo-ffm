@@ -11,10 +11,14 @@ public final class XyzVtblFD implements XyzVtbl {
   public static final MemoryLayout FD$LAYOUT =
       MemoryLayout.sequenceLayout(4L, ValueLayout.ADDRESS);
 
+  public static XyzVtblFD reinterpret(MemorySegment ms) {
+    return new XyzVtblFD(ms.reinterpret(FD$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public XyzVtblFD(MemorySegment ms) {
-    this.ms = ms.reinterpret(FD$LAYOUT.byteSize());
+    this.ms = ms;
     this.FF$MH$0 = java.lang.invoke.MethodHandles.insertArguments(
         FF$MD$0, 0,
         this.ms.getAtIndex(ValueLayout.ADDRESS, 1L));

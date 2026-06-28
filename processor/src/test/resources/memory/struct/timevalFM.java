@@ -31,6 +31,10 @@ public final class timevalFM implements timeval {
         FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static timevalFM reinterpret(MemorySegment ms) {
+    return new timevalFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public timevalFM(SegmentAllocator allocator) {

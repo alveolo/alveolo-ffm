@@ -31,6 +31,10 @@ public final class div_tFM {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static div_t reinterpret(MemorySegment ms) {
+    return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public static void toMemorySegment(div_t from, MemorySegment ms) {
     quot(ms, from.quot());
     rem(ms, from.rem());

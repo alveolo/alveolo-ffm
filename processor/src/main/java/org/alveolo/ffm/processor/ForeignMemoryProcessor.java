@@ -339,6 +339,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     out.write("""
 
+          public static <src> reinterpret(MemorySegment ms) {
+            return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
+          }
+
           public static void toMemorySegment(<src> from, MemorySegment ms) {
             <toMemorySegmentFields>
           }
@@ -386,6 +390,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeConstructors(Writer out,
       String className, String ifaceName) throws IOException {
     out.write("""
+
+          public static <class> reinterpret(MemorySegment ms) {
+            return new <class>(ms.reinterpret(FM$LAYOUT.byteSize()));
+          }
 
           public final MemorySegment ms;
 
@@ -770,13 +778,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .asElement(field.typeMirror());
     String foreignClassName = ProcessorUtils.foreignClassName(typeEl);
     String name = field.name();
-    String address = "((MemorySegment) FM$VH$" + name + ".get(" + segment
-        + ")).reinterpret(" + foreignClassName + ".FM$LAYOUT.byteSize())";
+    String address = "(MemorySegment) FM$VH$" + name + ".get(" + segment
+        + ")";
 
     if (typeEl.getKind() == ElementKind.RECORD)
-      return foreignClassName + ".fromMemorySegment(" + address + ")";
+      return foreignClassName + ".reinterpret(" + address + ")";
 
-    return "new " + foreignClassName + "(" + address + ")";
+    return foreignClassName + ".reinterpret(" + address + ")";
   }
 
   private String nestedAddressValue(StructField field, String value) {

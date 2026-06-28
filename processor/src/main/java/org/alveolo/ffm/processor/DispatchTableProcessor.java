@@ -99,6 +99,10 @@ public class DispatchTableProcessor extends AbstractProcessor {
             public static final MemoryLayout FD$LAYOUT =
                 MemoryLayout.sequenceLayout(<slotCount>L, ValueLayout.ADDRESS);
 
+            public static <name> reinterpret(MemorySegment ms) {
+              return new <name>(ms.reinterpret(FD$LAYOUT.byteSize()));
+            }
+
             public final MemorySegment ms;
 
           """
@@ -205,7 +209,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
       throws IOException {
     out.write("""
           public <class>(MemorySegment ms) {
-            this.ms = ms.reinterpret(FD$LAYOUT.byteSize());
+            this.ms = ms;
         <initializers>
           }
         """

@@ -31,6 +31,10 @@ public final class OuterFM implements Outer {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static OuterFM reinterpret(MemorySegment ms) {
+    return new OuterFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public OuterFM(SegmentAllocator allocator) {
@@ -42,8 +46,7 @@ public final class OuterFM implements Outer {
   }
 
   public pkg.Inner inner() {
-    return new pkg.InnerFM(((MemorySegment) FM$VH$inner.get(ms))
-        .reinterpret(pkg.InnerFM.FM$LAYOUT.byteSize()));
+    return pkg.InnerFM.reinterpret((MemorySegment) FM$VH$inner.get(ms));
   }
 
   public OuterFM inner(pkg.Inner value) {

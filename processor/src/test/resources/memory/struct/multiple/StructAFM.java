@@ -31,6 +31,10 @@ public final class StructAFM implements StructA {
         FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static StructAFM reinterpret(MemorySegment ms) {
+    return new StructAFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public StructAFM(SegmentAllocator allocator) {

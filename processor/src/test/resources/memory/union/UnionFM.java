@@ -31,6 +31,10 @@ public final class UnionFM implements Union {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static UnionFM reinterpret(MemorySegment ms) {
+    return new UnionFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public UnionFM(SegmentAllocator allocator) {

@@ -31,6 +31,10 @@ public final class InnerFM implements Inner {
         FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static InnerFM reinterpret(MemorySegment ms) {
+    return new InnerFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public InnerFM(SegmentAllocator allocator) {

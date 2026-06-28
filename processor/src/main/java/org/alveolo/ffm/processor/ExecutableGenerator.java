@@ -232,8 +232,7 @@ class ExecutableGenerator {
           + ".fromMemorySegment((MemorySegment) " + call + ")";
 
     return foreignClassName(type)
-        + ".fromMemorySegment(((MemorySegment) " + call + ").reinterpret("
-        + foreignClassName(type) + ".FM$LAYOUT.byteSize()))";
+        + ".reinterpret((MemorySegment) " + call + ")";
   }
 
   private String cfStringInvoke(String call, String copyOut) {
@@ -270,9 +269,8 @@ class ExecutableGenerator {
       return "new " + foreignClassName(type)
           + "((MemorySegment) " + call + ")";
 
-    return "new " + foreignClassName(type)
-        + "(((MemorySegment) " + call + ").reinterpret("
-        + foreignClassName(type) + ".FM$LAYOUT.byteSize()))";
+    return foreignClassName(type)
+        + ".reinterpret((MemorySegment) " + call + ")";
   }
 
   boolean needsConfinedArena() {

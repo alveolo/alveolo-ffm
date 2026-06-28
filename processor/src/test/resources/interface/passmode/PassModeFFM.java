@@ -41,9 +41,8 @@ public final class PassModeFFM implements PassMode {
   public pkg.@org.alveolo.ffm.Address RecordDefault recordAddress(
       pkg.RecordDefault ref) {
     try (var ff$arena = Arena.ofConfined()) {
-      return pkg.RecordDefaultFM.fromMemorySegment(((MemorySegment) FF$MH$1.invokeExact(
-          pkg.RecordDefaultFM.toMemorySegment(ff$arena, ref)))
-              .reinterpret(pkg.RecordDefaultFM.FM$LAYOUT.byteSize()));
+      return pkg.RecordDefaultFM.reinterpret((MemorySegment) FF$MH$1.invokeExact(
+          pkg.RecordDefaultFM.toMemorySegment(ff$arena, ref)));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -60,9 +59,8 @@ public final class PassModeFFM implements PassMode {
   public pkg.InterfaceDefault interfaceDefault(
       pkg.InterfaceDefault ref) {
     try {
-      return new pkg.InterfaceDefaultFM(((MemorySegment) FF$MH$2.invokeExact(
-          ((pkg.InterfaceDefaultFM)ref).ms))
-              .reinterpret(pkg.InterfaceDefaultFM.FM$LAYOUT.byteSize()));
+      return pkg.InterfaceDefaultFM.reinterpret((MemorySegment) FF$MH$2.invokeExact(
+          ((pkg.InterfaceDefaultFM)ref).ms));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -118,9 +116,8 @@ public final class PassModeFFM implements PassMode {
   public pkg.@org.alveolo.ffm.Address InterfaceValue addressTypeUseOverridesValueType(
       pkg.InterfaceValue ref) {
     try {
-      return new pkg.InterfaceValueFM(((MemorySegment) FF$MH$5.invokeExact(
-          ((pkg.InterfaceValueFM)ref).ms))
-              .reinterpret(pkg.InterfaceValueFM.FM$LAYOUT.byteSize()));
+      return pkg.InterfaceValueFM.reinterpret((MemorySegment) FF$MH$5.invokeExact(
+          ((pkg.InterfaceValueFM)ref).ms));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {

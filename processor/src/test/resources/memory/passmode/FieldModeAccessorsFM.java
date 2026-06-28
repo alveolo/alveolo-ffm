@@ -51,6 +51,10 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static FieldModeAccessorsFM reinterpret(MemorySegment ms) {
+    return new FieldModeAccessorsFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public FieldModeAccessorsFM(SegmentAllocator allocator) {
@@ -76,7 +80,7 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public pkg.InnerInterface interfaceDefault() {
-    return new pkg.InnerInterfaceFM(((MemorySegment) FM$VH$interfaceDefault.get(ms)).reinterpret(pkg.InnerInterfaceFM.FM$LAYOUT.byteSize()));
+    return pkg.InnerInterfaceFM.reinterpret((MemorySegment) FM$VH$interfaceDefault.get(ms));
   }
 
   public FieldModeAccessorsFM interfaceDefault(pkg.InnerInterface value) {
@@ -85,7 +89,7 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public pkg.InnerRecord recordTypeUseAddress() {
-    return pkg.InnerRecordFM.fromMemorySegment(((MemorySegment) FM$VH$recordTypeUseAddress.get(ms)).reinterpret(pkg.InnerRecordFM.FM$LAYOUT.byteSize()));
+    return pkg.InnerRecordFM.reinterpret((MemorySegment) FM$VH$recordTypeUseAddress.get(ms));
   }
 
   public FieldModeAccessorsFM recordTypeUseAddress(pkg.InnerRecord value) {
@@ -123,7 +127,7 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public pkg.TypeValueInterface fieldOverridesTypeValue() {
-    return new pkg.TypeValueInterfaceFM(((MemorySegment) FM$VH$fieldOverridesTypeValue.get(ms)).reinterpret(pkg.TypeValueInterfaceFM.FM$LAYOUT.byteSize()));
+    return pkg.TypeValueInterfaceFM.reinterpret((MemorySegment) FM$VH$fieldOverridesTypeValue.get(ms));
   }
 
   public FieldModeAccessorsFM fieldOverridesTypeValue(pkg.TypeValueInterface value) {

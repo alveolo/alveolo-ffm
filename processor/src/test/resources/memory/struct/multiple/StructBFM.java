@@ -71,6 +71,10 @@ public final class StructBFM implements StructB {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static StructBFM reinterpret(MemorySegment ms) {
+    return new StructBFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
   public final MemorySegment ms;
 
   public StructBFM(SegmentAllocator allocator) {
