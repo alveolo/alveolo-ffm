@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import javax.tools.JavaFileObject;
 
 import org.alveolo.ffm.Address;
+import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.ForeignName;
 import org.alveolo.ffm.ForeignStruct;
@@ -23,6 +24,7 @@ import org.alveolo.ffm.Libraries;
 import org.alveolo.ffm.Library;
 import org.alveolo.ffm.Out;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.Slot;
 import org.alveolo.ffm.macos.CFString;
 import org.alveolo.ffm.macos.CFStringSupport;
 
@@ -30,6 +32,7 @@ import com.google.testing.compile.Compilation;
 
 abstract class AbstractProcessorTest {
   private static final Class<?>[] CORE_CLASSES = {
+    DispatchTable.class,
     ForeignInterface.class,
     ForeignName.class,
     ForeignStruct.class,
@@ -40,6 +43,7 @@ abstract class AbstractProcessorTest {
     In.class,
     Out.class,
     Sequence.class,
+    Slot.class,
     CFString.class,
     CFStringSupport.class,
   };
@@ -59,6 +63,7 @@ abstract class AbstractProcessorTest {
     return javac()
         .withClasspath(files)
         .withProcessors(
+            new DispatchTableProcessor(),
             new ForeignMemoryProcessor(),
             new ForeignInterfaceProcessor())
         .compile(sources);

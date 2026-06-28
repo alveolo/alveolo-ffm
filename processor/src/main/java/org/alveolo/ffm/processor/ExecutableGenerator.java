@@ -24,16 +24,24 @@ class ExecutableGenerator {
   final ExecutableElement element;
   final boolean hasErrors;
   final String methodHandleName;
+  final boolean instanceMethodHandle;
   final TypeGenerator returnGenerator;
   final List<VariableGenerator> parameterGenerators;
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
       ExecutableElement element, String methodHandleName) {
+    this(processingEnv, element, methodHandleName, false);
+  }
+
+  ExecutableGenerator(ProcessingEnvironment processingEnv,
+      ExecutableElement element, String methodHandleName,
+      boolean instanceMethodHandle) {
     this.processingEnv = processingEnv;
     types = processingEnv.getTypeUtils();
     messager = processingEnv.getMessager();
     this.element = element;
     this.methodHandleName = methodHandleName;
+    this.instanceMethodHandle = instanceMethodHandle;
 
     returnGenerator = new TypeGenerator(processingEnv, element.getReturnType());
 
@@ -67,6 +75,17 @@ class ExecutableGenerator {
         .replace("<descriptor>", descriptor())
         .replace("<signature>", signature());
 
+    if (instanceMethodHandle) {
+      header = """
+
+          private final MethodHandle <mh>;
+
+          <signature> {
+        """
+          .replace("<mh>", methodHandleName)
+          .replace("<signature>", signature());
+    }
+
     return header
         + cfStringDeclarations()
         + "    try " + allocatorDefinition() + "{\n"
@@ -97,7 +116,7 @@ class ExecutableGenerator {
         : name.value();
   }
 
-  private String descriptor() {
+  String descriptor() {
     var returnType = element.getReturnType();
     boolean isVoid = returnType.getKind() == TypeKind.VOID;
 

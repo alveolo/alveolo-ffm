@@ -1,2 +1,3 @@
+org.alveolo.ffm.processor.DispatchTableProcessor
 org.alveolo.ffm.processor.ForeignInterfaceProcessor
 org.alveolo.ffm.processor.ForeignMemoryProcessor

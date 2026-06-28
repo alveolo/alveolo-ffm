@@ -2,6 +2,7 @@ package org.alveolo.ffm.processor;
 
 import javax.lang.model.element.TypeElement;
 
+import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.ForeignName;
 import org.alveolo.ffm.ForeignStruct;
 import org.alveolo.ffm.ForeignUnion;
@@ -26,5 +27,13 @@ public class ProcessorUtils {
     // make consistent (caller expect simple name and adding package themselves
 
     return element.getQualifiedName() + "FM";
+  }
+
+  static String dispatchTableClassName(TypeElement element) {
+    var dispatchTable = element.getAnnotation(DispatchTable.class);
+    if (dispatchTable != null && !dispatchTable.name().isEmpty())
+      return dispatchTable.name();
+
+    return element.getQualifiedName() + "FD";
   }
 }
