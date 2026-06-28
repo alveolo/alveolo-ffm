@@ -54,31 +54,39 @@ class ExecutableGenerator {
           """
           .replace("<signature>", signature());
 
-    return """
+    var header = """
 
           private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
               FF$LOOKUP.find("<name>").get(),
               <descriptor>);
 
           <signature> {
-          <cfStringDeclarations>    try <allocator>{
-          <cfStringInitializers>      <invoke>
-            } catch (RuntimeException|Error ff$e) {
-              throw ff$e;
-            } catch (Throwable ff$t) {
-              throw new AssertionError(ff$t);
-            }<cfStringFinally>
-          }
         """
         .replace("<mh>", methodHandleName)
         .replace("<name>", name(element))
         .replace("<descriptor>", descriptor())
-        .replace("<signature>", signature())
-        .replace("<cfStringDeclarations>", cfStringDeclarations())
-        .replace("<allocator>", allocatorDefinition())
-        .replace("<cfStringInitializers>", cfStringInitializers())
-        .replace("<cfStringFinally>", cfStringFinally())
-        .replace("<invoke>", invoke());
+        .replace("<signature>", signature());
+
+    return header
+        + cfStringDeclarations()
+        + "    try " + allocatorDefinition() + "{\n"
+        + methodBody()
+        + """
+              } catch (RuntimeException|Error ff$e) {
+                throw ff$e;
+              } catch (Throwable ff$t) {
+                throw new AssertionError(ff$t);
+              }<cfStringFinally>
+            }
+          """
+            .replace("<cfStringFinally>", cfStringFinally());
+  }
+
+  private String methodBody() {
+    return Stream.of(cfStringInitializers(), arrayInitializers(), invoke())
+        .filter(not(String::isEmpty))
+        .collect(joining("\n"))
+        .indent(6);
   }
 
   private String name(ExecutableElement method) {
@@ -132,8 +140,34 @@ class ExecutableGenerator {
 
   private String invoke() {
     var returnType = element.getReturnType();
+    var call = methodHandleName + ".invokeExact(" + params() + ")";
+    var copyOut = copyOut();
 
-    String newLine = "\n          ";
+    if (returnGenerator.isPrimitive())
+      return returnWithCopyOut("(" + returnType + ") " + call, copyOut);
+
+    if (returnGenerator.isMemorySegment())
+      return returnWithCopyOut("(MemorySegment) " + call, copyOut);
+
+    if (returnGenerator.isRecord())
+      return returnWithCopyOut(recordExpression(returnType, call), copyOut);
+
+    if (returnGenerator.isCFString())
+      return cfStringInvoke(call, copyOut);
+
+    if (returnGenerator.isString())
+      return returnWithCopyOut(call, copyOut); // TODO
+
+    if (returnGenerator.isForeignMemory())
+      return returnWithCopyOut(foreignMemoryExpression(returnType, call),
+          copyOut);
+
+    // returnType.getKind() == TypeKind.VOID
+    return statementWithCopyOut(call, copyOut);
+  }
+
+  private String params() {
+    String newLine = "\n    ";
 
     boolean needsLocalAllocator =
         returnGenerator.isRecord() && returnGenerator.isValue();
@@ -145,66 +179,81 @@ class ExecutableGenerator {
             ? "(SegmentAllocator) ff$arena" : null),
         parameterGenerators.stream().map(VariableGenerator::invoke));
 
-    var params = paramsList.collect(joining("," + newLine, newLine, ""));
+    return paramsList.collect(joining("," + newLine, newLine, ""));
+  }
 
-    if (returnGenerator.isPrimitive())
-      return "return (" + returnType + ") " + methodHandleName
-          + ".invokeExact(" + params + ");";
+  private String returnWithCopyOut(String expression, String copyOut) {
+    if (copyOut.isEmpty())
+      return "return " + expression + ";";
 
-    if (returnGenerator.isMemorySegment())
-      return "return (MemorySegment) " + methodHandleName
-          + ".invokeExact(" + params + ");";
+    return """
+        var ff$result = <expression>;
+        <copyOut>
+        return ff$result;"""
+        .replace("<expression>", expression)
+        .replace("<copyOut>", copyOut.stripTrailing());
+  }
 
-    if (returnGenerator.isRecord()) {
-      var type = (TypeElement) types.asElement(returnType);
-      if (returnGenerator.isValue())
-        return "return " + foreignClassName(type)
-            + ".fromMemorySegment((MemorySegment) " + methodHandleName
-            + ".invokeExact(" + params + "));";
+  private String statementWithCopyOut(String statement, String copyOut) {
+    if (copyOut.isEmpty())
+      return statement + ";";
 
-      return "return " + foreignClassName(type)
-          + ".fromMemorySegment(((MemorySegment) " + methodHandleName
-          + ".invokeExact(" + params + ")).reinterpret("
-          + foreignClassName(type) + ".FM$LAYOUT.byteSize()));";
-    }
+    return """
+        <statement>;
+        <copyOut>"""
+        .replace("<statement>", statement)
+        .replace("<copyOut>", copyOut.stripTrailing());
+  }
 
-    if (returnGenerator.isCFString()) {
-      var result = "(MemorySegment) " + methodHandleName
-          + ".invokeExact(" + params + ")";
+  private String recordExpression(
+      javax.lang.model.type.TypeMirror returnType, String call) {
+    var type = (TypeElement) types.asElement(returnType);
+    if (returnGenerator.isValue())
+      return foreignClassName(type)
+          + ".fromMemorySegment((MemorySegment) " + call + ")";
 
-      if (!returnGenerator.isOwnedCFString())
-        return "return org.alveolo.ffm.macos.CFStringSupport.toJavaString("
-            + result + ");";
+    return foreignClassName(type)
+        + ".fromMemorySegment(((MemorySegment) " + call + ").reinterpret("
+        + foreignClassName(type) + ".FM$LAYOUT.byteSize()))";
+  }
 
-      return """
-          var ff$CFString$r = <result>;
-                try {
-                  return org.alveolo.ffm.macos.CFStringSupport
-                      .toJavaString(ff$CFString$r);
-                } finally {
-                  org.alveolo.ffm.macos.CFStringSupport.release(ff$CFString$r);
-                }"""
-          .replace("<result>", result);
-    }
+  private String cfStringInvoke(String call, String copyOut) {
+    var result = "(MemorySegment) " + call;
 
-    if (returnGenerator.isString())
-      return "return " + methodHandleName + ".invokeExact(" + params + ");"; // TODO
+    if (!returnGenerator.isOwnedCFString())
+      return returnWithCopyOut(
+          "org.alveolo.ffm.macos.CFStringSupport.toJavaString("
+              + result + ")",
+          copyOut);
 
-    if (returnGenerator.isForeignMemory()) {
-      var type = (TypeElement) types.asElement(returnType);
-      if (returnGenerator.isValue())
-        return "return new " + foreignClassName(type)
-            + "((MemorySegment) " + methodHandleName
-            + ".invokeExact(" + params + "));";
+    var conversion = returnWithCopyOut("""
+        org.alveolo.ffm.macos.CFStringSupport
+            .toJavaString(ff$CFString$r)"""
+        .stripTrailing(), copyOut)
+        .indent(2)
+        .stripTrailing();
 
-      return "return new " + foreignClassName(type)
-          + "(((MemorySegment) " + methodHandleName
-          + ".invokeExact(" + params + ")).reinterpret("
-          + foreignClassName(type) + ".FM$LAYOUT.byteSize()));";
-    }
+    return """
+        var ff$CFString$r = <result>;
+        try {
+        <conversion>
+        } finally {
+          org.alveolo.ffm.macos.CFStringSupport.release(ff$CFString$r);
+        }"""
+        .replace("<result>", result)
+        .replace("<conversion>", conversion);
+  }
 
-    // returnType.getKind() == TypeKind.VOID
-    return methodHandleName + ".invokeExact(" + params + ");";
+  private String foreignMemoryExpression(
+      javax.lang.model.type.TypeMirror returnType, String call) {
+    var type = (TypeElement) types.asElement(returnType);
+    if (returnGenerator.isValue())
+      return "new " + foreignClassName(type)
+          + "((MemorySegment) " + call + ")";
+
+    return "new " + foreignClassName(type)
+        + "(((MemorySegment) " + call + ").reinterpret("
+        + foreignClassName(type) + ".FM$LAYOUT.byteSize()))";
   }
 
   boolean needsConfinedArena() {
@@ -237,7 +286,32 @@ class ExecutableGenerator {
     if (initializers.isEmpty()) return "";
 
     return initializers.stream()
-        .collect(joining("\n      ", "      ", "\n\n"));
+        .collect(joining("\n"));
+  }
+
+  private String arrayInitializers() {
+    var initializers = parameterGenerators.stream()
+        .filter(VariableGenerator::isArrayOrBuffer)
+        .map(VariableGenerator::arrayOrBufferInitializer)
+        .toList();
+
+    if (initializers.isEmpty()) return "";
+
+    return initializers.stream()
+        .collect(joining("\n"));
+  }
+
+  private String copyOut() {
+    var copyOut = parameterGenerators.stream()
+        .filter(VariableGenerator::isArrayOrBuffer)
+        .map(VariableGenerator::arrayOrBufferCopyOut)
+        .filter(s -> !s.isEmpty())
+        .toList();
+
+    if (copyOut.isEmpty()) return "";
+
+    return copyOut.stream()
+        .collect(joining("\n"));
   }
 
   private String cfStringFinally() {
@@ -300,6 +374,24 @@ class ExecutableGenerator {
 
         processingEnv.getMessager().printError(
             "@CFString(owned = true) is only supported on return types",
+            paramGen.element);
+        continue;
+      }
+
+      if (paramGen.hasConflictingTransferAnnotations()) {
+        hasUnsupported = true;
+
+        processingEnv.getMessager().printError(
+            "@In and @Out cannot be used together", paramGen.element);
+        continue;
+      }
+
+      if ((paramGen.hasInAnnotation() || paramGen.hasOutAnnotation())
+          && !paramGen.isArrayOrBuffer()) {
+        hasUnsupported = true;
+
+        processingEnv.getMessager().printError(
+            "@In and @Out are only supported on array and Buffer parameters",
             paramGen.element);
         continue;
       }

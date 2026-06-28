@@ -1,3 +1,351 @@
 # alveolo-ffm ![Maven build](https://github.com/alveolo/alveolo-ffm/actions/workflows/maven.yml/badge.svg)
 
-APT Generator for simplifying use of Java Foreign Function and Memory API
+Alveolo FFM is a small annotation-processor layer over the Java Foreign
+Function and Memory API. It lets you describe native functions, C structs,
+unions, buffers, and library loading in ordinary Java declarations, then
+generates the repetitive `Linker`, `FunctionDescriptor`, `MemoryLayout`,
+`VarHandle`, and copy glue for you.
+
+The goal is not to hide FFM. The generated code still uses Java's native FFM
+types where they matter. The goal is to keep binding code readable:
+
+```java
+@Library("affm_test")
+@ForeignInterface
+public interface NativeMath {
+  int add_ints(int left, int right);
+
+  @ForeignName("scale_ints")
+  void scale(int[] values, int count, int factor);
+}
+```
+
+The processor generates `NativeMathFFM`, with a ready-to-use singleton:
+
+```java
+var sum = NativeMathFFM.INSTANCE.add_ints(19, 23);
+
+var values = new int[] {1, 2, 3};
+NativeMathFFM.INSTANCE.scale(values, values.length, 10);
+// values == {10, 20, 30}
+```
+
+## What It Generates
+
+- `@ForeignInterface` bindings for native functions.
+- `@ForeignStruct` and `@ForeignUnion` memory wrappers.
+- C name mapping with `@ForeignName`.
+- Native library lookup with `@Library`.
+- Pass-by-value and pass-by-address control with `@Value` and `@Address`.
+- Java array and `java.nio.*Buffer` pointer parameters.
+- Input/output transfer control with `@In`, `@Out`, and `@Sequence`.
+- UTF-8 native string parameters.
+- macOS CoreFoundation `CFStringRef` helpers.
+
+Generated names are intentionally predictable:
+
+- `NativeMath` -> `NativeMathFFM`
+- `timeval` -> `timevalFM`
+- `Pair` -> `PairFM`
+
+## Requirements
+
+- Java 25
+- Maven
+- Native access enabled when running code that calls FFM
+
+For unnamed-module applications and tests, pass:
+
+```text
+--enable-native-access=ALL-UNNAMED
+```
+
+For named modules, enable native access for the module that uses the generated
+bindings.
+
+## Maven Setup
+
+Add the core artifact as a dependency and the processor as an annotation
+processor:
+
+```xml
+<properties>
+  <maven.compiler.release>25</maven.compiler.release>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>org.alveolo.ffm</groupId>
+    <artifactId>alveolo-ffm-core</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+  </dependency>
+</dependencies>
+
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.13.0</version>
+      <configuration>
+        <annotationProcessorPaths>
+          <path>
+            <groupId>org.alveolo.ffm</groupId>
+            <artifactId>alveolo-ffm-processor</artifactId>
+            <version>0.0.2-SNAPSHOT</version>
+          </path>
+        </annotationProcessorPaths>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+
+The core module exports:
+
+```java
+module org.alveolo.ffm {
+  exports org.alveolo.ffm;
+  exports org.alveolo.ffm.macos;
+}
+```
+
+## Native Functions
+
+Declare an interface and mark it with `@ForeignInterface`:
+
+```java
+@ForeignInterface
+public interface LibC {
+  int abs(int number);
+
+  @ForeignName("strlen")
+  long stringLength(String utf8z);
+}
+```
+
+Generated code uses `Linker.nativeLinker()` and `downcallHandle(...)`.
+Methods on the source interface become methods on the generated implementation:
+
+```java
+var length = LibCFFM.INSTANCE.stringLength("hello");
+```
+
+Default and static methods are ignored by the processor, so the interface can
+still contain ordinary Java helpers.
+
+## Library Loading
+
+Without `@Library`, generated bindings use the platform default lookup. Add
+`@Library` when symbols live in a specific native library:
+
+```java
+@Library("affm_test")
+@ForeignInterface
+public interface AffmTest {
+  int add_ints(int left, int right);
+}
+```
+
+`@Library("name")` maps to the platform library file name:
+
+- macOS: `libname.dylib`
+- Linux: `libname.so`
+- Windows: `name.dll`
+
+For test-local or application-local native libraries, set:
+
+```text
+-Daffm.library.path=/path/to/native/libs
+```
+
+You can also load by path or, on macOS, by framework:
+
+```java
+@Library(value = "CoreFoundation", kind = Library.Kind.FRAMEWORK)
+@ForeignInterface
+public interface CoreFoundation {
+  double CFAbsoluteTimeGetCurrent();
+}
+```
+
+Multiple `@Library` annotations are allowed. The generated lookup combines the
+matching libraries and falls back to the platform default lookup when no library
+entry applies.
+
+## Structs and Unions
+
+Use `@ForeignStruct` for C structs. Records are convenient for value-style data:
+
+```java
+@ForeignStruct
+public record div_t(int quot, int rem) {}
+```
+
+The processor generates a layout helper with:
+
+- `FM$LAYOUT`
+- path elements and var handles
+- `allocate(...)`
+- record conversion helpers
+
+For mutable memory-backed wrappers, use an interface:
+
+```java
+@ForeignStruct
+public interface timeval {
+  int tv_sec();
+  timeval tv_sec(int value);
+
+  int tv_usec();
+  timeval tv_usec(int value);
+}
+```
+
+Generated usage:
+
+```java
+try (var arena = Arena.ofConfined()) {
+  var tv = new timevalFM(arena)
+      .tv_sec(1)
+      .tv_usec(500);
+}
+```
+
+Use `@ForeignUnion` when fields share storage:
+
+```java
+@ForeignUnion
+public interface NumberBits {
+  int i();
+  NumberBits i(int value);
+
+  float f();
+  NumberBits f(float value);
+}
+```
+
+## Value vs Address
+
+The processor has defaults that match the common Java shape:
+
+- records are value-like
+- interfaces are address-like memory wrappers
+
+Override that with `@Value` or `@Address` on a type use:
+
+```java
+@ForeignInterface
+public interface NativePairs {
+  int pair_sum(PairR value);
+
+  int pair_ptr_sum(@Address PairR ref);
+
+  @Value PairS make_pair(
+      SegmentAllocator allocator, int left, int right);
+
+  int pair_sum_interface(@Value PairS value);
+}
+```
+
+If a generated wrapper needs caller-owned memory for a returned value, the
+processor requires a `SegmentAllocator` parameter and reports a compile error if
+it is missing.
+
+## Arrays and Buffers
+
+Primitive arrays and typed NIO buffers can be used as pointer parameters:
+
+```java
+@ForeignInterface
+public interface Samples {
+  void scale(int[] values);
+
+  int sum(@In @Sequence(3) int[] values);
+
+  void fill(@Out @Sequence(2) int[] values);
+
+  void increment(ByteBuffer values);
+
+  @ForeignName("fill_two_ints")
+  void fill(@Out @Sequence(2) IntBuffer values);
+}
+```
+
+Supported array element types:
+
+```text
+byte, char, short, int, long, float, double
+```
+
+Supported buffer types:
+
+```text
+ByteBuffer, CharBuffer, ShortBuffer, IntBuffer,
+LongBuffer, FloatBuffer, DoubleBuffer
+```
+
+Transfer rules:
+
+- unannotated arrays and heap buffers are copied in before the native call and
+  copied out after the call
+- `@In` copies in only
+- `@Out` copies out only
+- direct buffers are passed directly with `MemorySegment.ofBuffer(...)`
+- `@In` and `@Out` do not change direct-buffer behavior, because no copy is
+  performed
+
+`@Sequence(n)` validates the Java argument size:
+
+- arrays use `array.length`
+- buffers use `buffer.remaining()`
+
+Without `@Sequence`, the generated temporary native segment uses the passed
+array length or buffer remaining size.
+
+## CoreFoundation Strings
+
+On macOS, `org.alveolo.ffm.macos.CFString` can convert Java strings to
+`CFStringRef` parameters:
+
+```java
+@Library(value = "CoreFoundation", kind = Library.Kind.FRAMEWORK)
+@ForeignInterface
+public interface CoreStrings {
+  long CFStringGetLength(@CFString String value);
+
+  @ForeignName("CFStringCreateWithCString")
+  @CFString(owned = true)
+  String create(MemorySegment allocator, String cString, int encoding);
+}
+```
+
+Parameter `@CFString String` values are converted before the call and released
+afterwards. Return values are borrowed by default; set `owned = true` for
+CoreFoundation Create/Copy-rule returns that the generated wrapper must release.
+
+## Development
+
+Build everything:
+
+```sh
+mvn clean install
+```
+
+Run the processor-focused tests:
+
+```sh
+mvn -pl processor -am test
+```
+
+The benchmark module contains end-to-end native tests. They compile a small C
+library during the JUnit setup and exercise generated bindings against the real
+FFM runtime.
+
+## Status
+
+This project targets Java 25 and is intentionally small. The generated code is
+plain Java source, so when something looks surprising, inspect the generated
+`*FFM` and `*FM` classes first. The library is most useful when you want FFM's
+native performance and ownership model, but you do not want every binding file
+to hand-write the same boilerplate.

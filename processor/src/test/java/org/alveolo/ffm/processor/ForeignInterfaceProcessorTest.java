@@ -44,6 +44,14 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesArrayParameterFFM() {
+    var c = compile("interface/arrays/ArrayParameters.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.ArrayParametersFFM",
+        "interface/arrays/ArrayParametersFFM.java");
+  }
+
+  @Test
   void generatesMacFrameworkFFM() {
     var c = compile("interface/CoreFramework.java");
     assertThat(c).succeeded();
@@ -172,6 +180,37 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
 
     assertThat(c).hadErrorContaining(
         "@CFString(owned = true) is only supported on return types");
+  }
+
+  @Test
+  void failsWhenInAndOutAreUsedTogether() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.In @org.alveolo.ffm.Out int[] values);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining("@In and @Out cannot be used together");
+  }
+
+  @Test
+  void failsWhenInOrOutIsUsedOnScalarParameter() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.Out int value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@In and @Out are only supported on array and Buffer parameters");
   }
 
   @Test

@@ -18,8 +18,10 @@ import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.ForeignName;
 import org.alveolo.ffm.ForeignStruct;
 import org.alveolo.ffm.ForeignUnion;
+import org.alveolo.ffm.In;
 import org.alveolo.ffm.Libraries;
 import org.alveolo.ffm.Library;
+import org.alveolo.ffm.Out;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.macos.CFString;
 import org.alveolo.ffm.macos.CFStringSupport;
@@ -35,6 +37,8 @@ abstract class AbstractProcessorTest {
     Libraries.class,
     Library.class,
     Address.class,
+    In.class,
+    Out.class,
     Sequence.class,
     CFString.class,
     CFStringSupport.class,

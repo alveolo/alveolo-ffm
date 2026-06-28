@@ -6,6 +6,8 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
@@ -128,23 +130,48 @@ class TypeGenerator {
     };
   }
 
-  private static long sequence(TypeMirror typeMirror) {
-    if (typeMirror.getKind() == TypeKind.ARRAY)
-      return sequence(((ArrayType) typeMirror).getComponentType());
+  static long sequence(TypeMirror typeMirror) {
+    return sequence(typeMirror, null);
+  }
 
-    for (var annotationMirror : typeMirror.getAnnotationMirrors()) {
+  static long sequence(TypeMirror typeMirror, Element element) {
+    var value = sequenceValue(typeMirror, element);
+    return value == null ? 1 : value;
+  }
+
+  static boolean hasSequence(TypeMirror typeMirror, Element element) {
+    return sequenceValue(typeMirror, element) != null;
+  }
+
+  private static Long sequenceValue(TypeMirror typeMirror, Element element) {
+    if (element != null) {
+      var elementValue = sequenceValue(element.getAnnotationMirrors());
+      if (elementValue != null) return elementValue;
+    }
+
+    var typeValue = sequenceValue(typeMirror.getAnnotationMirrors());
+    if (typeValue != null) return typeValue;
+
+    if (typeMirror.getKind() == TypeKind.ARRAY)
+      return sequenceValue(((ArrayType) typeMirror).getComponentType(), null);
+
+    return null;
+  }
+
+  private static Long sequenceValue(
+      Iterable<? extends AnnotationMirror> annotationMirrors) {
+    for (var annotationMirror : annotationMirrors) {
       if (annotationMirror.getAnnotationType().toString()
-          .equals(Sequence.class.getCanonicalName()))
+        .equals(Sequence.class.getCanonicalName()))
         return annotationMirror.getElementValues().entrySet().stream()
             .filter(e -> e.getKey().getSimpleName().toString().equals("value"))
             .map(e -> e.getValue())
             .map(v -> v.getValue())
             .map(Long.class::cast)
-            .findFirst().orElseThrow();
+            .findFirst().orElse(1L);
     }
 
-    return 1;
-    // throw new IllegalArgumentException("Missing @Sequence annotation");
+    return null;
   }
 
   // /// Checks if using the type in a call needs allocator.

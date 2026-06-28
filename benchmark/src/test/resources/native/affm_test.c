@@ -51,3 +51,26 @@ EXPORT int pair_box_value_sum(pair_box_value value) {
 EXPORT int pair_box_ptr_sum(pair_box_ptr value) {
   return pair_ptr_sum(value.pair);
 }
+
+EXPORT void scale_ints(int32_t* values, int32_t count, int32_t factor) {
+  for (int32_t i = 0; i < count; i++) {
+    values[i] *= factor;
+  }
+}
+
+EXPORT int32_t sum_three_and_clobber(int32_t* values) {
+  int32_t result = values[0] + values[1] + values[2];
+  values[0] = 777;
+  return result;
+}
+
+EXPORT void fill_two_ints(int32_t* values, int32_t start) {
+  values[0] = start;
+  values[1] = start + 1;
+}
+
+EXPORT void increment_bytes(uint8_t* values, int32_t count) {
+  for (int32_t i = 0; i < count; i++) {
+    values[i] += 1;
+  }
+}

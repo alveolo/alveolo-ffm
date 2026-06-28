@@ -2,11 +2,15 @@ package org.alveolo.ffm.benchmark.nativecall;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.lang.foreign.Arena;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -132,6 +136,80 @@ class NativeSharedLibraryTest {
       assertEquals(18, AffmTestFFM.INSTANCE
           .pair_box_interface_value_sum(new PairBoxIV(pair)));
     }
+  }
+
+  @Test
+  void copiesArrayParameterInAndOutByDefault() {
+    var values = new int[] {1, 2, 3};
+
+    AffmTestFFM.INSTANCE.scale_ints(values, values.length, 10);
+
+    assertArrayEquals(new int[] {10, 20, 30}, values);
+  }
+
+  @Test
+  void copiesInArrayParameterOnlyWhenAnnotatedIn() {
+    var values = new int[] {1, 2, 3};
+
+    assertEquals(6, AffmTestFFM.INSTANCE.sum_three_and_clobber(values));
+
+    assertArrayEquals(new int[] {1, 2, 3}, values);
+  }
+
+  @Test
+  void copiesOutArrayParameterOnlyWhenAnnotatedOut() {
+    var values = new int[] {100, 200};
+
+    AffmTestFFM.INSTANCE.fill_two_ints(values, 7);
+
+    assertArrayEquals(new int[] {7, 8}, values);
+  }
+
+  @Test
+  void rejectsArrayParameterWithWrongSequenceLength() {
+    var values = new int[] {100};
+
+    assertThrows(IllegalArgumentException.class,
+        () -> AffmTestFFM.INSTANCE.fill_two_ints(values, 7));
+  }
+
+  @Test
+  void copiesHeapBufferParameterInAndOutByDefault() {
+    var values = ByteBuffer.wrap(new byte[] {1, 2, 3});
+    values.position(1);
+
+    AffmTestFFM.INSTANCE.increment_bytes(values, values.remaining());
+
+    assertEquals(1, values.get(0));
+    assertEquals(3, values.get(1));
+    assertEquals(4, values.get(2));
+    assertEquals(1, values.position());
+  }
+
+  @Test
+  void usesDirectBufferParameterWithoutCopiesByDefault() {
+    var values = ByteBuffer.allocateDirect(3);
+    values.put(0, (byte) 1);
+    values.put(1, (byte) 2);
+    values.put(2, (byte) 3);
+    values.position(1);
+
+    AffmTestFFM.INSTANCE.increment_bytes(values, values.remaining());
+
+    assertEquals(1, values.get(0));
+    assertEquals(3, values.get(1));
+    assertEquals(4, values.get(2));
+    assertEquals(1, values.position());
+  }
+
+  @Test
+  void copiesOutHeapTypedBufferWhenAnnotatedOut() {
+    var values = IntBuffer.allocate(2);
+
+    AffmTestFFM.INSTANCE.fill_two_int_buffer(values, 19);
+
+    assertEquals(19, values.get(0));
+    assertEquals(20, values.get(1));
   }
 
   private static List<List<String>> compilers() {
