@@ -112,12 +112,10 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
         out.write("""
               private static final SymbolLookup FF$LOOKUP =
                   FF$LINKER.defaultLookup();
-
             """);
       } else {
         out.write("""
               private static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
-
             """
         );
         writeLookupInitializer(out, srcSimpleClassName, libraries);
@@ -188,14 +186,13 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       Writer out, String sourceClassName, List<Library> libraries)
       throws IOException {
     out.write("""
+
           private static SymbolLookup FF$LOOKUP() {
             return org.alveolo.ffm.ForeignUtils.libraryLookup(
                 <sourceClass>.class,
                 FF$LINKER.defaultLookup(),
-        <libraries>
-            );
+        <libraries>);
           }
-
         """
         .replace("<sourceClass>", sourceClassName)
         .replace("<libraries>", librarySpecs(libraries)
@@ -221,8 +218,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
             <value>, <version>,
             <os>,
-            org.alveolo.ffm.Library.Kind.<kind><overrides>
-        )
+            org.alveolo.ffm.Library.Kind.<kind><overrides>)
         """
         .replace("<value>", quote(library.value()))
         .replace("<version>", quote(library.version()))

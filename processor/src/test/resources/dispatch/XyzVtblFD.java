@@ -19,18 +19,14 @@ public final class XyzVtblFD implements XyzVtbl {
 
   public XyzVtblFD(MemorySegment ms) {
     this.ms = ms;
-    this.FF$MH$0 = java.lang.invoke.MethodHandles.insertArguments(
-        FF$MD$0, 0,
-        this.ms.getAtIndex(ValueLayout.ADDRESS, 1L));
-    this.FF$MH$1 = java.lang.invoke.MethodHandles.insertArguments(
-        FF$MD$1, 0,
-        this.ms.getAtIndex(ValueLayout.ADDRESS, 3L));
-    this.FF$MH$2 = java.lang.invoke.MethodHandles.insertArguments(
-        FF$MD$2, 0,
-        this.ms.getAtIndex(ValueLayout.ADDRESS, 2L));
-    this.FF$MH$3 = java.lang.invoke.MethodHandles.insertArguments(
-        FF$MD$3, 0,
-        this.ms.getAtIndex(ValueLayout.ADDRESS, 0L));
+    this.FF$MH$0 = FF$MD$0.bindTo(
+        ms.getAtIndex(ValueLayout.ADDRESS, 1L));
+    this.FF$MH$1 = FF$MD$1.bindTo(
+        ms.getAtIndex(ValueLayout.ADDRESS, 3L));
+    this.FF$MH$2 = FF$MD$2.bindTo(
+        ms.getAtIndex(ValueLayout.ADDRESS, 2L));
+    this.FF$MH$3 = FF$MD$3.bindTo(
+        ms.getAtIndex(ValueLayout.ADDRESS, 0L));
   }
 
   private static final MethodHandle FF$MD$0 = FF$LINKER.downcallHandle(

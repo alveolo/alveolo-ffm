@@ -30,12 +30,13 @@ public final class CoreStringsFFM implements CoreStrings {
           ValueLayout.JAVA_LONG,
           ValueLayout.ADDRESS));
 
-  public long CFStringGetLength(java.lang.String value) {
+  public long CFStringGetLength(
+      java.lang.String value) {
     MemorySegment ff$cfString$value = MemorySegment.NULL;
     try {
       ff$cfString$value = org.alveolo.ffm.macos.CFStringSupport.toCFString(value);
-
-      return (long) FF$MH$0.invokeExact(ff$cfString$value);
+      return (long) FF$MH$0.invokeExact(
+          ff$cfString$value);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -53,16 +54,18 @@ public final class CoreStringsFFM implements CoreStrings {
           ValueLayout.ADDRESS,
           ValueLayout.JAVA_LONG));
 
-  public long compare(java.lang.String left, java.lang.String right,
+  public long compare(
+      java.lang.String left,
+      java.lang.String right,
       long options) {
     MemorySegment ff$cfString$left = MemorySegment.NULL;
     MemorySegment ff$cfString$right = MemorySegment.NULL;
-
     try {
       ff$cfString$left = org.alveolo.ffm.macos.CFStringSupport.toCFString(left);
       ff$cfString$right = org.alveolo.ffm.macos.CFStringSupport.toCFString(right);
-
-      return (long) FF$MH$1.invokeExact(ff$cfString$left, ff$cfString$right,
+      return (long) FF$MH$1.invokeExact(
+          ff$cfString$left,
+          ff$cfString$right,
           options);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
@@ -82,11 +85,15 @@ public final class CoreStringsFFM implements CoreStrings {
           ValueLayout.ADDRESS,
           ValueLayout.JAVA_INT));
 
-  public java.lang.String create(java.lang.foreign.MemorySegment allocator,
-      java.lang.String cString, int encoding) {
+  public java.lang.String create(
+      java.lang.foreign.MemorySegment allocator,
+      java.lang.String cString,
+      int encoding) {
     try (var ff$arena = Arena.ofConfined()) {
       var ff$CFString$r = (MemorySegment) FF$MH$2.invokeExact(
-          allocator, ff$arena.allocateFrom(cString), encoding);
+          allocator,
+          ff$arena.allocateFrom(cString),
+          encoding);
       try {
         return org.alveolo.ffm.macos.CFStringSupport
             .toJavaString(ff$CFString$r);

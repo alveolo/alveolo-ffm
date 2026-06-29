@@ -115,8 +115,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
       writeConstructor(out, simpleClassName, generators, methods);
 
       for (var i = 0; i < generators.size(); i++) {
-        writeMethodDescriptor(out, generators.get(i), i);
         var generator = generators.get(i);
+        writeMethodDescriptor(out, generator, i);
         out.write(generator.method());
       }
 
@@ -196,9 +196,9 @@ public class DispatchTableProcessor extends AbstractProcessor {
       java.io.Writer out, ExecutableGenerator generator, int index)
       throws IOException {
     out.write("""
+
           private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
               <descriptor>);
-
         """
         .replace("<mh>", "FF$MD$" + Integer.toString(index))
         .replace("<descriptor>", generator.descriptor()));
@@ -224,9 +224,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
     var result = new StringBuilder();
     for (var i = 0; i < generators.size(); i++) {
       result.append("""
-          this.<mh> = java.lang.invoke.MethodHandles.insertArguments(
-              FF$MD$<index>, 0,
-              this.ms.getAtIndex(ValueLayout.ADDRESS, <slot>L));
+          this.<mh> = FF$MD$<index>.bindTo(
+              ms.getAtIndex(ValueLayout.ADDRESS, <slot>L));
           """
           .replace("<mh>", generators.get(i).methodHandleName)
           .replace("<index>", Integer.toString(i))

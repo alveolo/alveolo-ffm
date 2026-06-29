@@ -1,5 +1,6 @@
 package org.alveolo.ffm.processor;
 
+import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
@@ -56,56 +57,53 @@ class ExecutableGenerator {
     if (hasErrors)
       return """
 
-          <signature> {
-            throw new RuntimeException("Check compile errors!");
-          }
+            <signature> {
+              throw new RuntimeException("Check compile errors!");
+            }
           """
           .replace("<signature>", signature());
 
-    var header = """
+    return methodHandleDeclaration() + """
+
+          <signature> {<declarations>
+            try <confinedArena>{
+              <body>
+            } catch (RuntimeException|Error ff$e) {
+              throw ff$e;
+            } catch (Throwable ff$t) {
+              throw new AssertionError(ff$t);
+            }<finallyBlock>
+          }
+        """
+        .replace("<signature>", signature())
+        .replace("<declarations>", declarations())
+        .replace("<confinedArena>", confinedArena())
+        .replace("<body>", methodBody())
+        .replace("<finallyBlock>", finallyBlock());
+  }
+
+  private String methodHandleDeclaration() {
+    if (instanceMethodHandle) return """
+
+          private final MethodHandle <mh>;
+        """
+        .replace("<mh>", methodHandleName);
+
+    return """
 
           private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
               FF$LOOKUP.find("<name>").get(),
               <descriptor>);
-
-          <signature> {
         """
         .replace("<mh>", methodHandleName)
         .replace("<name>", name(element))
-        .replace("<descriptor>", descriptor())
-        .replace("<signature>", signature());
-
-    if (instanceMethodHandle) {
-      header = """
-
-          private final MethodHandle <mh>;
-
-          <signature> {
-        """
-          .replace("<mh>", methodHandleName)
-          .replace("<signature>", signature());
-    }
-
-    return header
-        + cfStringDeclarations()
-        + "    try " + allocatorDefinition() + "{\n"
-        + methodBody()
-        + """
-              } catch (RuntimeException|Error ff$e) {
-                throw ff$e;
-              } catch (Throwable ff$t) {
-                throw new AssertionError(ff$t);
-              }<cfStringFinally>
-            }
-          """
-            .replace("<cfStringFinally>", cfStringFinally());
+        .replace("<descriptor>", descriptor());
   }
 
   private String methodBody() {
-    return Stream.of(cfStringInitializers(), arrayInitializers(), invoke())
-        .filter(not(String::isEmpty))
-        .collect(joining("\n"))
-        .indent(6);
+    return Stream.of(paramInitializers(), invoke())
+        .flatMap(identity())
+        .collect(joining("\n      ", "", ""));
   }
 
   private String name(ExecutableElement method) {
@@ -148,19 +146,20 @@ class ExecutableGenerator {
   }
 
   private String returnTypeName() {
-    if (returnGenerator.isCFString()) return returnGenerator.typeName();
+    if (returnGenerator.isCFString())
+      return returnGenerator.typeName();
 
     return element.getReturnType().toString();
   }
 
-  private String allocatorDefinition() {
+  private String confinedArena() {
     return needsConfinedArena() ? "(var ff$arena = Arena.ofConfined()) " : "";
   }
 
-  private String invoke() {
+  private Stream<String> invoke() {
     var returnType = element.getReturnType();
     var call = methodHandleName + ".invokeExact(" + params() + ")";
-    var copyOut = copyOut();
+    var copyOut = copyOut().toList();
 
     if (returnGenerator.isPrimitive())
       return returnWithCopyOut("(" + returnType + ") " + call, copyOut);
@@ -201,32 +200,31 @@ class ExecutableGenerator {
     return paramsList.collect(joining("," + newLine, newLine, ""));
   }
 
-  private String returnWithCopyOut(String expression, String copyOut) {
+  private Stream<String> returnWithCopyOut(
+      String expression, List<String> copyOut) {
     if (copyOut.isEmpty())
-      return "return " + expression + ";";
+      return ("return " + expression + ";").lines();
 
-    return """
-        var ff$result = <expression>;
-        <copyOut>
-        return ff$result;"""
-        .replace("<expression>", expression)
-        .replace("<copyOut>", copyOut.stripTrailing());
+    var all = Stream.of(
+        ("var ff$result = " + expression + ";").lines(),
+        copyOut.stream(),
+        Stream.of("return ff$result;"));
+
+    return all.flatMap(identity());
   }
 
-  private String statementWithCopyOut(String statement, String copyOut) {
-    if (copyOut.isEmpty())
-      return statement + ";";
+  private Stream<String> statementWithCopyOut(
+      String statement, List<String> copyOut) {
+    var base = (statement + ";").lines();
+    if (copyOut.isEmpty()) return base;
 
-    return """
-        <statement>;
-        <copyOut>"""
-        .replace("<statement>", statement)
-        .replace("<copyOut>", copyOut.stripTrailing());
+    return Stream.of(base, copyOut.stream()).flatMap(identity());
   }
 
   private String recordExpression(
       javax.lang.model.type.TypeMirror returnType, String call) {
     var type = (TypeElement) types.asElement(returnType);
+
     if (returnGenerator.isValue())
       return foreignClassName(type)
           + ".fromMemorySegment((MemorySegment) " + call + ")";
@@ -235,21 +233,17 @@ class ExecutableGenerator {
         + ".reinterpret((MemorySegment) " + call + ")";
   }
 
-  private String cfStringInvoke(String call, String copyOut) {
+  private Stream<String> cfStringInvoke(String call, List<String> copyOut) {
     var result = "(MemorySegment) " + call;
 
     if (!returnGenerator.isOwnedCFString())
       return returnWithCopyOut(
-          "org.alveolo.ffm.macos.CFStringSupport.toJavaString("
-              + result + ")",
+          "org.alveolo.ffm.macos.CFStringSupport.toJavaString(" + result + ")",
           copyOut);
 
     var conversion = returnWithCopyOut("""
         org.alveolo.ffm.macos.CFStringSupport
-            .toJavaString(ff$CFString$r)"""
-        .stripTrailing(), copyOut)
-        .indent(2)
-        .stripTrailing();
+            .toJavaString(ff$CFString$r)""", copyOut);
 
     return """
         var ff$CFString$r = <result>;
@@ -259,7 +253,8 @@ class ExecutableGenerator {
           org.alveolo.ffm.macos.CFStringSupport.release(ff$CFString$r);
         }"""
         .replace("<result>", result)
-        .replace("<conversion>", conversion);
+        .replace("<conversion>", conversion.collect(joining("\n  ", "  ", "")))
+        .lines();
   }
 
   private String foreignMemoryExpression(
@@ -279,7 +274,7 @@ class ExecutableGenerator {
             .anyMatch(VariableGenerator::needsConfinedArena);
   }
 
-  private String cfStringDeclarations() {
+  private String declarations() {
     var declarations = parameterGenerators.stream()
         .filter(VariableGenerator::isCFString)
         .map(p -> "MemorySegment " + p.cfStringName()
@@ -289,49 +284,33 @@ class ExecutableGenerator {
     if (declarations.isEmpty()) return "";
 
     return declarations.stream()
-        .collect(joining("\n    ", "    ", "\n\n"));
+        .collect(joining("\n    ", "\n    ", ""));
   }
 
-  private String cfStringInitializers() {
-    var initializers = parameterGenerators.stream()
-        .filter(VariableGenerator::isCFString)
-        .map(p -> p.cfStringName()
-            + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
-            + p.name() + ");")
-        .toList();
+  private Stream<String> paramInitializers() {
+    return parameterGenerators.stream().flatMap(this::paramInitializers);
 
-    if (initializers.isEmpty()) return "";
-
-    return initializers.stream()
-        .collect(joining("\n"));
   }
 
-  private String arrayInitializers() {
-    var initializers = parameterGenerators.stream()
-        .filter(VariableGenerator::isArrayOrBuffer)
-        .map(VariableGenerator::arrayOrBufferInitializer)
-        .toList();
+  private Stream<String> paramInitializers(VariableGenerator p) {
+    if (p.isCFString()) return Stream.of(p.cfStringName()
+        + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
+        + p.name() + ");");
 
-    if (initializers.isEmpty()) return "";
+    if (p.isArrayOrBuffer())
+      return p.arrayOrBufferInitializer().lines();
 
-    return initializers.stream()
-        .collect(joining("\n"));
+    return Stream.empty();
   }
 
-  private String copyOut() {
-    var copyOut = parameterGenerators.stream()
+  private Stream<String> copyOut() {
+    return parameterGenerators.stream()
         .filter(VariableGenerator::isArrayOrBuffer)
         .map(VariableGenerator::arrayOrBufferCopyOut)
-        .filter(s -> !s.isEmpty())
-        .toList();
-
-    if (copyOut.isEmpty()) return "";
-
-    return copyOut.stream()
-        .collect(joining("\n"));
+        .flatMap(String::lines);
   }
 
-  private String cfStringFinally() {
+  private String finallyBlock() {
     var releases = parameterGenerators.stream()
         .filter(VariableGenerator::isCFString)
         .map(p -> "      org.alveolo.ffm.macos.CFStringSupport.release("

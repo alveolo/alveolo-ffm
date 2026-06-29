@@ -15,7 +15,6 @@ public final class ArrayParametersFFM implements ArrayParameters {
   private static final SymbolLookup FF$LOOKUP =
       FF$LINKER.defaultLookup();
 
-
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.find("scale").get(),
       FunctionDescriptor.ofVoid(

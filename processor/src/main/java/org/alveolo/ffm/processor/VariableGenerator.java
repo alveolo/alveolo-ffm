@@ -235,7 +235,8 @@ class VariableGenerator extends TypeGenerator {
             <name>.put(<position> + <index>,
                 <segment>.getAtIndex(<layout>, <index>));
           }
-        }"""
+        }
+        """
         .replace("<direct>", directName())
         .replace("<index>", indexName())
         .replace("<size>", sizeName())
@@ -251,7 +252,7 @@ class VariableGenerator extends TypeGenerator {
   }
 
   private String elementLayout() {
-    if (typeMirror.getKind() == TypeKind.ARRAY) {
+    if (typeMirror.getKind() == TypeKind.ARRAY)
       return switch (((ArrayType) typeMirror).getComponentType().getKind()) {
         case BYTE -> "ValueLayout.JAVA_BYTE";
         case CHAR -> "ValueLayout.JAVA_CHAR";
@@ -262,7 +263,6 @@ class VariableGenerator extends TypeGenerator {
         case DOUBLE -> "ValueLayout.JAVA_DOUBLE";
         default -> null;
       };
-    }
 
     return switch (typeName()) {
       case "java.nio.ByteBuffer" -> "ValueLayout.JAVA_BYTE";
