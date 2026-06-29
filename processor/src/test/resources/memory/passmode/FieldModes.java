@@ -1,28 +1,28 @@
 package pkg;
 
 import org.alveolo.ffm.Address;
-import org.alveolo.ffm.ForeignStruct;
+import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Value;
 
-@ForeignStruct
+@Struct
 record InnerRecord(int x) {}
 
-@ForeignStruct
+@Struct
 interface InnerInterface {
   int x();
 }
 
 @Address
-@ForeignStruct
+@Struct
 record TypeAddressRecord(int x) {}
 
 @Value
-@ForeignStruct
+@Struct
 interface TypeValueInterface {
   int x();
 }
 
-@ForeignStruct
+@Struct
 public record FieldModes(
     InnerRecord recordDefault,
     InnerInterface interfaceDefault,
@@ -32,7 +32,7 @@ public record FieldModes(
     @Address TypeValueInterface fieldOverridesTypeValue
 ) {}
 
-@ForeignStruct
+@Struct
 interface FieldModeAccessors {
   InnerRecord recordDefault();
 

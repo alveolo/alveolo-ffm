@@ -10,7 +10,7 @@ public interface LibC {
   default int skip() { return abs(0); }
   static int ignore() { return 0; }
 
-  @ForeignName("abs")
+  @Symbol("abs")
   int renamed(int number);
 
   div_t div(int numerator, int denominator);

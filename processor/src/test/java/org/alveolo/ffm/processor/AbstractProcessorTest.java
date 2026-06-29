@@ -16,15 +16,15 @@ import javax.tools.JavaFileObject;
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.ForeignInterface;
-import org.alveolo.ffm.ForeignName;
-import org.alveolo.ffm.ForeignStruct;
-import org.alveolo.ffm.ForeignUnion;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Libraries;
 import org.alveolo.ffm.Library;
 import org.alveolo.ffm.Out;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.Slot;
+import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.Symbol;
+import org.alveolo.ffm.Union;
 import org.alveolo.ffm.macos.CFString;
 import org.alveolo.ffm.macos.CFStringSupport;
 
@@ -32,20 +32,20 @@ import com.google.testing.compile.Compilation;
 
 abstract class AbstractProcessorTest {
   private static final Class<?>[] CORE_CLASSES = {
+    Address.class,
+    CFString.class,
+    CFStringSupport.class,
     DispatchTable.class,
     ForeignInterface.class,
-    ForeignName.class,
-    ForeignStruct.class,
-    ForeignUnion.class,
     Libraries.class,
     Library.class,
-    Address.class,
     In.class,
     Out.class,
     Sequence.class,
     Slot.class,
-    CFString.class,
-    CFStringSupport.class,
+    Struct.class,
+    Symbol.class,
+    Union.class,
   };
 
   protected JavaFileObject forTestResource(String resource) {

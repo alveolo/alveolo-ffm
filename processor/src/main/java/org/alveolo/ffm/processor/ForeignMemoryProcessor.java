@@ -29,13 +29,13 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
-import org.alveolo.ffm.ForeignStruct;
-import org.alveolo.ffm.ForeignUnion;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.Union;
 
 @SupportedAnnotationTypes({
-  "org.alveolo.ffm.ForeignStruct",
-  "org.alveolo.ffm.ForeignUnion",
+  "org.alveolo.ffm.Struct",
+  "org.alveolo.ffm.Union",
 })
 @SupportedSourceVersion(RELEASE_25)
 public class ForeignMemoryProcessor extends AbstractProcessor {
@@ -64,10 +64,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             case INTERFACE:
             case RECORD:
               try {
-                if (type.getAnnotation(ForeignStruct.class) != null) {
+                if (type.getAnnotation(Struct.class) != null) {
                   writeFile(type, "structLayout");
                 }
-                if (type.getAnnotation(ForeignUnion.class) != null) {
+                if (type.getAnnotation(Union.class) != null) {
                   if (type.getKind() == ElementKind.RECORD) {
                     messager.printError("@" + annotation.getSimpleName()
                         + " can only be applied to an interface, not "
@@ -115,7 +115,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           && !enc.getModifiers().contains(STATIC)
           && !enc.getModifiers().contains(DEFAULT)) {
         String name = exe.getSimpleName().toString();
-        methodsByName.computeIfAbsent(name, k -> new ArrayList<>()).add(exe);
+        methodsByName.computeIfAbsent(name, _ -> new ArrayList<>()).add(exe);
       }
     }
 
@@ -741,8 +741,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .asElement(field.typeMirror());
 
     return typeEl != null
-        && (typeEl.getAnnotation(ForeignStruct.class) != null
-            || typeEl.getAnnotation(ForeignUnion.class) != null);
+        && (typeEl.getAnnotation(Struct.class) != null
+            || typeEl.getAnnotation(Union.class) != null);
   }
 
   private boolean isNestedValue(StructField field) {

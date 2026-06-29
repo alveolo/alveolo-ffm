@@ -15,7 +15,7 @@ types where they matter. The goal is to keep binding code readable:
 public interface NativeMath {
   int add_ints(int left, int right);
 
-  @ForeignName("scale_ints")
+  @Symbol("scale_ints")
   void scale(int[] values, int count, int factor);
 }
 ```
@@ -33,8 +33,8 @@ NativeMathFFM.INSTANCE.scale(values, values.length, 10);
 ## What It Generates
 
 - `@ForeignInterface` bindings for native functions.
-- `@ForeignStruct` and `@ForeignUnion` memory wrappers.
-- C name mapping with `@ForeignName`.
+- `@Struct` and `@Union` memory wrappers.
+- C name mapping with `@Symbol`.
 - Native library lookup with `@Library`.
 - Pass-by-value and pass-by-address control with `@Value` and `@Address`.
 - Java array and `java.nio.*Buffer` pointer parameters.
@@ -119,7 +119,7 @@ Declare an interface and mark it with `@ForeignInterface`:
 public interface LibC {
   int abs(int number);
 
-  @ForeignName("strlen")
+  @Symbol("strlen")
   long stringLength(String utf8z);
 }
 ```
@@ -175,10 +175,10 @@ entry applies.
 
 ## Structs and Unions
 
-Use `@ForeignStruct` for C structs. Records are convenient for value-style data:
+Use `@Struct` for C structs. Records are convenient for value-style data:
 
 ```java
-@ForeignStruct
+@Struct
 public record div_t(int quot, int rem) {}
 ```
 
@@ -192,7 +192,7 @@ The processor generates a layout helper with:
 For mutable memory-backed wrappers, use an interface:
 
 ```java
-@ForeignStruct
+@Struct
 public interface timeval {
   int tv_sec();
   timeval tv_sec(int value);
@@ -212,10 +212,10 @@ try (var arena = Arena.ofConfined()) {
 }
 ```
 
-Use `@ForeignUnion` when fields share storage:
+Use `@Union` when fields share storage:
 
 ```java
-@ForeignUnion
+@Union
 public interface NumberBits {
   int i();
   NumberBits i(int value);
@@ -267,7 +267,7 @@ public interface Samples {
 
   void increment(ByteBuffer values);
 
-  @ForeignName("fill_two_ints")
+  @Symbol("fill_two_ints")
   void fill(@Out @Sequence(2) IntBuffer values);
 }
 ```
@@ -314,7 +314,7 @@ On macOS, `org.alveolo.ffm.macos.CFString` can convert Java strings to
 public interface CoreStrings {
   long CFStringGetLength(@CFString String value);
 
-  @ForeignName("CFStringCreateWithCString")
+  @Symbol("CFStringCreateWithCString")
   @CFString(owned = true)
   String create(MemorySegment allocator, String cString, int encoding);
 }

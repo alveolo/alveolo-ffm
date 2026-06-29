@@ -2,7 +2,7 @@ package pkg;
 
 import org.alveolo.ffm.*;
 
-@ForeignUnion
+@org.alveolo.ffm.Union
 public interface Union {
   int i();
   Union i(int value);

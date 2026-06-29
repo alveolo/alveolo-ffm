@@ -15,7 +15,7 @@ public final class PassModeFFM implements PassMode {
   private static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("recordDefault").get(),
+      FF$LOOKUP.findOrThrow("recordDefault"),
       FunctionDescriptor.of(
           pkg.RecordDefaultFM.FM$LAYOUT,
           pkg.RecordDefaultFM.FM$LAYOUT));
@@ -33,7 +33,7 @@ public final class PassModeFFM implements PassMode {
   }
 
   private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("recordAddress").get(),
+      FF$LOOKUP.findOrThrow("recordAddress"),
       FunctionDescriptor.of(
           ValueLayout.ADDRESS,
           ValueLayout.ADDRESS));
@@ -51,7 +51,7 @@ public final class PassModeFFM implements PassMode {
   }
 
   private static final MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("interfaceDefault").get(),
+      FF$LOOKUP.findOrThrow("interfaceDefault"),
       FunctionDescriptor.of(
           ValueLayout.ADDRESS,
           ValueLayout.ADDRESS));
@@ -69,7 +69,7 @@ public final class PassModeFFM implements PassMode {
   }
 
   private static final MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("interfaceValue").get(),
+      FF$LOOKUP.findOrThrow("interfaceValue"),
       FunctionDescriptor.of(
           pkg.InterfaceDefaultFM.FM$LAYOUT,
           pkg.InterfaceDefaultFM.FM$LAYOUT));
@@ -89,7 +89,7 @@ public final class PassModeFFM implements PassMode {
   }
 
   private static final MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("valueTypeUseOverridesAddressType").get(),
+      FF$LOOKUP.findOrThrow("valueTypeUseOverridesAddressType"),
       FunctionDescriptor.of(
           pkg.RecordAddressFM.FM$LAYOUT,
           pkg.RecordAddressFM.FM$LAYOUT));
@@ -108,7 +108,7 @@ public final class PassModeFFM implements PassMode {
   }
 
   private static final MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("addressTypeUseOverridesValueType").get(),
+      FF$LOOKUP.findOrThrow("addressTypeUseOverridesValueType"),
       FunctionDescriptor.of(
           ValueLayout.ADDRESS,
           ValueLayout.ADDRESS));

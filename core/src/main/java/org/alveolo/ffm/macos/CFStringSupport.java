@@ -22,37 +22,37 @@ public final class CFStringSupport {
 
   private static final MethodHandle CFStringCreateWithCString =
       LINKER.downcallHandle(
-          LOOKUP.find("CFStringCreateWithCString").get(),
+          LOOKUP.findOrThrow("CFStringCreateWithCString"),
           FunctionDescriptor.of(ValueLayout.ADDRESS,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
   private static final MethodHandle CFStringGetCStringPtr =
       LINKER.downcallHandle(
-          LOOKUP.find("CFStringGetCStringPtr").get(),
+          LOOKUP.findOrThrow("CFStringGetCStringPtr"),
           FunctionDescriptor.of(ValueLayout.ADDRESS,
               ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
   private static final MethodHandle CFStringGetLength =
       LINKER.downcallHandle(
-          LOOKUP.find("CFStringGetLength").get(),
+          LOOKUP.findOrThrow("CFStringGetLength"),
           FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
   private static final MethodHandle CFStringGetMaximumSizeForEncoding =
       LINKER.downcallHandle(
-          LOOKUP.find("CFStringGetMaximumSizeForEncoding").get(),
+          LOOKUP.findOrThrow("CFStringGetMaximumSizeForEncoding"),
           FunctionDescriptor.of(ValueLayout.JAVA_LONG,
               ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
 
   private static final MethodHandle CFStringGetCString =
       LINKER.downcallHandle(
-          LOOKUP.find("CFStringGetCString").get(),
+          LOOKUP.findOrThrow("CFStringGetCString"),
           FunctionDescriptor.of(ValueLayout.JAVA_BYTE,
               ValueLayout.ADDRESS, ValueLayout.ADDRESS,
               ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
 
   private static final MethodHandle CFRelease =
       LINKER.downcallHandle(
-          LOOKUP.find("CFRelease").get(),
+          LOOKUP.findOrThrow("CFRelease"),
           FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
   private CFStringSupport() {}

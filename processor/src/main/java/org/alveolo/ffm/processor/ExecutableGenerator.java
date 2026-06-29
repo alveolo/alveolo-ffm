@@ -16,7 +16,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Types;
 
-import org.alveolo.ffm.ForeignName;
+import org.alveolo.ffm.Symbol;
 
 class ExecutableGenerator {
   final ProcessingEnvironment processingEnv;
@@ -92,7 +92,7 @@ class ExecutableGenerator {
     return """
 
           private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
-              FF$LOOKUP.find("<name>").get(),
+              FF$LOOKUP.findOrThrow("<name>"),
               <descriptor>);
         """
         .replace("<mh>", methodHandleName)
@@ -107,7 +107,7 @@ class ExecutableGenerator {
   }
 
   private String name(ExecutableElement method) {
-    var name = method.getAnnotation(ForeignName.class);
+    var name = method.getAnnotation(Symbol.class);
 
     return name == null
         ? method.getSimpleName().toString()

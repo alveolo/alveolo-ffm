@@ -2,7 +2,7 @@ package pkg;
 
 import org.alveolo.ffm.*;
 
-@ForeignStruct
+@Struct
 public interface Inner {
   int a();
   Inner a(int value);

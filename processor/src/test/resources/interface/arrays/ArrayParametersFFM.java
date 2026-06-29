@@ -16,7 +16,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
       FF$LINKER.defaultLookup();
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("scale").get(),
+      FF$LOOKUP.findOrThrow("scale"),
       FunctionDescriptor.ofVoid(
           ValueLayout.ADDRESS));
 
@@ -37,7 +37,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("sum").get(),
+      FF$LOOKUP.findOrThrow("sum"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_INT,
           ValueLayout.ADDRESS));
@@ -61,7 +61,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("fill").get(),
+      FF$LOOKUP.findOrThrow("fill"),
       FunctionDescriptor.ofVoid(
           ValueLayout.ADDRESS));
 
@@ -84,7 +84,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("bytes").get(),
+      FF$LOOKUP.findOrThrow("bytes"),
       FunctionDescriptor.ofVoid(
           ValueLayout.ADDRESS));
 
@@ -119,7 +119,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("ints").get(),
+      FF$LOOKUP.findOrThrow("ints"),
       FunctionDescriptor.ofVoid(
           ValueLayout.ADDRESS));
 

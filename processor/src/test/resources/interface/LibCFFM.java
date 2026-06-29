@@ -15,7 +15,7 @@ public final class LibCFFM implements LibC {
   private static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("abs").get(),
+      FF$LOOKUP.findOrThrow("abs"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_INT,
           ValueLayout.JAVA_INT));
@@ -33,7 +33,7 @@ public final class LibCFFM implements LibC {
   }
 
   private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("abs").get(),
+      FF$LOOKUP.findOrThrow("abs"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_INT,
           ValueLayout.JAVA_INT));
@@ -51,7 +51,7 @@ public final class LibCFFM implements LibC {
   }
 
   private static final MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("div").get(),
+      FF$LOOKUP.findOrThrow("div"),
       FunctionDescriptor.of(
           pkg.div_tFM.FM$LAYOUT,
           ValueLayout.JAVA_INT,
@@ -73,7 +73,7 @@ public final class LibCFFM implements LibC {
   }
 
   private static final MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("ldiv").get(),
+      FF$LOOKUP.findOrThrow("ldiv"),
       FunctionDescriptor.of(
           pkg.ldiv_tFM.FM$LAYOUT,
           ValueLayout.JAVA_LONG,
@@ -98,7 +98,7 @@ public final class LibCFFM implements LibC {
   // TODO support and use FF$LINKER.canonicalLayouts().get("size_t")
   // and how invokeExact would work with different size data?
   private static final MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("strlen").get(),
+      FF$LOOKUP.findOrThrow("strlen"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_LONG,
           ValueLayout.ADDRESS));
@@ -116,7 +116,7 @@ public final class LibCFFM implements LibC {
   }
 
 //  private static final MethodHandle FF$MH$7 = FF$LINKER.downcallHandle(
-//      FF$LOOKUP.find("l64a").get(),
+//      FF$LOOKUP.findOrThrow("l64a"),
 //      FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 //
 //  public java.lang.String l64a(long n) {

@@ -17,9 +17,9 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.Address;
-import org.alveolo.ffm.ForeignStruct;
-import org.alveolo.ffm.ForeignUnion;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Value;
 import org.alveolo.ffm.macos.CFString;
 
@@ -74,14 +74,16 @@ class TypeGenerator {
   String layout() {
     if (typeElement != null) {
       if (isForeignMemory()) {
-        if (hasConflictingPassModeAnnotations()) return VALUE_LAYOUT_NOT_SUPPORTED;
+        if (hasConflictingPassModeAnnotations())
+          return VALUE_LAYOUT_NOT_SUPPORTED;
         return isValue()
             ? foreignClassName(typeElement) + ".FM$LAYOUT"
             : "ValueLayout.ADDRESS";
       }
 
       if (typeElement.getKind() == ElementKind.CLASS) {
-        if (hasConflictingPassModeAnnotations()) return VALUE_LAYOUT_NOT_SUPPORTED;
+        if (hasConflictingPassModeAnnotations())
+          return VALUE_LAYOUT_NOT_SUPPORTED;
 
         if (!hasTypeUseAddress() && !hasTypeUseValue()
             && !hasTypeAddress() && !hasTypeValue())
@@ -162,7 +164,7 @@ class TypeGenerator {
       Iterable<? extends AnnotationMirror> annotationMirrors) {
     for (var annotationMirror : annotationMirrors) {
       if (annotationMirror.getAnnotationType().toString()
-        .equals(Sequence.class.getCanonicalName()))
+          .equals(Sequence.class.getCanonicalName()))
         return annotationMirror.getElementValues().entrySet().stream()
             .filter(e -> e.getKey().getSimpleName().toString().equals("value"))
             .map(e -> e.getValue())
@@ -250,8 +252,8 @@ class TypeGenerator {
 
   boolean isForeignMemory() {
     return typeElement != null
-        && (typeElement.getAnnotation(ForeignStruct.class) != null
-            || typeElement.getAnnotation(ForeignUnion.class) != null);
+        && (typeElement.getAnnotation(Struct.class) != null
+            || typeElement.getAnnotation(Union.class) != null);
   }
 
   boolean hasConflictingPassModeAnnotations() {
@@ -269,10 +271,12 @@ class TypeGenerator {
   }
 
   private boolean hasTypeAddress() {
-    return typeElement != null && typeElement.getAnnotation(Address.class) != null;
+    return typeElement != null
+        && typeElement.getAnnotation(Address.class) != null;
   }
 
   private boolean hasTypeValue() {
-    return typeElement != null && typeElement.getAnnotation(Value.class) != null;
+    return typeElement != null
+        && typeElement.getAnnotation(Value.class) != null;
   }
 }

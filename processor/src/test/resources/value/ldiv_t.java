@@ -2,7 +2,7 @@ package pkg;
 
 import org.alveolo.ffm.*;
 
-@ForeignStruct
+@Struct
 public interface ldiv_t {
   int quot();
   int rem();

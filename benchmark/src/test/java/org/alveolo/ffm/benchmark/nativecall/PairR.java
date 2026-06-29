@@ -1,6 +1,6 @@
 package org.alveolo.ffm.benchmark.nativecall;
 
-import org.alveolo.ffm.ForeignStruct;
+import org.alveolo.ffm.Struct;
 
-@ForeignStruct
+@Struct
 public record PairR(int left, int right) {}

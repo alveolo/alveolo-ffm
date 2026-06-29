@@ -3,7 +3,7 @@ package org.alveolo.ffm.benchmark.affm;
 import java.lang.foreign.SegmentAllocator;
 
 import org.alveolo.ffm.ForeignInterface;
-import org.alveolo.ffm.ForeignName;
+import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.Value;
 
 @ForeignInterface
@@ -12,15 +12,15 @@ public interface AffmLibC {
 
   IntWrapper abs(IntWrapper number);
 
-  @ForeignName("div")
+  @Symbol("div")
   div_t_R div_r(int numerator, int denominator);
 
-  @ForeignName("ldiv")
+  @Symbol("ldiv")
   ldiv_t_R ldiv_r(long numerator, long denominator);
 
-  @ForeignName("div")
-  @Value div_t_S div_s(
-      SegmentAllocator allocator, int numerator, int denominator);
+  @Symbol("div")
+  @Value
+  div_t_S div_s(SegmentAllocator allocator, int numerator, int denominator);
 
   long strlen(String str);
 

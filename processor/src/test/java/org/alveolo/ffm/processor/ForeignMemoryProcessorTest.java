@@ -51,78 +51,78 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void failsForeignStructOnEnum() {
+  void failsStructOnEnum() {
     var source = forSourceString("test.BadEnum", """
         package test;
-        @org.alveolo.ffm.ForeignStruct
+        @org.alveolo.ffm.Struct
         public enum BadEnum { A, B }
         """);
     var c = compile(source);
     assertThat(c).hadErrorContaining(
-        "@ForeignStruct can only be applied to an interface, not ENUM");
+        "@Struct can only be applied to an interface, not ENUM");
   }
 
   @Test
-  void failsForeignUnionOnEnum() {
+  void failsUnionOnEnum() {
     var source = forSourceString("test.BadEnum", """
         package test;
-        @org.alveolo.ffm.ForeignUnion
+        @org.alveolo.ffm.Union
         public enum BadEnum { A, B }
         """);
     var c = compile(source);
     assertThat(c).hadErrorContaining(
-        "@ForeignUnion can only be applied to an interface, not ENUM");
+        "@Union can only be applied to an interface, not ENUM");
   }
 
   @Test
-  void failsForeignStructOnClass() {
+  void failsStructOnClass() {
     var source = forSourceString("test.BadClass", """
         package test;
-        @org.alveolo.ffm.ForeignStruct
+        @org.alveolo.ffm.Struct
         public abstract class BadClass {public int x();}
         """);
 
     var c = compile(source);
 
     assertThat(c).hadErrorContaining(
-        "@ForeignStruct can only be applied to an interface, not CLASS");
+        "@Struct can only be applied to an interface, not CLASS");
   }
 
   @Test
-  void failsForeignUnionOnClass() {
+  void failsUnionOnClass() {
     var source = forSourceString("test.BadClass", """
         package test;
-        @org.alveolo.ffm.ForeignUnion
+        @org.alveolo.ffm.Union
         public abstract class BadClass {public int x();}
         """);
 
     var c = compile(source);
 
     assertThat(c).hadErrorContaining(
-        "@ForeignUnion can only be applied to an interface, not CLASS");
+        "@Union can only be applied to an interface, not CLASS");
   }
 
   @Test
-  void failsForeignUnionOnRecord() {
+  void failsUnionOnRecord() {
     var source = forSourceString("test.BadRecord", """
         package test;
-        @org.alveolo.ffm.ForeignUnion
+        @org.alveolo.ffm.Union
         public record BadRecord(int a) {}
         """);
 
     var c = compile(source);
 
     assertThat(c).hadErrorContaining(
-        "@ForeignUnion can only be applied to an interface, not RECORD");
+        "@Union can only be applied to an interface, not RECORD");
   }
 
   @Test
-  void failsForeignStructOnRecordWithUnsupportedType() {
+  void failsStructOnRecordWithUnsupportedType() {
     var source = forSourceString("test.BadRecord", """
         package test;
-        import org.alveolo.ffm.ForeignStruct;
+        import org.alveolo.ffm.Struct;
         import java.util.List;
-        @ForeignStruct
+        @Struct
         public record BadRecord(List<String> data) {}
         """);
 

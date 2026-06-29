@@ -103,7 +103,7 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   void failsWhenMemorySegmentWrapperReturnHasNoAllocator() {
     var struct = forSourceString("test.Div", """
         package test;
-        @org.alveolo.ffm.ForeignStruct
+        @org.alveolo.ffm.Struct
         public interface Div {
           int quot();
           int rem();
@@ -114,7 +114,7 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         package test;
         @org.alveolo.ffm.ForeignInterface
         public interface Lib {
-          @org.alveolo.ffm.ForeignName("div")
+          @org.alveolo.ffm.Symbol("div")
           @org.alveolo.ffm.Value Div div(int numerator, int denominator);
         }
         """);
@@ -128,7 +128,7 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   void usesSeparateAllocatorsForWrapperReturnAndConvertedParameters() {
     var struct = forSourceString("test.Div", """
         package test;
-        @org.alveolo.ffm.ForeignStruct
+        @org.alveolo.ffm.Struct
         public interface Div {
           int quot();
           int rem();
@@ -139,7 +139,7 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         package test;
         @org.alveolo.ffm.ForeignInterface
         public interface Lib {
-          @org.alveolo.ffm.ForeignName("div")
+          @org.alveolo.ffm.Symbol("div")
           @org.alveolo.ffm.Value Div div(
               java.lang.foreign.SegmentAllocator allocator, String label);
         }
@@ -219,7 +219,7 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         package test;
         @org.alveolo.ffm.ForeignInterface
         public interface Lib {
-          @org.alveolo.ffm.ForeignName("strchr")
+          @org.alveolo.ffm.Symbol("strchr")
           java.lang.foreign.MemorySegment strchr(String string, int ch);
         }
         """);

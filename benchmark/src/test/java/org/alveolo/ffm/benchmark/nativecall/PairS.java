@@ -1,8 +1,8 @@
 package org.alveolo.ffm.benchmark.nativecall;
 
-import org.alveolo.ffm.ForeignStruct;
+import org.alveolo.ffm.Struct;
 
-@ForeignStruct
+@Struct
 public interface PairS {
   int left();
 

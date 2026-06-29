@@ -26,7 +26,7 @@ public final class NativeLookupTestFFM implements NativeLookupTest {
   }
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("add_ints").get(),
+      FF$LOOKUP.findOrThrow("add_ints"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_INT,
           ValueLayout.JAVA_INT,

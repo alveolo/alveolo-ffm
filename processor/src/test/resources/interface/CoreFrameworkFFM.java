@@ -25,7 +25,7 @@ public final class CoreFrameworkFFM implements CoreFramework {
   }
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("CFAbsoluteTimeGetCurrent").get(),
+      FF$LOOKUP.findOrThrow("CFAbsoluteTimeGetCurrent"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_DOUBLE));
 

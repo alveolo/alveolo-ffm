@@ -1,6 +1,6 @@
 package org.alveolo.ffm.benchmark.affm;
 
-import org.alveolo.ffm.ForeignStruct;
+import org.alveolo.ffm.Struct;
 
-@ForeignStruct
+@Struct
 public record Alignment(boolean b, int i, byte x, char c, long l) {}

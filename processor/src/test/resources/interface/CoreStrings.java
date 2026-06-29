@@ -3,8 +3,8 @@ package pkg;
 import java.lang.foreign.MemorySegment;
 
 import org.alveolo.ffm.ForeignInterface;
-import org.alveolo.ffm.ForeignName;
 import org.alveolo.ffm.Library;
+import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.macos.CFString;
 
 @Library(value = "CoreFoundation", kind = Library.Kind.FRAMEWORK)
@@ -12,10 +12,10 @@ import org.alveolo.ffm.macos.CFString;
 public interface CoreStrings {
   long CFStringGetLength(@CFString String value);
 
-  @ForeignName("CFStringCompare")
+  @Symbol("CFStringCompare")
   long compare(@CFString String left, @CFString String right, long options);
 
-  @ForeignName("CFStringCreateWithCString")
+  @Symbol("CFStringCreateWithCString")
   @CFString(owned = true) String create(
       MemorySegment allocator, String cString, int encoding);
 }

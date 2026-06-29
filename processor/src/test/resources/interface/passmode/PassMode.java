@@ -4,23 +4,23 @@ import java.lang.foreign.SegmentAllocator;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.ForeignInterface;
-import org.alveolo.ffm.ForeignStruct;
+import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Value;
 
-@ForeignStruct
+@Struct
 record RecordDefault(int x) {}
 
 @Address
-@ForeignStruct
+@Struct
 record RecordAddress(int x) {}
 
-@ForeignStruct
+@Struct
 interface InterfaceDefault {
   int x();
 }
 
 @Value
-@ForeignStruct
+@Struct
 interface InterfaceValue {
   int x();
 }

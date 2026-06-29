@@ -1,8 +1,8 @@
 package org.alveolo.ffm.benchmark.affm;
 
-import org.alveolo.ffm.ForeignStruct;
+import org.alveolo.ffm.Struct;
 
-@ForeignStruct
+@Struct
 public interface div_t_S {
   int quot();
 

@@ -25,7 +25,7 @@ public final class CoreStringsFFM implements CoreStrings {
   }
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("CFStringGetLength").get(),
+      FF$LOOKUP.findOrThrow("CFStringGetLength"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_LONG,
           ValueLayout.ADDRESS));
@@ -47,7 +47,7 @@ public final class CoreStringsFFM implements CoreStrings {
   }
 
   private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("CFStringCompare").get(),
+      FF$LOOKUP.findOrThrow("CFStringCompare"),
       FunctionDescriptor.of(
           ValueLayout.JAVA_LONG,
           ValueLayout.ADDRESS,
@@ -78,7 +78,7 @@ public final class CoreStringsFFM implements CoreStrings {
   }
 
   private static final MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.find("CFStringCreateWithCString").get(),
+      FF$LOOKUP.findOrThrow("CFStringCreateWithCString"),
       FunctionDescriptor.of(
           ValueLayout.ADDRESS,
           ValueLayout.ADDRESS,
