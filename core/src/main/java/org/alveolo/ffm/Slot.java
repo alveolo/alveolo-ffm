@@ -12,5 +12,9 @@ import java.lang.annotation.Target;
 @Target(METHOD)
 @Retention(SOURCE)
 public @interface Slot {
-  int index();
+  /// Shorthand slot index.
+  int value() default -1;
+
+  /// Named slot index.
+  int index() default -1;
 }

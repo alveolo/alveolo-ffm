@@ -10,9 +10,9 @@ public final class PassModeFFM implements PassMode {
 
   private PassModeFFM() {}
 
-  private static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final Linker FF$LINKER = Linker.nativeLinker();
 
-  private static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
+  public static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("recordDefault"),

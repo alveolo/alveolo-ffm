@@ -26,19 +26,26 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
+import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.Union;
+import org.alveolo.ffm.Virtual;
 
 @SupportedAnnotationTypes({
   "org.alveolo.ffm.Struct",
   "org.alveolo.ffm.Union",
+  "org.alveolo.ffm.Virtual",
 })
 @SupportedSourceVersion(RELEASE_25)
 public class ForeignMemoryProcessor extends AbstractProcessor {
+  private static final String VTABLE_FIELD = "ff$vtbl";
+
   private static final Set<String> NIO_BUFFER_TYPES = Set.of(
       "java.nio.ByteBuffer", "java.nio.ShortBuffer",
       "java.nio.CharBuffer",
@@ -50,6 +57,24 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       String name, TypeMirror typeMirror, long sequence, Element errorElement
   ) {}
 
+  record ObjectMethods(
+      List<ExecutableElement> methods,
+      List<ExecutableElement> virtualMethods,
+      List<ExecutableElement> symbolMethods
+  ) {
+    static ObjectMethods empty() {
+      return new ObjectMethods(List.of(), List.of(), List.of());
+    }
+
+    boolean hasVirtualMethods() {
+      return !virtualMethods.isEmpty();
+    }
+
+    boolean hasSymbolMethods() {
+      return !symbolMethods.isEmpty();
+    }
+  }
+
   @Override
   public boolean process(
       Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -58,14 +83,29 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     if (roundEnv.processingOver()) return true;
 
     for (var annotation : annotations) {
+      if (annotation.getQualifiedName().contentEquals(
+          Virtual.class.getCanonicalName())) {
+        validateVirtualAnnotations(roundEnv.getElementsAnnotatedWith(
+            annotation));
+        continue;
+      }
+
       for (var element : roundEnv.getElementsAnnotatedWith(annotation)) {
         if (element instanceof TypeElement type) {
           switch (type.getKind()) {
             case INTERFACE:
             case RECORD:
               try {
-                if (type.getAnnotation(Struct.class) != null) {
-                  writeFile(type, "structLayout");
+                var struct = type.getAnnotation(Struct.class);
+                if (struct != null) {
+                  if (struct.vtable()
+                      && type.getKind() == ElementKind.RECORD) {
+                    messager.printError(
+                        "@Struct(vtable = true) can only be applied to an "
+                            + "interface, not RECORD", type);
+                  } else {
+                    writeFile(type, "structLayout", struct.vtable());
+                  }
                 }
                 if (type.getAnnotation(Union.class) != null) {
                   if (type.getKind() == ElementKind.RECORD) {
@@ -73,7 +113,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                         + " can only be applied to an interface, not "
                         + ElementKind.RECORD, type);
                   } else {
-                    writeFile(type, "unionLayout");
+                    writeFile(type, "unionLayout", false);
                   }
                 }
               } catch (Throwable e) {
@@ -94,8 +134,38 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return true;
   }
 
+  private void validateVirtualAnnotations(Set<? extends Element> elements) {
+    for (var element : elements) {
+      if (!(element instanceof ExecutableElement method)
+          || !(method.getEnclosingElement() instanceof TypeElement owner)) {
+        processingEnv.getMessager().printError(
+            "@Virtual is only allowed on methods of @Struct(vtable = true)",
+            element);
+        continue;
+      }
+
+      var struct = owner.getAnnotation(Struct.class);
+      if (struct == null || !struct.vtable()) {
+        processingEnv.getMessager().printError(
+            "@Virtual is only allowed on @Struct(vtable = true) methods",
+            method);
+        continue;
+      }
+
+      if (method.getKind() != ElementKind.METHOD
+          || !method.getModifiers().contains(ABSTRACT)
+          || method.getModifiers().contains(STATIC)
+          || method.getModifiers().contains(DEFAULT)) {
+        processingEnv.getMessager().printError(
+            "@Virtual is only allowed on abstract instance methods",
+            method);
+      }
+    }
+  }
+
   /// Infer struct fields from interface accessor methods.
-  private List<StructField> inferFields(TypeElement iface) {
+  private List<StructField> inferFields(
+      TypeElement iface, boolean excludeObjectMethods) {
     if (iface.getKind() == ElementKind.RECORD) {
       var rcGens = iface.getRecordComponents().stream()
           .map(rc -> new VariableGenerator(processingEnv, rc))
@@ -114,6 +184,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           && enc.getModifiers().contains(ABSTRACT)
           && !enc.getModifiers().contains(STATIC)
           && !enc.getModifiers().contains(DEFAULT)) {
+        if (excludeObjectMethods && isObjectMethod(exe)) continue;
         String name = exe.getSimpleName().toString();
         methodsByName.computeIfAbsent(name, _ -> new ArrayList<>()).add(exe);
       }
@@ -173,6 +244,129 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return fields;
   }
 
+  private boolean isObjectMethod(ExecutableElement method) {
+    return method.getAnnotation(Virtual.class) != null
+        || method.getAnnotation(Symbol.class) != null;
+  }
+
+  private ObjectMethods objectMethods(TypeElement iface) {
+    var methods = new ArrayList<ExecutableElement>();
+    var virtualMethods = new ArrayList<ExecutableElement>();
+    var symbolMethods = new ArrayList<ExecutableElement>();
+
+    for (var enc : iface.getEnclosedElements()) {
+      if (enc instanceof ExecutableElement method
+          && method.getModifiers().contains(ABSTRACT)
+          && !method.getModifiers().contains(STATIC)
+          && !method.getModifiers().contains(DEFAULT)) {
+        if (isObjectMethod(method)) {
+          methods.add(method);
+        }
+        if (method.getAnnotation(Virtual.class) != null) {
+          virtualMethods.add(method);
+        }
+        if (method.getAnnotation(Symbol.class) != null) {
+          symbolMethods.add(method);
+        }
+      }
+    }
+
+    return new ObjectMethods(methods, virtualMethods, symbolMethods);
+  }
+
+  private boolean validateObjectMethods(
+      TypeElement iface, ObjectMethods objectMethods, boolean vtable) {
+    var valid = true;
+
+    if (vtable) {
+      for (var member : iface.getEnclosedElements()) {
+        if (member.getSimpleName().contentEquals(VTABLE_FIELD)) {
+          processingEnv.getMessager().printError(
+              "'" + VTABLE_FIELD + "' is reserved for generated vtable access",
+              member);
+          valid = false;
+        }
+      }
+    }
+
+    if (!vtable && objectMethods.hasVirtualMethods()) {
+      for (var method : objectMethods.virtualMethods()) {
+        processingEnv.getMessager().printError(
+            "@Virtual is only allowed on @Struct(vtable = true) methods",
+            method);
+      }
+      valid = false;
+    }
+
+    var slots = new LinkedHashMap<Integer, ExecutableElement>();
+    for (var method : objectMethods.virtualMethods()) {
+      if (method.getAnnotation(Symbol.class) != null) {
+        processingEnv.getMessager().printError(
+            "@Virtual and @Symbol cannot be used on the same method", method);
+        valid = false;
+      }
+
+      var slot = method.getAnnotation(Virtual.class).value();
+      if (slot < 0) {
+        processingEnv.getMessager().printError(
+            "@Virtual value must be non-negative", method);
+        valid = false;
+        continue;
+      }
+
+      var previous = slots.putIfAbsent(slot, method);
+      if (previous != null) {
+        processingEnv.getMessager().printError(
+            "Duplicate @Virtual slot: " + slot, method);
+        processingEnv.getMessager().printError(
+            "Duplicate @Virtual slot: " + slot, previous);
+        valid = false;
+      }
+    }
+
+    return valid;
+  }
+
+  private TypeElement symbolOwner(
+      TypeElement iface, ObjectMethods objectMethods) {
+    if (!objectMethods.hasSymbolMethods()) return null;
+
+    var symbols = symbols(iface);
+    if (symbols == null || symbols.toString().equals(Void.class.getName())) {
+      processingEnv.getMessager().printError(
+          "@Struct symbols is required when @Symbol methods are used", iface);
+      return null;
+    }
+
+    var owner = processingEnv.getTypeUtils().asElement(symbols);
+    if (!(owner instanceof TypeElement type)
+        || type.getKind() != ElementKind.INTERFACE
+        || type.getAnnotation(ForeignInterface.class) == null) {
+      processingEnv.getMessager().printError(
+          "@Struct symbols must reference an @ForeignInterface", iface);
+      return null;
+    }
+
+    return type;
+  }
+
+  private TypeMirror symbols(TypeElement iface) {
+    for (var mirror : iface.getAnnotationMirrors()) {
+      if (!mirror.getAnnotationType().toString()
+          .equals(Struct.class.getCanonicalName())) {
+        continue;
+      }
+
+      for (var entry : mirror.getElementValues().entrySet()) {
+        if (entry.getKey().getSimpleName().contentEquals("symbols")) {
+          return (TypeMirror) entry.getValue().getValue();
+        }
+      }
+    }
+
+    return null;
+  }
+
   /// Get @Sequence value from a method annotation, defaulting to 1.
   private long getSequenceFromMethod(ExecutableElement method) {
     var seq = method.getAnnotation(Sequence.class);
@@ -217,7 +411,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return typeUtils.unboxedType(wrapperType);
   }
 
-  private void writeFile(TypeElement iface, String layoutKind)
+  private void writeFile(TypeElement iface, String layoutKind, boolean vtable)
       throws IOException {
     String packageName = processingEnv.getElementUtils()
         .getPackageOf(iface).getQualifiedName().toString();
@@ -226,20 +420,44 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     String simpleClassName = className.substring(lastDot + 1);
     String ifaceName = iface.getSimpleName().toString();
 
-    var fields = inferFields(iface);
+    var isStructInterface = layoutKind.equals("structLayout")
+        && iface.getKind() == ElementKind.INTERFACE;
+    var objectMethods = isStructInterface
+        ? objectMethods(iface)
+        : ObjectMethods.empty();
+    if (!validateObjectMethods(iface, objectMethods, vtable)) return;
+
+    var symbolOwner = symbolOwner(iface, objectMethods);
+    if (objectMethods.hasSymbolMethods() && symbolOwner == null) return;
+    var symbolOwnerClassName = symbolOwner == null
+        ? null
+        : foreignInterfaceClassName(symbolOwner);
+    var symbolGenerators = symbolGenerators(objectMethods,
+        symbolOwnerClassName);
+
+    if (objectMethods.hasVirtualMethods()) {
+      writeDispatchTable(iface, packageName, ifaceName,
+          objectMethods.virtualMethods());
+    }
+
+    var fields = inferFields(iface, isStructInterface);
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 
     try (var out = file.openWriter()) {
-      writeClassHeader(out, packageName, simpleClassName, iface);
-      writeLayout(out, fields, layoutKind);
-      writePathElements(out, simpleClassName, fields);
-      writeVarHandles(out, simpleClassName, fields);
+      writeClassHeader(out, packageName, simpleClassName, iface,
+          objectMethods.hasSymbolMethods());
+      writeLayout(out, fields, layoutKind, vtable);
+      writePathElements(out, simpleClassName, fields, vtable);
+      writeVarHandles(out, simpleClassName, fields, vtable);
       writeAllocate(out, simpleClassName);
       switch (iface.getKind()) {
         case INTERFACE:
-          writeConstructors(out, simpleClassName, ifaceName);
+          writeConstructors(out, simpleClassName, ifaceName,
+              objectMethods.hasVirtualMethods());
           writeFieldAccessors(out, simpleClassName, fields);
+          writeSymbolHolder(out, symbolGenerators);
+          writeObjectMethods(out, objectMethods, symbolGenerators);
           break;
         case RECORD:
           writeRecordConverters(out, ifaceName, fields, iface);
@@ -254,7 +472,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeClassHeader(Writer out, String packageName,
-      String className, TypeElement srcType) throws IOException {
+      String className, TypeElement srcType, boolean hasSymbolMethods)
+      throws IOException {
     if (!packageName.isEmpty()) {
       out.append("package ").append(packageName).append(";\n\n");
     }
@@ -269,23 +488,181 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     out.write("""
         import java.lang.foreign.*;
-
+        <methodHandleImport>
         @javax.annotation.processing.Generated(
             "<generator>")
         public final class <declaration> {
         """
         .replace("<generator>", getClass().getCanonicalName())
-        .replace("<declaration>", declaration));
+        .replace("<declaration>", declaration)
+        .replace("<methodHandleImport>", hasSymbolMethods
+            ? "import java.lang.invoke.MethodHandle;\n" : ""));
+  }
+
+  private void writeDispatchTable(TypeElement iface, String packageName,
+      String ifaceName, List<ExecutableElement> methods)
+      throws IOException {
+    String qualifiedName = packageName.isEmpty()
+        ? ifaceName + "Vtbl"
+        : packageName + "." + ifaceName + "Vtbl";
+    var file = processingEnv.getFiler().createSourceFile(
+        qualifiedName, iface);
+
+    try (var out = file.openWriter()) {
+      if (!packageName.isEmpty()) {
+        out.write("package " + packageName + ";\n\n");
+      }
+
+      out.write("""
+          @javax.annotation.processing.Generated(
+              "<generator>")
+          @org.alveolo.ffm.DispatchTable
+          interface <name>Vtbl {
+          """
+          .replace("<generator>", getClass().getCanonicalName())
+          .replace("<name>", ifaceName));
+
+      for (var method : methods) {
+        out.write("""
+
+            @org.alveolo.ffm.Slot(<slot>)
+            <signature>;
+          """
+            .replace("<slot>", Integer.toString(virtualSlot(method)))
+            .replace("<signature>",
+                dispatchTableMethodSignature(iface, method)));
+      }
+
+      out.write("}\n");
+    }
+  }
+
+  private String dispatchTableMethodSignature(TypeElement iface,
+      ExecutableElement method) {
+    var params = new ArrayList<String>();
+    params.add(iface.getSimpleName() + " ff$self");
+    params.addAll(method.getParameters().stream()
+        .map(this::sourceParameter)
+        .toList());
+
+    return sourceReturnType(method)
+        + " " + method.getSimpleName()
+        + params.stream().collect(joining(",\n      ", "(\n      ", ")"));
+  }
+
+  private List<ExecutableGenerator> symbolGenerators(
+      ObjectMethods objectMethods, String symbolOwnerClassName) {
+    var generators = new ArrayList<ExecutableGenerator>();
+    var index = 0;
+    for (var method : objectMethods.symbolMethods()) {
+      generators.add(symbolGenerator(method, index++, symbolOwnerClassName));
+    }
+    return generators;
+  }
+
+  private void writeSymbolHolder(
+      Writer out, List<ExecutableGenerator> symbolGenerators)
+      throws IOException {
+    if (symbolGenerators.isEmpty()) return;
+
+    out.write("""
+
+          private static final class FF$SYMBOLS {
+        """);
+
+    for (var generator : symbolGenerators) {
+      if (!generator.hasErrors) {
+        out.write(generator.methodHandleDeclaration()
+            .replace("\n  ", "\n    "));
+      }
+    }
+
+    out.write("""
+          }
+        """);
+  }
+
+  private void writeObjectMethods(Writer out, ObjectMethods objectMethods,
+      List<ExecutableGenerator> symbolGenerators)
+      throws IOException {
+    var symbolIndex = 0;
+    for (var method : objectMethods.methods()) {
+      if (method.getAnnotation(Virtual.class) != null) {
+        writeVirtualMethod(out, method);
+      } else {
+        var generator = symbolGenerators.get(symbolIndex++);
+        out.write(generator.methodOnly(
+            "FF$SYMBOLS." + generator.methodHandleName));
+      }
+    }
+  }
+
+  private ExecutableGenerator symbolGenerator(ExecutableElement method,
+      int index, String symbolOwnerClassName) {
+    return new ExecutableGenerator(
+        processingEnv, method, "FF$MH$" + index, false,
+        List.of(new ExecutableGenerator.NativeArgument(
+            "ValueLayout.ADDRESS", "this.ms")),
+        symbolOwnerClassName + ".FF$LINKER",
+        symbolOwnerClassName + ".FF$LOOKUP");
+  }
+
+  private void writeVirtualMethod(Writer out, ExecutableElement method)
+      throws IOException {
+    var generator = new ExecutableGenerator(
+        processingEnv, method, "FF$VH$unused", true);
+    var args = new ArrayList<String>();
+    args.add("this");
+    args.addAll(method.getParameters().stream()
+        .map(VariableElement::getSimpleName)
+        .map(Object::toString)
+        .toList());
+    String call = "ff$vtbl()." + method.getSimpleName()
+        + args.stream().collect(joining(", ", "(", ")"));
+
+    String statement = method.getReturnType().getKind() == TypeKind.VOID
+        ? call + ";"
+        : "return " + call + ";";
+
+    out.write("""
+
+          <signature> {
+            <statement>
+          }
+        """
+        .replace("<signature>", generator.signature())
+        .replace("<statement>", statement));
+  }
+
+  private String sourceReturnType(ExecutableElement method) {
+    return method.getReturnType().toString();
+  }
+
+  private String sourceParameter(VariableElement parameter) {
+    return parameter.asType() + " " + parameter.getSimpleName();
+  }
+
+  private String foreignInterfaceClassName(TypeElement type) {
+    return type.getQualifiedName() + "FFM";
+  }
+
+  private int virtualSlot(ExecutableElement method) {
+    return method.getAnnotation(Virtual.class).value();
   }
 
   private void writeLayout(Writer out, List<StructField> fields,
-      String layoutKind) throws IOException {
+      String layoutKind, boolean vtable) throws IOException {
     out.write("""
           public static final MemoryLayout FM$LAYOUT =
               MemoryLayout.<layout>(
                   org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
         """
         .replace("<layout>", layoutKind));
+
+    if (vtable) {
+      out.write("        ValueLayout.ADDRESS.withName(\""
+          + VTABLE_FIELD + "\"),\n");
+    }
 
     var layoutFields = fields.stream()
         .map(f -> {
@@ -387,7 +764,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeConstructors(Writer out,
-      String className, String ifaceName) throws IOException {
+      String className, String ifaceName, boolean hasVirtualMethods)
+      throws IOException {
     out.write("""
 
           public static <class> reinterpret(MemorySegment ms) {
@@ -395,6 +773,18 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           }
 
           public final MemorySegment ms;
+        """
+        .replace("<class>", className));
+
+    if (hasVirtualMethods) {
+      out.write("""
+
+            private final <iface>Vtbl ff$vtbl;
+          """
+          .replace("<iface>", ifaceName));
+    }
+
+    out.write("""
 
           public <class>(SegmentAllocator allocator) {
             this(allocate(allocator));
@@ -402,14 +792,39 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
           public <class>(MemorySegment ms) {
             this.ms = ms;
-          }
         """
-        .replace("<class>", className)
-        .replace("<iface>", ifaceName));
+        .replace("<class>", className));
+
+    if (hasVirtualMethods) {
+      out.write("    this.ff$vtbl = " + ifaceName
+          + "VtblFD.reinterpret((MemorySegment) FM$VH$ff$vtbl.get(ms));\n");
+    }
+
+    out.write("""
+          }
+        """);
+
+    if (hasVirtualMethods) {
+      out.write("""
+
+            private <iface>Vtbl ff$vtbl() {
+              return ff$vtbl;
+            }
+          """
+          .replace("<iface>", ifaceName));
+    }
   }
 
   private void writePathElements(Writer out, String className,
-      List<StructField> fields) throws IOException {
+      List<StructField> fields, boolean vtable) throws IOException {
+    if (vtable) {
+      out.write("""
+
+            public static final MemoryLayout.PathElement FM$PE$ff$vtbl =
+                MemoryLayout.PathElement.groupElement("ff$vtbl");
+          """);
+    }
+
     for (var field : fields) {
       out.write("""
 
@@ -421,7 +836,16 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeVarHandles(Writer out, String className,
-      List<StructField> fields) throws IOException {
+      List<StructField> fields, boolean vtable) throws IOException {
+    if (vtable) {
+      out.write("""
+
+            public static final java.lang.invoke.VarHandle FM$VH$ff$vtbl =
+                java.lang.invoke.MethodHandles.insertCoordinates(
+                    FM$LAYOUT.varHandle(FM$PE$ff$vtbl), 1, 0L);
+          """);
+    }
+
     for (var field : fields) {
       if (isNestedValue(field)) {
         continue; // TODO complex/structured/indexed accessors

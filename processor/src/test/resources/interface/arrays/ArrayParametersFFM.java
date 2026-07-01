@@ -10,9 +10,9 @@ public final class ArrayParametersFFM implements ArrayParameters {
 
   private ArrayParametersFFM() {}
 
-  private static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final Linker FF$LINKER = Linker.nativeLinker();
 
-  private static final SymbolLookup FF$LOOKUP =
+  public static final SymbolLookup FF$LOOKUP =
       FF$LINKER.defaultLookup();
 
   private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(

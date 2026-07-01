@@ -51,6 +51,22 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesObjectVtblStruct() {
+    var c = compile(
+        "memory/object/NativeApi.java",
+        "memory/object/Obj.java",
+        "memory/object/VirtualObj.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.ObjFM", "memory/object/ObjFM.java");
+    assertGenerated(c, "pkg.VirtualObjFM",
+        "memory/object/VirtualObjFM.java");
+    assertGenerated(c, "pkg.VirtualObjVtbl",
+        "memory/object/VirtualObjVtbl.java");
+    assertGenerated(c, "pkg.VirtualObjVtblFD",
+        "memory/object/VirtualObjVtblFD.java");
+  }
+
+  @Test
   void failsStructOnEnum() {
     var source = forSourceString("test.BadEnum", """
         package test;
@@ -114,6 +130,157 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
 
     assertThat(c).hadErrorContaining(
         "@Union can only be applied to an interface, not RECORD");
+  }
+
+  @Test
+  void failsVtableStructOnRecord() {
+    var source = forSourceString("test.BadRecord", """
+        package test;
+        @org.alveolo.ffm.Struct(vtable = true)
+        public record BadRecord(int a) {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Struct(vtable = true) can only be applied to an interface, not RECORD");
+  }
+
+  @Test
+  void failsVirtualOnNonVtableStruct() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          @org.alveolo.ffm.Virtual(1) int bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Virtual is only allowed on @Struct(vtable = true) methods");
+  }
+
+  @Test
+  void failsDuplicateVirtualSlot() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct(vtable = true)
+        public interface Bad {
+          @org.alveolo.ffm.Virtual(1) int a();
+          @org.alveolo.ffm.Virtual(1) int b();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining("Duplicate @Virtual slot: 1");
+  }
+
+  @Test
+  void failsNegativeVirtualSlot() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct(vtable = true)
+        public interface Bad {
+          @org.alveolo.ffm.Virtual(-1) int bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Virtual value must be non-negative");
+  }
+
+  @Test
+  void failsVirtualAndSymbolOnSameMethod() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        interface NativeApi {}
+        @org.alveolo.ffm.Struct(vtable = true, symbols = NativeApi.class)
+        public interface Bad {
+          @org.alveolo.ffm.Virtual(1)
+          @org.alveolo.ffm.Symbol("bad")
+          int bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Virtual and @Symbol cannot be used on the same method");
+  }
+
+  @Test
+  void failsSymbolMethodWithoutSymbolsOwner() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          @org.alveolo.ffm.Symbol("bad") int bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Struct symbols is required when @Symbol methods are used");
+  }
+
+  @Test
+  void failsSymbolOwnerWithoutForeignInterface() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        interface NativeApi {}
+        @org.alveolo.ffm.Struct(symbols = NativeApi.class)
+        public interface Bad {
+          @org.alveolo.ffm.Symbol("bad") int bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Struct symbols must reference an @ForeignInterface");
+  }
+
+  @Test
+  void failsReservedVtblMemberName() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct(vtable = true)
+        public interface Bad {
+          int ff$vtbl();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "'ff$vtbl' is reserved for generated vtable access");
+  }
+
+  @Test
+  void failsUnsupportedObjectMethodType() {
+    var nativeApi = forSourceString("test.NativeApi", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface NativeApi {}
+        """);
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct(symbols = NativeApi.class)
+        public interface Bad {
+          @org.alveolo.ffm.Symbol("bad") Object bad();
+        }
+        """);
+
+    var c = compile(nativeApi, source);
+
+    assertThat(c).hadErrorContaining("Type is not supported: java.lang.Object");
   }
 
   @Test

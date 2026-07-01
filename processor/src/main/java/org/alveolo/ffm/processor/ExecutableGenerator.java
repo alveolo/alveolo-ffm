@@ -26,8 +26,13 @@ class ExecutableGenerator {
   final boolean hasErrors;
   final String methodHandleName;
   final boolean instanceMethodHandle;
+  final List<NativeArgument> leadingNativeArguments;
+  final String linkerExpression;
+  final String lookupExpression;
   final TypeGenerator returnGenerator;
   final List<VariableGenerator> parameterGenerators;
+
+  record NativeArgument(String layout, String expression) {}
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
       ExecutableElement element, String methodHandleName) {
@@ -37,12 +42,32 @@ class ExecutableGenerator {
   ExecutableGenerator(ProcessingEnvironment processingEnv,
       ExecutableElement element, String methodHandleName,
       boolean instanceMethodHandle) {
+    this(processingEnv, element, methodHandleName,
+        instanceMethodHandle, List.of());
+  }
+
+  ExecutableGenerator(ProcessingEnvironment processingEnv,
+      ExecutableElement element, String methodHandleName,
+      boolean instanceMethodHandle,
+      List<NativeArgument> leadingNativeArguments) {
+    this(processingEnv, element, methodHandleName, instanceMethodHandle,
+        leadingNativeArguments, "FF$LINKER", "FF$LOOKUP");
+  }
+
+  ExecutableGenerator(ProcessingEnvironment processingEnv,
+      ExecutableElement element, String methodHandleName,
+      boolean instanceMethodHandle,
+      List<NativeArgument> leadingNativeArguments,
+      String linkerExpression, String lookupExpression) {
     this.processingEnv = processingEnv;
     types = processingEnv.getTypeUtils();
     messager = processingEnv.getMessager();
     this.element = element;
     this.methodHandleName = methodHandleName;
     this.instanceMethodHandle = instanceMethodHandle;
+    this.leadingNativeArguments = leadingNativeArguments;
+    this.linkerExpression = linkerExpression;
+    this.lookupExpression = lookupExpression;
 
     returnGenerator = new TypeGenerator(processingEnv, element.getReturnType());
 
@@ -53,17 +78,30 @@ class ExecutableGenerator {
     hasErrors = checkParameterTypes();
   }
 
-  String method() {
-    if (hasErrors)
-      return """
+  String methodWithHandle() {
+    if (hasErrors) return throwingMethodPlaceholder();
 
-            <signature> {
-              throw new RuntimeException("Check compile errors!");
-            }
-          """
-          .replace("<signature>", signature());
+    return methodHandleDeclaration() + methodImpl(methodHandleName);
+  }
 
-    return methodHandleDeclaration() + """
+  String methodOnly(String methodHandleExpression) {
+    if (hasErrors) return throwingMethodPlaceholder();
+
+    return methodImpl(methodHandleExpression);
+  }
+
+  private String throwingMethodPlaceholder() {
+    return """
+
+          <signature> {
+            throw new RuntimeException("Check compile errors!");
+          }
+        """
+        .replace("<signature>", signature());
+  }
+
+  private String methodImpl(String methodHandleExpression) {
+    return """
 
           <signature> {<declarations>
             try <confinedArena>{
@@ -78,30 +116,33 @@ class ExecutableGenerator {
         .replace("<signature>", signature())
         .replace("<declarations>", declarations())
         .replace("<confinedArena>", confinedArena())
-        .replace("<body>", methodBody())
+        .replace("<body>", methodBody(methodHandleExpression))
         .replace("<finallyBlock>", finallyBlock());
   }
 
-  private String methodHandleDeclaration() {
-    if (instanceMethodHandle) return """
+  String methodHandleDeclaration() {
+    if (instanceMethodHandle)
+      return """
 
-          private final MethodHandle <mh>;
-        """
-        .replace("<mh>", methodHandleName);
+            private final MethodHandle <mh>;
+          """
+          .replace("<mh>", methodHandleName);
 
     return """
 
-          private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
-              FF$LOOKUP.findOrThrow("<name>"),
+          private static final MethodHandle <mh> = <linker>.downcallHandle(
+              <lookup>.findOrThrow("<name>"),
               <descriptor>);
         """
         .replace("<mh>", methodHandleName)
+        .replace("<linker>", linkerExpression)
+        .replace("<lookup>", lookupExpression)
         .replace("<name>", name(element))
         .replace("<descriptor>", descriptor());
   }
 
-  private String methodBody() {
-    return Stream.of(paramInitializers(), invoke())
+  private String methodBody(String methodHandleExpression) {
+    return Stream.of(paramInitializers(), invoke(methodHandleExpression))
         .flatMap(identity())
         .collect(joining("\n      ", "", ""));
   }
@@ -118,9 +159,13 @@ class ExecutableGenerator {
     var returnType = element.getReturnType();
     boolean isVoid = returnType.getKind() == TypeKind.VOID;
 
-    var stream = Stream.concat(
-        isVoid ? Stream.empty() : Stream.of(returnGenerator),
-        parameterGenerators.stream());
+    var layouts = Stream.of(
+        isVoid ? Stream.<String> empty() : Stream.of(returnGenerator.layout()),
+        leadingNativeArguments.stream().map(NativeArgument::layout),
+        parameterGenerators.stream()
+            .filter(not(TypeGenerator::isSegmentAllocator))
+            .map(TypeGenerator::layout))
+        .flatMap(identity());
 
     String prefix = isVoid
         ? "FunctionDescriptor.ofVoid("
@@ -128,13 +173,11 @@ class ExecutableGenerator {
 
     String newLine = "\n          ";
 
-    return stream
-        .filter(not(TypeGenerator::isSegmentAllocator))
-        .map(TypeGenerator::layout)
+    return layouts
         .collect(joining("," + newLine, prefix + newLine, ")"));
   }
 
-  private String signature() {
+  String signature() {
     String prefix = "public " + returnTypeName()
         + " " + element.getSimpleName() + "(";
 
@@ -156,9 +199,9 @@ class ExecutableGenerator {
     return needsConfinedArena() ? "(var ff$arena = Arena.ofConfined()) " : "";
   }
 
-  private Stream<String> invoke() {
+  private Stream<String> invoke(String methodHandleExpression) {
     var returnType = element.getReturnType();
-    var call = methodHandleName + ".invokeExact(" + params() + ")";
+    var call = methodHandleExpression + ".invokeExact(" + params() + ")";
     var copyOut = copyOut().toList();
 
     if (returnGenerator.isPrimitive())
@@ -192,10 +235,12 @@ class ExecutableGenerator {
     // SegmentAllocator parameters are part of the downcall argument list only
     // when an external allocator is required. Keep validation in sync so an
     // allocator parameter is rejected unless it is passed here.
-    var paramsList = Stream.concat(
+    var paramsList = Stream.of(
         Stream.ofNullable(needsLocalAllocator
             ? "(SegmentAllocator) ff$arena" : null),
-        parameterGenerators.stream().map(VariableGenerator::invoke));
+        leadingNativeArguments.stream().map(NativeArgument::expression),
+        parameterGenerators.stream().map(VariableGenerator::invoke))
+        .flatMap(identity());
 
     return paramsList.collect(joining("," + newLine, newLine, ""));
   }

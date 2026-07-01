@@ -7,7 +7,7 @@ import org.alveolo.ffm.Slot;
 
 @DispatchTable
 public interface XyzVtbl {
-  @Slot(index = 1)
+  @Slot(1)
   int add(int a, int b);
 
   @Slot(index = 3)

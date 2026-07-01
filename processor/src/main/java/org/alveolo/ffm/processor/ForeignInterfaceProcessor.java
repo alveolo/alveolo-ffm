@@ -104,18 +104,18 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           .replace("<interface>", srcSimpleClassName));
 
       out.write("""
-            private static final Linker FF$LINKER = Linker.nativeLinker();
+            public static final Linker FF$LINKER = Linker.nativeLinker();
 
           """);
 
       if (libraries.isEmpty()) {
         out.write("""
-              private static final SymbolLookup FF$LOOKUP =
+              public static final SymbolLookup FF$LOOKUP =
                   FF$LINKER.defaultLookup();
             """);
       } else {
         out.write("""
-              private static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
+              public static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
             """
         );
         writeLookupInitializer(out, srcSimpleClassName, libraries);
@@ -132,7 +132,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           var generator = new ExecutableGenerator(
               processingEnv, method, "FF$MH$" + index++);
 
-          out.write(generator.method());
+          out.write(generator.methodWithHandle());
         }
       }
 

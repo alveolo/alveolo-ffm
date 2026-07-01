@@ -117,7 +117,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
       for (var i = 0; i < generators.size(); i++) {
         var generator = generators.get(i);
         writeMethodDescriptor(out, generator, i);
-        out.write(generator.method());
+        out.write(generator.methodWithHandle());
       }
 
       out.write("}\n");
@@ -154,18 +154,32 @@ public class DispatchTableProcessor extends AbstractProcessor {
       }
 
       var index = slot.index();
-      if (index < 0) {
+      var value = slot.value();
+      var hasIndex = hasSlotValue(method, "index");
+      var hasValue = hasSlotValue(method, "value");
+      if (hasIndex == hasValue) {
+        processingEnv.getMessager().printError(
+            hasIndex
+                ? "@Slot value and index cannot both be set"
+                : "@Slot index is required",
+            method);
+        valid = false;
+        continue;
+      }
+
+      var slotIndex = hasIndex ? index : value;
+      if (slotIndex < 0) {
         processingEnv.getMessager().printError(
             "@Slot index must be non-negative", method);
         valid = false;
       }
 
-      var previous = indexes.putIfAbsent(index, method);
+      var previous = indexes.putIfAbsent(slotIndex, method);
       if (previous != null) {
         processingEnv.getMessager().printError(
-            "Duplicate @Slot index: " + index, method);
+            "Duplicate @Slot index: " + slotIndex, method);
         processingEnv.getMessager().printError(
-            "Duplicate @Slot index: " + index, previous);
+            "Duplicate @Slot index: " + slotIndex, previous);
         valid = false;
       }
     }
@@ -173,10 +187,24 @@ public class DispatchTableProcessor extends AbstractProcessor {
     return valid;
   }
 
+  private boolean hasSlotValue(ExecutableElement method, String name) {
+    for (var mirror : method.getAnnotationMirrors()) {
+      if (!mirror.getAnnotationType().toString()
+          .equals(Slot.class.getCanonicalName())) {
+        continue;
+      }
+
+      for (var entry : mirror.getElementValues().entrySet()) {
+        if (entry.getKey().getSimpleName().contentEquals(name)) return true;
+      }
+    }
+
+    return false;
+  }
+
   private long slotCount(List<ExecutableElement> methods) {
     return methods.stream()
-        .map(method -> method.getAnnotation(Slot.class))
-        .mapToLong(Slot::index)
+        .mapToLong(this::slot)
         .max()
         .orElse(-1L) + 1L;
   }
@@ -235,6 +263,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
   }
 
   private int slot(ExecutableElement method) {
-    return method.getAnnotation(Slot.class).index();
+    var slot = method.getAnnotation(Slot.class);
+    return hasSlotValue(method, "index") ? slot.index() : slot.value();
   }
 }

@@ -14,8 +14,12 @@ import java.lang.annotation.Target;
 @Target(TYPE)
 @Retention(SOURCE)
 public @interface Struct {
-  /**
-   * Override the generated class name. Defaults to interface name + "FM".
-   */
+  /// Override the generated class name. Defaults to interface name + `FM`.
   String name() default "";
+
+  /// Reserve the first struct field for a native dispatch table pointer.
+  boolean vtable() default false;
+
+  /// Foreign interface that owns direct native symbols used by this struct.
+  Class<?> symbols() default Void.class;
 }

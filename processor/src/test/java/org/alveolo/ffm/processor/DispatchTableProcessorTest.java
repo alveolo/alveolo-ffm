@@ -44,6 +44,37 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsOnSlotWithoutIndex() {
+    var source = forSourceString("test.BadVtbl", """
+        package test;
+        @org.alveolo.ffm.DispatchTable
+        public interface BadVtbl {
+          @org.alveolo.ffm.Slot void bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining("@Slot index is required");
+  }
+
+  @Test
+  void failsOnSlotValueAndIndex() {
+    var source = forSourceString("test.BadVtbl", """
+        package test;
+        @org.alveolo.ffm.DispatchTable
+        public interface BadVtbl {
+          @org.alveolo.ffm.Slot(value = 1, index = 1) void bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Slot value and index cannot both be set");
+  }
+
+  @Test
   void failsOnDuplicateSlot() {
     var source = forSourceString("test.BadVtbl", """
         package test;

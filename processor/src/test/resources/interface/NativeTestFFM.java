@@ -10,9 +10,9 @@ public final class NativeTestFFM implements NativeTest {
 
   private NativeTestFFM() {}
 
-  private static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final Linker FF$LINKER = Linker.nativeLinker();
 
-  private static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
+  public static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
 
   private static SymbolLookup FF$LOOKUP() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
