@@ -297,4 +297,63 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
 
     assertThat(c).hadErrorContaining("Type is not supported: java.util.List");
   }
+
+  @Test
+  void failsStructFieldWithoutGetter() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          Bad x(int value);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining("Field 'x' has no accessor");
+  }
+
+  @Test
+  void failsArrayFieldOnStructInterface() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          int[] data();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Array fields are not supported, use java.nio.IntBuffer instead");
+  }
+
+  @Test
+  void failsArrayFieldOnStructRecord() {
+    var source = forSourceString("test.BadRecord", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public record BadRecord(double[] data) {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Array fields are not supported, use java.nio.DoubleBuffer instead");
+  }
+
+  @Test
+  void failsBufferFieldOnStructRecord() {
+    var source = forSourceString("test.BadRecord", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public record BadRecord(java.nio.IntBuffer data) {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Buffer fields are not supported on records");
+  }
 }

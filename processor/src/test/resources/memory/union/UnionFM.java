@@ -7,7 +7,7 @@ import java.lang.foreign.*;
 public final class UnionFM implements Union {
   public static final MemoryLayout FM$LAYOUT =
     MemoryLayout.unionLayout(
-        org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+        org.alveolo.ffm.ForeignUtils.unionPad(new MemoryLayout [] {
           ValueLayout.JAVA_INT.withName("i"),
           ValueLayout.JAVA_DOUBLE.withName("d"),
         }));

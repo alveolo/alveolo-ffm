@@ -7,7 +7,7 @@ import java.lang.foreign.*;
 public final class div_tFM {
   public static final MemoryLayout FM$LAYOUT =
       MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
         ValueLayout.JAVA_INT.withName("quot"),
         ValueLayout.JAVA_INT.withName("rem"),
       }));

@@ -7,7 +7,7 @@ import java.lang.foreign.*;
 public final class StructBFM implements StructB {
   public static final MemoryLayout FM$LAYOUT =
       MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
             ValueLayout.JAVA_BOOLEAN.withName("b"),
             ValueLayout.JAVA_CHAR.withName("c"),
             ValueLayout.JAVA_SHORT.withName("s"),

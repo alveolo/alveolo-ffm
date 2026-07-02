@@ -27,6 +27,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
@@ -102,9 +103,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                       && type.getKind() == ElementKind.RECORD) {
                     messager.printError(
                         "@Struct(vtable = true) can only be applied to an "
-                            + "interface, not RECORD", type);
+                            + "interface, not RECORD",
+                        type);
                   } else {
-                    writeFile(type, "structLayout", struct.vtable());
+                    writeFile(type, "struct", struct.vtable());
                   }
                 }
                 if (type.getAnnotation(Union.class) != null) {
@@ -113,7 +115,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                         + " can only be applied to an interface, not "
                         + ElementKind.RECORD, type);
                   } else {
-                    writeFile(type, "unionLayout", false);
+                    writeFile(type, "union", false);
                   }
                 }
               } catch (Throwable e) {
@@ -184,7 +186,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           && enc.getModifiers().contains(ABSTRACT)
           && !enc.getModifiers().contains(STATIC)
           && !enc.getModifiers().contains(DEFAULT)) {
-        if (excludeObjectMethods && isObjectMethod(exe)) continue;
+        if (excludeObjectMethods && isObjectMethod(exe)) {
+          continue;
+        }
         String name = exe.getSimpleName().toString();
         methodsByName.computeIfAbsent(name, _ -> new ArrayList<>()).add(exe);
       }
@@ -196,6 +200,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       var methods = entry.getValue();
 
       ExecutableElement accessor = null;
+      var reportedError = false;
 
       for (var m : methods) {
         var params = m.getParameters();
@@ -205,6 +210,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             && m.getReturnType().getKind() == TypeKind.DECLARED) {
               // TODO check if setter signature
             } else {
+              reportedError = true;
               processingEnv.getMessager().printError(
                   "Unsupported accessor signature for field '"
                       + fieldName + "': " + m,
@@ -213,22 +219,24 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       }
 
       if (accessor == null) {
+        if (!reportedError) {
+          processingEnv.getMessager().printError(
+              "Field '" + fieldName + "' has no accessor",
+              methods.get(0));
+        }
         continue;
       }
 
       // Determine type from accessor return or setter parameter
       var fieldType = accessor.getReturnType();
 
-      // Determine sequence length
       if (fieldType.getKind() == TypeKind.ARRAY) {
-        // TODO error suggesting to use corresponding Buffer class
-        // // Check for @Sequence on the getter/setter method
-        // ExecutableElement sourceMethod = getter != null ? getter : setter;
-        // sequence = getSequenceFromMethod(sourceMethod);
-        // // Use component type for layout, strip annotations
-        // TypeMirror componentType = ((ArrayType)
-        // fieldType).getComponentType();
-        // fieldType = processingEnv.getTypeUtils().erasure(componentType);
+        processingEnv.getMessager().printError(
+            "Array fields are not supported, use "
+                + bufferSuggestion(((ArrayType) fieldType).getComponentType())
+                + " instead",
+            accessor);
+        continue;
       }
 
       long sequence = 1;
@@ -358,13 +366,53 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       }
 
       for (var entry : mirror.getElementValues().entrySet()) {
-        if (entry.getKey().getSimpleName().contentEquals("symbols")) {
+        if (entry.getKey().getSimpleName().contentEquals("symbols"))
           return (TypeMirror) entry.getValue().getValue();
-        }
       }
     }
 
     return null;
+  }
+
+  /// Validate record components. Array and buffer components are not supported
+  /// in record converters yet.
+  private boolean validateRecordComponents(TypeElement type) {
+    if (type.getKind() != ElementKind.RECORD) return true;
+
+    var valid = true;
+    for (var component : type.getRecordComponents()) {
+      var componentType = component.asType();
+      if (componentType.getKind() == TypeKind.ARRAY) {
+        processingEnv.getMessager().printError(
+            "Array fields are not supported, use "
+                + bufferSuggestion(
+                    ((ArrayType) componentType).getComponentType())
+                + " instead",
+            component);
+        valid = false;
+      } else if (isNioBufferType(componentType)) {
+        processingEnv.getMessager().printError(
+            "Buffer fields are not supported on records, use an interface "
+                + "@Struct instead",
+            component);
+        valid = false;
+      }
+    }
+
+    return valid;
+  }
+
+  private String bufferSuggestion(TypeMirror componentType) {
+    return switch (componentType.getKind()) {
+      case BYTE -> "java.nio.ByteBuffer";
+      case CHAR -> "java.nio.CharBuffer";
+      case SHORT -> "java.nio.ShortBuffer";
+      case INT -> "java.nio.IntBuffer";
+      case LONG -> "java.nio.LongBuffer";
+      case FLOAT -> "java.nio.FloatBuffer";
+      case DOUBLE -> "java.nio.DoubleBuffer";
+      default -> "a java.nio Buffer type";
+    };
   }
 
   /// Get @Sequence value from a method annotation, defaulting to 1.
@@ -411,8 +459,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return typeUtils.unboxedType(wrapperType);
   }
 
-  private void writeFile(TypeElement iface, String layoutKind, boolean vtable)
+  private void writeFile(TypeElement iface, String kind, boolean vtable)
       throws IOException {
+    if (!validateRecordComponents(iface)) return;
+
     String packageName = processingEnv.getElementUtils()
         .getPackageOf(iface).getQualifiedName().toString();
     String className = foreignClassName(iface);
@@ -420,7 +470,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     String simpleClassName = className.substring(lastDot + 1);
     String ifaceName = iface.getSimpleName().toString();
 
-    var isStructInterface = layoutKind.equals("structLayout")
+    var isStructInterface = kind.equals("struct")
         && iface.getKind() == ElementKind.INTERFACE;
     var objectMethods = isStructInterface
         ? objectMethods(iface)
@@ -447,7 +497,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     try (var out = file.openWriter()) {
       writeClassHeader(out, packageName, simpleClassName, iface,
           objectMethods.hasSymbolMethods());
-      writeLayout(out, fields, layoutKind, vtable);
+      writeLayout(out, fields, kind, vtable);
       writePathElements(out, simpleClassName, fields, vtable);
       writeVarHandles(out, simpleClassName, fields, vtable);
       writeAllocate(out, simpleClassName);
@@ -464,8 +514,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           writeStaticAccessors(out, simpleClassName, fields);
           break;
         case ElementKind k:
-          throw new IllegalArgumentException(
-              "Unexpected value: " + k);
+          throw new IllegalArgumentException("Unexpected value: " + k);
       }
       out.write("}\n");
     }
@@ -525,9 +574,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       for (var method : methods) {
         out.write("""
 
-            @org.alveolo.ffm.Slot(<slot>)
-            <signature>;
-          """
+              @org.alveolo.ffm.Slot(<slot>)
+              <signature>;
+            """
             .replace("<slot>", Integer.toString(virtualSlot(method)))
             .replace("<signature>",
                 dispatchTableMethodSignature(iface, method)));
@@ -651,13 +700,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeLayout(Writer out, List<StructField> fields,
-      String layoutKind, boolean vtable) throws IOException {
+      String kind, boolean vtable) throws IOException {
     out.write("""
           public static final MemoryLayout FM$LAYOUT =
-              MemoryLayout.<layout>(
-                  org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+              MemoryLayout.<kind>Layout(
+                  org.alveolo.ffm.ForeignUtils.<kind>Pad(new MemoryLayout [] {
         """
-        .replace("<layout>", layoutKind));
+        .replace("<kind>", kind));
 
     if (vtable) {
       out.write("        ValueLayout.ADDRESS.withName(\""
@@ -875,11 +924,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeStaticAccessors(Writer out, String className,
       List<StructField> fields) throws IOException {
     for (var field : fields) {
-      if (field.sequence() > 1) {
-        writeStaticAccessorsBuffer(out, field);
-      } else {
-        writeStaticAccessorsSimple(out, className, field);
-      }
+      writeStaticAccessorsSimple(out, className, field);
     }
   }
 
@@ -981,11 +1026,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           .replace("<name>", name)
           .replace("<type>", type));
     }
-  }
-
-  private void writeStaticAccessorsBuffer(Writer out, StructField field)
-      throws IOException {
-    // TODO accessors for array/buffer types in records
   }
 
   private void writeFieldAccessors(Writer out, String className,

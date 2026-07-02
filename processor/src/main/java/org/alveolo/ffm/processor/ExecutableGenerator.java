@@ -217,7 +217,7 @@ class ExecutableGenerator {
       return cfStringInvoke(call, copyOut);
 
     if (returnGenerator.isString())
-      return returnWithCopyOut(call, copyOut); // TODO
+      return stringInvoke(call, copyOut);
 
     if (returnGenerator.isForeignMemory())
       return returnWithCopyOut(foreignMemoryExpression(returnType, call),
@@ -276,6 +276,18 @@ class ExecutableGenerator {
 
     return foreignClassName(type)
         + ".reinterpret((MemorySegment) " + call + ")";
+  }
+
+  private Stream<String> stringInvoke(String call, List<String> copyOut) {
+    var all = Stream.of(
+        ("var ff$string$r = (MemorySegment) " + call + ";").lines(),
+        copyOut.stream(),
+        """
+        return ff$string$r.address() == 0L ? null
+            : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);"""
+            .lines());
+
+    return all.flatMap(identity());
   }
 
   private Stream<String> cfStringInvoke(String call, List<String> copyOut) {

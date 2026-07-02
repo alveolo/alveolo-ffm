@@ -20,5 +20,5 @@ public interface LibC {
   // TODO support use of size_t
   long strlen(String utf8z);
 
-//  String l64a (long n);
+  String l64a(long n);
 }

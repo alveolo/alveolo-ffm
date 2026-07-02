@@ -7,7 +7,7 @@ import java.lang.foreign.*;
 public final class OuterFM implements Outer {
   public static final MemoryLayout FM$LAYOUT =
       MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
         ValueLayout.ADDRESS.withName("inner"),
         ValueLayout.JAVA_INT.withName("tag"),
       }));

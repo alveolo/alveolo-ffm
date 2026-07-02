@@ -8,7 +8,7 @@ import java.lang.invoke.MethodHandle;
 public final class VirtualObjFM implements VirtualObj {
   public static final MemoryLayout FM$LAYOUT =
       MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
         ValueLayout.ADDRESS.withName("ff$vtbl"),
         ValueLayout.JAVA_INT.withName("field"),
       }));

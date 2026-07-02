@@ -199,7 +199,8 @@ public class ForeignUtils {
     return Library.OS.LINUX;
   }
 
-  public static MemoryLayout[] pad(MemoryLayout... elements) {
+  /// Interleaves struct elements with padding for natural C alignment.
+  public static MemoryLayout[] structPad(MemoryLayout... elements) {
     if (elements.length == 0) return elements;
 
     var result = new ArrayList<MemoryLayout>(elements.length * 2 - 1);
@@ -231,5 +232,28 @@ public class ForeignUtils {
     }
 
     return result.toArray(MemoryLayout[]::new);
+  }
+
+  /// Pads union elements so the union size matches C semantics. All union
+  /// members start at offset zero, so no padding is inserted between them;
+  /// instead the union size is rounded up to its natural alignment by an
+  /// extra padding member, ensuring the union works well in arrays
+  /// (SequenceLayout).
+  public static MemoryLayout[] unionPad(MemoryLayout... elements) {
+    if (elements.length == 0) return elements;
+
+    long maxSize = Stream.of(elements)
+        .mapToLong(MemoryLayout::byteSize).max().getAsLong();
+
+    long maxAlignment = Stream.of(elements)
+        .mapToLong(MemoryLayout::byteAlignment).max().getAsLong();
+
+    long misAlignment = maxSize % maxAlignment;
+    if (misAlignment == 0) return elements;
+
+    var result = Arrays.copyOf(elements, elements.length + 1);
+    result[elements.length] =
+        paddingLayout(maxSize + maxAlignment - misAlignment);
+    return result;
   }
 }

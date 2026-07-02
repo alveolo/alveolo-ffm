@@ -115,18 +115,23 @@ public final class LibCFFM implements LibC {
     }
   }
 
-//  private static final MethodHandle FF$MH$7 = FF$LINKER.downcallHandle(
-//      FF$LOOKUP.findOrThrow("l64a"),
-//      FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-//
-//  public java.lang.String l64a(long n) {
-//    try {
-//      return ((MemorySegment) FF$MH$7.invokeExact(n))
-//          .reinterpret(Long.MAX_VALUE).getString(0L);
-//    } catch (RuntimeException|Error ff$e) {
-//      throw ff$e;
-//    } catch (Throwable ff$t) {
-//      throw new AssertionError(ff$t);
-//    }
-//  }
+  private static final MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
+      FF$LOOKUP.findOrThrow("l64a"),
+      FunctionDescriptor.of(
+          ValueLayout.ADDRESS,
+          ValueLayout.JAVA_LONG));
+
+  public java.lang.String l64a(
+      long n) {
+    try {
+      var ff$string$r = (MemorySegment) FF$MH$5.invokeExact(
+          n);
+      return ff$string$r.address() == 0L ? null
+          : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);
+    } catch (RuntimeException|Error ff$e) {
+      throw ff$e;
+    } catch (Throwable ff$t) {
+      throw new AssertionError(ff$t);
+    }
+  }
 }

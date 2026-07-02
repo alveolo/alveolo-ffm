@@ -7,7 +7,7 @@ import java.lang.foreign.*;
 public final class FieldModesFM {
   public static final MemoryLayout FM$LAYOUT =
       MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.pad(new MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
         pkg.InnerRecordFM.FM$LAYOUT.withName("recordDefault"),
         ValueLayout.ADDRESS.withName("interfaceDefault"),
         ValueLayout.ADDRESS.withName("recordTypeUseAddress"),
