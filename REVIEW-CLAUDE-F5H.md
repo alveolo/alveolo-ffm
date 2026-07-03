@@ -10,7 +10,7 @@ thoughtful. The findings below are ordered by severity.
 
 ## Bugs
 
-### 1. Unions get struct-style padding, producing layouts that disagree with C — confirmed
+### 1. ✅ Unions get struct-style padding, producing layouts that disagree with C — confirmed
 
 `ForeignMemoryProcessor.writeLayout` wraps fields in `ForeignUtils.pad(...)` for
 both `structLayout` and `unionLayout`, but `pad()`
@@ -31,7 +31,7 @@ sequenceLayout(n, thatUnion)
 Unions need a dedicated path: no inter-member padding, plus a trailing pad
 member of `roundUp(maxSize, maxAlign) - maxSize` (or equivalent).
 
-### 2. `String` return types silently generate non-compiling code
+### 2. ✅ `String` return types silently generate non-compiling code
 
 In `ExecutableGenerator.invoke`
 (`processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:219`)
@@ -43,7 +43,7 @@ processor diagnostic. Either implement the conversion (the commented-out `l64a`
 block in the `LibCFFM` test fixture is exactly the needed code) or `printError`
 until it's supported.
 
-### 3. Struct interface fields with unsupported accessor shapes are silently dropped — layout corruption
+### 3. ✅ Struct interface fields with unsupported accessor shapes are silently dropped — layout corruption
 
 In `inferFields`
 (`processor/src/main/java/org/alveolo/ffm/processor/ForeignMemoryProcessor.java:215`),
@@ -54,7 +54,7 @@ returns and is itself a TODO), vanishes from the layout. The struct then has the
 wrong size and every subsequent field the wrong offset — silent native memory
 corruption. This should be a hard error.
 
-### 4. Array-typed struct fields generate wrong layout and broken accessors
+### 4. ✅ Array-typed struct fields generate wrong layout and broken accessors
 
 The `ARRAY` branch in `inferFields` (`ForeignMemoryProcessor.java:223`) is an
 empty TODO, so an `int[]` field falls through with `sequence = 1`:
@@ -63,7 +63,7 @@ empty TODO, so an `int[]` field falls through with `sequence = 1`:
 doesn't compile. The intended error ("use the corresponding Buffer class")
 should actually be emitted.
 
-### 5. Records with buffer/`@Sequence` fields generate non-compiling converters
+### 5. ✅ Records with buffer/`@Sequence` fields generate non-compiling converters
 
 `writeStaticAccessorsBuffer` (`ForeignMemoryProcessor.java:986`) is an empty
 TODO, but `writeRecordConverters` (`ForeignMemoryProcessor.java:693`) still
@@ -166,7 +166,7 @@ reading the vtable lazily.
   Central Portal (`central-publishing-maven-plugin`) is required to release —
   which matters, since the README tells users to depend on `0.0.2-SNAPSHOT`
   that isn't resolvable from any public repo.
-- `benchmark/dependency-reduced-pom.xml` (a shade-plugin artifact) is committed;
+- ✅ `benchmark/dependency-reduced-pom.xml` (a shade-plugin artifact) is committed;
   add it to `.gitignore`.
 - Minor: JUnit 5.11.1 and compile-testing 0.23.0 have newer releases.
 
