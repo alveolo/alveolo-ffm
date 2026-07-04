@@ -1,6 +1,6 @@
 package org.alveolo.ffm.processor;
 
-import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -80,11 +80,12 @@ class VariableGenerator extends TypeGenerator {
       return "ff$arena.allocateFrom(" + name() + ")";
 
     if (isRecord())
-      return foreignClassName(typeElement)
+      return foreignMemoryClassName(typeElement, elements)
           + ".toMemorySegment(ff$arena, " + name() + ")";
 
     return (typeElement.getKind() == ElementKind.INTERFACE)
-        ? "((" + foreignClassName(typeElement) + ")" + name() + ").ms"
+        ? "((" + foreignMemoryClassName(typeElement, elements) + ")" + name()
+            + ").ms"
         : name() + ".ms";
   }
 

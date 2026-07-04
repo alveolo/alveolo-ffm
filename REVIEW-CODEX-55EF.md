@@ -49,7 +49,7 @@ Recommendation:
 Either generate `MemorySegment` to UTF-8 conversion for plain C string returns,
 or reject non-`@CFString` `String` returns with a clear compile error.
 
-### P2: `@Struct(name = ...)` and `@Union(name = ...)` simple-name overrides look broken
+### P2: ✅ `@Struct(name = ...)` and `@Union(name = ...)` simple-name overrides look broken
 
 The annotations expose name overrides, but `foreignClassName` returns simple
 override names directly while `ForeignMemoryProcessor` passes that name to

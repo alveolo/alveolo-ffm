@@ -9,4 +9,7 @@ import java.lang.annotation.Target;
 /// Marks an interface for use as a Foreign Function API wrapper
 @Target(TYPE)
 @Retention(SOURCE)
-public @interface ForeignInterface {}
+public @interface ForeignInterface {
+  /// Override the generated simple class name. Defaults to type name + `FFM`.
+  String name() default "";
+}

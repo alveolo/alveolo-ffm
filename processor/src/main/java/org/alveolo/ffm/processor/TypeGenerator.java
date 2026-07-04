@@ -1,6 +1,6 @@
 package org.alveolo.ffm.processor;
 
-import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
@@ -77,7 +77,7 @@ class TypeGenerator {
         if (hasConflictingPassModeAnnotations())
           return VALUE_LAYOUT_NOT_SUPPORTED;
         return isValue()
-            ? foreignClassName(typeElement) + ".FM$LAYOUT"
+            ? foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT"
             : "ValueLayout.ADDRESS";
       }
 
@@ -89,7 +89,8 @@ class TypeGenerator {
             && !hasTypeAddress() && !hasTypeValue())
           return primitiveLayout();
 
-        if (isValue()) return foreignClassName(typeElement) + ".FM$LAYOUT";
+        if (isValue())
+          return foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT";
         if (isAddress()) return "ValueLayout.ADDRESS";
       }
     }

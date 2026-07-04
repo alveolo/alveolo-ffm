@@ -14,8 +14,7 @@ import java.lang.annotation.Target;
 @Target(TYPE)
 @Retention(SOURCE)
 public @interface Union {
-  /**
-   * Override the generated class name. Defaults to interface name + "FM".
-   */
+  /// Override the generated simple class name. The generated class stays in the
+  /// same package as the annotated type. Defaults to type name + `FM`.
   String name() default "";
 }

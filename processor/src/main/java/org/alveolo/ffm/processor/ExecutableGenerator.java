@@ -3,7 +3,7 @@ package org.alveolo.ffm.processor;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
-import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.TypeGenerator.VALUE_LAYOUT_NOT_SUPPORTED;
 
 import java.util.List;
@@ -14,14 +14,17 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Symbol;
 
 class ExecutableGenerator {
   final ProcessingEnvironment processingEnv;
-  final Types types;
   final Messager messager;
+  final Elements elements;
+  final Types types;
   final ExecutableElement element;
   final boolean hasErrors;
   final String methodHandleName;
@@ -60,8 +63,9 @@ class ExecutableGenerator {
       List<NativeArgument> leadingNativeArguments,
       String linkerExpression, String lookupExpression) {
     this.processingEnv = processingEnv;
-    types = processingEnv.getTypeUtils();
     messager = processingEnv.getMessager();
+    elements = processingEnv.getElementUtils();
+    types = processingEnv.getTypeUtils();
     this.element = element;
     this.methodHandleName = methodHandleName;
     this.instanceMethodHandle = instanceMethodHandle;
@@ -178,8 +182,8 @@ class ExecutableGenerator {
   }
 
   String signature() {
-    String prefix = "public " + returnTypeName()
-        + " " + element.getSimpleName() + "(";
+    String prefix = "public "
+        + returnTypeName() + " " + element.getSimpleName() + "(";
 
     String newLine = "\n      ";
 
@@ -232,6 +236,7 @@ class ExecutableGenerator {
 
     boolean needsLocalAllocator =
         returnGenerator.isRecord() && returnGenerator.isValue();
+
     // SegmentAllocator parameters are part of the downcall argument list only
     // when an external allocator is required. Keep validation in sync so an
     // allocator parameter is rejected unless it is passed here.
@@ -266,16 +271,13 @@ class ExecutableGenerator {
     return Stream.of(base, copyOut.stream()).flatMap(identity());
   }
 
-  private String recordExpression(
-      javax.lang.model.type.TypeMirror returnType, String call) {
+  private String recordExpression(TypeMirror returnType, String call) {
     var type = (TypeElement) types.asElement(returnType);
+    String className = foreignMemoryClassName(type, elements);
 
-    if (returnGenerator.isValue())
-      return foreignClassName(type)
-          + ".fromMemorySegment((MemorySegment) " + call + ")";
-
-    return foreignClassName(type)
-        + ".reinterpret((MemorySegment) " + call + ")";
+    return returnGenerator.isValue()
+        ? className + ".fromMemorySegment((MemorySegment) " + call + ")"
+        : className + ".reinterpret((MemorySegment) " + call + ")";
   }
 
   private Stream<String> stringInvoke(String call, List<String> copyOut) {
@@ -283,8 +285,8 @@ class ExecutableGenerator {
         ("var ff$string$r = (MemorySegment) " + call + ";").lines(),
         copyOut.stream(),
         """
-        return ff$string$r.address() == 0L ? null
-            : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);"""
+            return ff$string$r.address() == 0L ? null
+                : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);"""
             .lines());
 
     return all.flatMap(identity());
@@ -314,15 +316,13 @@ class ExecutableGenerator {
         .lines();
   }
 
-  private String foreignMemoryExpression(
-      javax.lang.model.type.TypeMirror returnType, String call) {
+  private String foreignMemoryExpression(TypeMirror returnType, String call) {
     var type = (TypeElement) types.asElement(returnType);
-    if (returnGenerator.isValue())
-      return "new " + foreignClassName(type)
-          + "((MemorySegment) " + call + ")";
+    String className = foreignMemoryClassName(type, elements);
 
-    return foreignClassName(type)
-        + ".reinterpret((MemorySegment) " + call + ")";
+    return returnGenerator.isValue()
+        ? "new " + className + "((MemorySegment) " + call + ")"
+        : className + ".reinterpret((MemorySegment) " + call + ")";
   }
 
   boolean needsConfinedArena() {
@@ -350,14 +350,13 @@ class ExecutableGenerator {
   }
 
   private Stream<String> paramInitializers(VariableGenerator p) {
-    if (p.isCFString()) return Stream.of(p.cfStringName()
-        + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
-        + p.name() + ");");
+    if (p.isCFString())
+      return Stream.of(p.cfStringName()
+          + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
+          + p.name() + ");");
 
-    if (p.isArrayOrBuffer())
-      return p.arrayOrBufferInitializer().lines();
-
-    return Stream.empty();
+    return p.isArrayOrBuffer() ? p.arrayOrBufferInitializer().lines()
+        : Stream.empty();
   }
 
   private Stream<String> copyOut() {
@@ -391,7 +390,7 @@ class ExecutableGenerator {
     if (needsExternalAllocator) {
       if (parameterGenerators.isEmpty()
           || !parameterGenerators.get(0).isSegmentAllocator()) {
-        processingEnv.getMessager().printError(
+        messager.printError(
             "SegmentAllocator is expected as first parameter",
             element);
         return true;
@@ -408,7 +407,7 @@ class ExecutableGenerator {
       if (paramGen.isSegmentAllocator()) {
         hasUnsupported = true;
 
-        processingEnv.getMessager().printError(
+        messager.printError(
             "SegmentAllocator is not expected", paramGen.element);
         continue;
       }
@@ -416,7 +415,7 @@ class ExecutableGenerator {
       if (paramGen.isCFString() && !paramGen.isString()) {
         hasUnsupported = true;
 
-        processingEnv.getMessager().printError(
+        messager.printError(
             "@CFString is only supported on java.lang.String",
             paramGen.element);
         continue;
@@ -425,7 +424,7 @@ class ExecutableGenerator {
       if (paramGen.isOwnedCFString()) {
         hasUnsupported = true;
 
-        processingEnv.getMessager().printError(
+        messager.printError(
             "@CFString(owned = true) is only supported on return types",
             paramGen.element);
         continue;
@@ -434,7 +433,7 @@ class ExecutableGenerator {
       if (paramGen.hasConflictingTransferAnnotations()) {
         hasUnsupported = true;
 
-        processingEnv.getMessager().printError(
+        messager.printError(
             "@In and @Out cannot be used together", paramGen.element);
         continue;
       }
@@ -443,7 +442,7 @@ class ExecutableGenerator {
           && !paramGen.isArrayOrBuffer()) {
         hasUnsupported = true;
 
-        processingEnv.getMessager().printError(
+        messager.printError(
             "@In and @Out are only supported on array and Buffer parameters",
             paramGen.element);
         continue;
@@ -454,7 +453,7 @@ class ExecutableGenerator {
       if (layout == VALUE_LAYOUT_NOT_SUPPORTED) {
         hasUnsupported = true;
 
-        processingEnv.getMessager().printError(
+        messager.printError(
             "Type is not supported: " + paramGen.typeMirror, paramGen.element);
       }
     }
@@ -463,14 +462,14 @@ class ExecutableGenerator {
         && returnGenerator.layout() == VALUE_LAYOUT_NOT_SUPPORTED) {
       hasUnsupported = true;
 
-      processingEnv.getMessager().printError(
+      messager.printError(
           "Type is not supported: " + returnGenerator.typeMirror, element);
     }
 
     if (returnGenerator.isCFString() && !returnGenerator.isString()) {
       hasUnsupported = true;
 
-      processingEnv.getMessager().printError(
+      messager.printError(
           "@CFString is only supported on java.lang.String", element);
     }
 

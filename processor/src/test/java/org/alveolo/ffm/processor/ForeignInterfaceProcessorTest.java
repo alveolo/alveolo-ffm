@@ -26,6 +26,14 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesNameOverrideFFM() {
+    var c = compile("interface/LibraryApi.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.RenamedLibraryFFM",
+        "interface/RenamedLibraryFFM.java");
+  }
+
+  @Test
   void generatesBasicFFM() {
     var c = compile("interface/LibC.java",
         "value/div_t.java", "value/ldiv_t.java");

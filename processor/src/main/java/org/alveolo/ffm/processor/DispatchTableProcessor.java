@@ -2,6 +2,9 @@ package org.alveolo.ffm.processor;
 
 import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,7 +21,9 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic;
 
+import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.Slot;
 
 @SupportedAnnotationTypes("org.alveolo.ffm.DispatchTable")
@@ -37,7 +42,14 @@ public class DispatchTableProcessor extends AbstractProcessor {
       for (var element : elements) {
         if (element instanceof TypeElement type) {
           try {
-            writeFile(type);
+            var dt = type.getAnnotation(DispatchTable.class);
+            if (dt != null) {
+              validateSimpleClassName(annotation, dt, dt.name());
+              writeFile(type);
+            }
+          } catch (ProcessorError e) {
+            messager.printMessage(Diagnostic.Kind.ERROR,
+                e.getMessage(), e.getElement());
           } catch (Throwable e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
@@ -50,40 +62,28 @@ public class DispatchTableProcessor extends AbstractProcessor {
     return true;
   }
 
-  private void writeFile(TypeElement type) throws IOException {
+  private void writeFile(TypeElement iface) throws ProcessorError, IOException {
     var messager = processingEnv.getMessager();
 
-    if (type.getKind() != ElementKind.INTERFACE) {
+    if (iface.getKind() != ElementKind.INTERFACE) {
       messager.printError("@DispatchTable is only allowed on interfaces",
-          type);
+          iface);
       return;
     }
 
-    var methods = abstractMethods(type);
+    var methods = abstractMethods(iface);
     if (!validateSlots(methods)) return;
 
-    String srcClassName = type.getQualifiedName().toString();
-    String srcPackageName = null;
-    int lastDot = srcClassName.lastIndexOf('.');
-    if (lastDot > 0) {
-      srcPackageName = srcClassName.substring(0, lastDot);
-    }
-    String srcSimpleClassName = srcClassName.substring(lastDot + 1);
-    String className = generatedClassName(type, srcPackageName);
-    int generatedLastDot = className.lastIndexOf('.');
-    String packageName = generatedLastDot > 0
-        ? className.substring(0, generatedLastDot)
-        : null;
-    String simpleClassName = className.substring(generatedLastDot + 1);
-    String interfaceName = packageName == null
-        || packageName.equals(srcPackageName)
-            ? srcSimpleClassName
-            : srcClassName;
+    var elements = processingEnv.getElementUtils();
+    String packageName = packageName(iface, elements);
+    String ifaceSimpleName = iface.getSimpleName().toString();
+    String className = dispatchTableClassName(iface, elements);
+    String simpleClassName = dispatchTableSimpleClassName(iface);
 
-    var file = processingEnv.getFiler().createSourceFile(className, type);
+    var file = processingEnv.getFiler().createSourceFile(className, iface);
 
     try (var out = file.openWriter()) {
-      if (packageName != null) {
+      if (!packageName.isEmpty()) {
         out.write("package " + packageName + ";\n\n");
       }
 
@@ -108,7 +108,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
           """
           .replace("<generator>", getClass().getCanonicalName())
           .replace("<name>", simpleClassName)
-          .replace("<interface>", interfaceName)
+          .replace("<interface>", ifaceSimpleName)
           .replace("<slotCount>", Long.toString(slotCount(methods))));
 
       var generators = generators(methods);
@@ -122,13 +122,6 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
       out.write("}\n");
     }
-  }
-
-  private String generatedClassName(TypeElement type, String packageName) {
-    var className = dispatchTableClassName(type);
-    if (className.indexOf('.') >= 0 || packageName == null) return className;
-
-    return packageName + "." + className;
   }
 
   private List<ExecutableElement> abstractMethods(TypeElement type) {

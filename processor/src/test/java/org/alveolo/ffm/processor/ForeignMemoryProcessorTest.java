@@ -51,6 +51,48 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesSimpleNameOverridesInSourcePackage() {
+    var c = compile("memory/override/SimpleOverrides.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.RenamedPoint",
+        "memory/override/RenamedPoint.java");
+    assertGenerated(c, "pkg.RenamedChoice",
+        "memory/override/RenamedChoice.java");
+  }
+
+  @Test
+  void failsQualifiedStructNameOverride() {
+    var source = forSourceString("test.BadStruct", """
+        package test;
+        @org.alveolo.ffm.Struct(name = "other.BadStructFM")
+        public interface BadStruct {
+          int value();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Struct name must be a simple Java class name");
+  }
+
+  @Test
+  void failsQualifiedUnionNameOverride() {
+    var source = forSourceString("test.BadUnion", """
+        package test;
+        @org.alveolo.ffm.Union(name = "other.BadUnionFM")
+        public interface BadUnion {
+          int value();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Union name must be a simple Java class name");
+  }
+
+  @Test
   void generatesObjectVtblStruct() {
     var c = compile(
         "memory/object/NativeApi.java",

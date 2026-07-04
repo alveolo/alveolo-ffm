@@ -1,6 +1,10 @@
 package org.alveolo.ffm.processor;
 
 import static javax.lang.model.SourceVersion.RELEASE_25;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -17,7 +21,9 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic;
 
+import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Library;
 
 @SupportedAnnotationTypes("org.alveolo.ffm.ForeignInterface")
@@ -26,26 +32,24 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
   @Override
   public boolean process(
       Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    var messager = processingEnv.getMessager();
-
-    messager.printNote("FfmProcessor process...");
-    messager.printNote("RoundEnvironment"
-        + ": processingOver = " + roundEnv.processingOver()
-        + ", rootElements = " + roundEnv.getRootElements());
-
     if (roundEnv.processingOver()) return true;
 
-    for (var annotation : annotations) {
-      messager.printNote("Annotation: " + annotation);
+    var messager = processingEnv.getMessager();
 
+    for (var annotation : annotations) {
       var ffmElements = roundEnv.getElementsAnnotatedWith(annotation);
 
       for (var ffm : ffmElements) {
-        messager.printNote("Annotated Element: " + ffm);
-
         if (ffm instanceof TypeElement type) {
           try {
-            writeFile(type);
+            var fi = type.getAnnotation(ForeignInterface.class);
+            if (fi != null) {
+              validateSimpleClassName(annotation, fi, fi.name());
+              writeFile(type);
+            }
+          } catch (ProcessorError e) {
+            messager.printMessage(Diagnostic.Kind.ERROR,
+                e.getMessage(), e.getElement());
           } catch (Throwable e) {
             var sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
@@ -58,32 +62,28 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     return true;
   }
 
-  private void writeFile(TypeElement type) throws IOException {
+  private void writeFile(TypeElement iface) throws IOException {
     var messager = processingEnv.getMessager();
 
-    if (type.getKind() != ElementKind.INTERFACE) {
+    if (iface.getKind() != ElementKind.INTERFACE) {
       messager.printError("@ForeignInterface is only allowed on interfaces",
-          type);
+          iface);
       return;
     }
 
-    String srcClassName = type.getQualifiedName().toString();
-    String packageName = null;
-    int lastDot = srcClassName.lastIndexOf('.');
-    if (lastDot > 0) {
-      packageName = srcClassName.substring(0, lastDot);
-    }
-    String srcSimpleClassName = srcClassName.substring(lastDot + 1);
-    String className = srcClassName + "FFM";
-    String simpleClassName = className.substring(lastDot + 1);
+    var elements = processingEnv.getElementUtils();
+    String packageName = packageName(iface, elements);
+    String ifaceSimpleName = iface.getSimpleName().toString();
+    String className = foreignInterfaceClassName(iface, elements);
+    String simpleClassName = foreignInterfaceSimpleClassName(iface);
 
-    var libraries = libraries(type);
-    if (!validateLibraries(type, libraries)) return;
+    var libraries = libraries(iface);
+    if (!validateLibraries(iface, libraries)) return;
 
-    var file = processingEnv.getFiler().createSourceFile(className, type);
+    var file = processingEnv.getFiler().createSourceFile(className, iface);
 
     try (var out = file.openWriter()) {
-      if (packageName != null) {
+      if (!packageName.isEmpty()) {
         out.write("package " + packageName + ";\n\n");
       }
 
@@ -101,7 +101,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           """
           .replace("<generator>", getClass().getCanonicalName())
           .replace("<name>", simpleClassName)
-          .replace("<interface>", srcSimpleClassName));
+          .replace("<interface>", ifaceSimpleName));
 
       out.write("""
             public static final Linker FF$LINKER = Linker.nativeLinker();
@@ -118,11 +118,11 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
               public static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
             """
         );
-        writeLookupInitializer(out, srcSimpleClassName, libraries);
+        writeLookupInitializer(out, ifaceSimpleName, libraries);
       }
 
       int index = 0;
-      for (var member : type.getEnclosedElements()) {
+      for (var member : iface.getEnclosedElements()) {
         if (member instanceof ExecutableElement method) {
           if (method.getKind() != ElementKind.METHOD || method.isDefault()
               || method.getModifiers().contains(Modifier.STATIC)) {

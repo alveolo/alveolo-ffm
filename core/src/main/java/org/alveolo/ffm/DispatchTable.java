@@ -14,8 +14,6 @@ import java.lang.annotation.Target;
 @Target(TYPE)
 @Retention(SOURCE)
 public @interface DispatchTable {
-  /**
-   * Override the generated class name. Defaults to interface name + "FD".
-   */
+  /// Override the generated simple class name. Defaults to type name + `FD`.
   String name() default "";
 }

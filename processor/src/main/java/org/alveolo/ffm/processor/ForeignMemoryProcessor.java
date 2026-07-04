@@ -5,7 +5,10 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.STATIC;
-import static org.alveolo.ffm.processor.ProcessorUtils.foreignClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.qualifyName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -30,6 +33,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic;
 
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Sequence;
@@ -99,6 +103,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
               try {
                 var struct = type.getAnnotation(Struct.class);
                 if (struct != null) {
+                  validateSimpleClassName(annotation, struct, struct.name());
                   if (struct.vtable()
                       && type.getKind() == ElementKind.RECORD) {
                     messager.printError(
@@ -109,7 +114,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                     writeFile(type, "struct", struct.vtable());
                   }
                 }
-                if (type.getAnnotation(Union.class) != null) {
+
+                var union = type.getAnnotation(Union.class);
+                if (union != null) {
+                  validateSimpleClassName(annotation, union, union.name());
                   if (type.getKind() == ElementKind.RECORD) {
                     messager.printError("@" + annotation.getSimpleName()
                         + " can only be applied to an interface, not "
@@ -118,6 +126,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                     writeFile(type, "union", false);
                   }
                 }
+              } catch (ProcessorError e) {
+                messager.printMessage(Diagnostic.Kind.ERROR,
+                    e.getMessage(), e.getElement());
               } catch (Throwable e) {
                 var sw = new StringWriter();
                 e.printStackTrace(new PrintWriter(sw));
@@ -125,8 +136,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
               }
               break;
             case ElementKind kind:
-              messager.printError("@"
-                  + annotation.getSimpleName()
+              messager.printError("@" + annotation.getSimpleName()
                   + " can only be applied to an interface, not " + kind, type);
           }
         }
@@ -463,12 +473,12 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       throws IOException {
     if (!validateRecordComponents(iface)) return;
 
-    String packageName = processingEnv.getElementUtils()
-        .getPackageOf(iface).getQualifiedName().toString();
-    String className = foreignClassName(iface);
-    int lastDot = className.lastIndexOf('.');
-    String simpleClassName = className.substring(lastDot + 1);
-    String ifaceName = iface.getSimpleName().toString();
+    var elements = processingEnv.getElementUtils();
+    String packageName = packageName(iface, elements);
+    String ifaceSimpleName = iface.getSimpleName().toString();
+    String className = foreignMemoryClassName(iface);
+    String simpleClassName = foreignMemorySimpleClassName(iface);
+    String vtableSimpleName = ifaceSimpleName + "Vtbl";
 
     var isStructInterface = kind.equals("struct")
         && iface.getKind() == ElementKind.INTERFACE;
@@ -486,8 +496,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         symbolOwnerClassName);
 
     if (objectMethods.hasVirtualMethods()) {
-      writeDispatchTable(iface, packageName, ifaceName,
-          objectMethods.virtualMethods());
+      writeDispatchTable(iface, packageName, ifaceSimpleName,
+          vtableSimpleName, objectMethods.virtualMethods());
     }
 
     var fields = inferFields(iface, isStructInterface);
@@ -495,22 +505,22 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 
     try (var out = file.openWriter()) {
-      writeClassHeader(out, packageName, simpleClassName, iface,
-          objectMethods.hasSymbolMethods());
+      writeClassHeader(out, packageName, simpleClassName,
+          ifaceSimpleName, iface, objectMethods.hasSymbolMethods());
       writeLayout(out, fields, kind, vtable);
       writePathElements(out, simpleClassName, fields, vtable);
       writeVarHandles(out, simpleClassName, fields, vtable);
       writeAllocate(out, simpleClassName);
       switch (iface.getKind()) {
         case INTERFACE:
-          writeConstructors(out, simpleClassName, ifaceName,
+          writeConstructors(out, simpleClassName, vtableSimpleName,
               objectMethods.hasVirtualMethods());
           writeFieldAccessors(out, simpleClassName, fields);
           writeSymbolHolder(out, symbolGenerators);
           writeObjectMethods(out, objectMethods, symbolGenerators);
           break;
         case RECORD:
-          writeRecordConverters(out, ifaceName, fields, iface);
+          writeRecordConverters(out, ifaceSimpleName, fields, iface);
           writeStaticAccessors(out, simpleClassName, fields);
           break;
         case ElementKind k:
@@ -521,7 +531,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeClassHeader(Writer out, String packageName,
-      String className, TypeElement srcType, boolean hasSymbolMethods)
+      String className, String sourceTypeName, TypeElement srcType,
+      boolean hasSymbolMethods)
       throws IOException {
     if (!packageName.isEmpty()) {
       out.append("package ").append(packageName).append(";\n\n");
@@ -529,7 +540,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     String declaration = switch (srcType.getKind()) {
       case INTERFACE -> className + " implements "
-          + srcType.getSimpleName().toString();
+          + sourceTypeName;
       case RECORD -> className;
       case ElementKind k -> throw new IllegalArgumentException(
           "Unexpected value: " + k);
@@ -549,13 +560,12 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeDispatchTable(TypeElement iface, String packageName,
-      String ifaceName, List<ExecutableElement> methods)
-      throws IOException {
-    String qualifiedName = packageName.isEmpty()
-        ? ifaceName + "Vtbl"
-        : packageName + "." + ifaceName + "Vtbl";
-    var file = processingEnv.getFiler().createSourceFile(
-        qualifiedName, iface);
+      String ifaceSimpleName, String vtableSimpleName,
+      List<ExecutableElement> methods) throws IOException {
+    String vtableClassName = qualifyName(packageName, vtableSimpleName);
+
+    var file = processingEnv.getFiler()
+        .createSourceFile(vtableClassName, iface);
 
     try (var out = file.openWriter()) {
       if (!packageName.isEmpty()) {
@@ -569,7 +579,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           interface <name>Vtbl {
           """
           .replace("<generator>", getClass().getCanonicalName())
-          .replace("<name>", ifaceName));
+          .replace("<name>", ifaceSimpleName));
 
       for (var method : methods) {
         out.write("""
@@ -692,7 +702,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private String foreignInterfaceClassName(TypeElement type) {
-    return type.getQualifiedName() + "FFM";
+    return ProcessorUtils.foreignInterfaceClassName(
+        type, processingEnv.getElementUtils());
+  }
+
+  private String foreignMemoryClassName(TypeElement type) {
+    return ProcessorUtils.foreignMemoryClassName(
+        type, processingEnv.getElementUtils());
   }
 
   private int virtualSlot(ExecutableElement method) {
@@ -813,7 +829,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeConstructors(Writer out,
-      String className, String ifaceName, boolean hasVirtualMethods)
+      String className, String vtableTypeName, boolean hasVirtualMethods)
       throws IOException {
     out.write("""
 
@@ -830,7 +846,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
             private final <iface>Vtbl ff$vtbl;
           """
-          .replace("<iface>", ifaceName));
+          .replace("<iface>Vtbl", vtableTypeName));
     }
 
     out.write("""
@@ -845,8 +861,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .replace("<class>", className));
 
     if (hasVirtualMethods) {
-      out.write("    this.ff$vtbl = " + ifaceName
-          + "VtblFD.reinterpret((MemorySegment) FM$VH$ff$vtbl.get(ms));\n");
+      out.write("    this.ff$vtbl = " + vtableTypeName
+          + "FD.reinterpret((MemorySegment) FM$VH$ff$vtbl.get(ms));\n");
     }
 
     out.write("""
@@ -860,7 +876,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
               return ff$vtbl;
             }
           """
-          .replace("<iface>", ifaceName));
+          .replace("<iface>Vtbl", vtableTypeName));
     }
   }
 
@@ -936,7 +952,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     if (isNestedValue(field)) {
       var typeEl = (TypeElement) processingEnv.getTypeUtils()
           .asElement(field.typeMirror());
-      String foreignClassName = foreignClassName(typeEl);
+      String foreignClassName = foreignMemoryClassName(typeEl);
 
       if (typeEl.getKind() == ElementKind.RECORD) {
         out.write("""
@@ -981,7 +997,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     } else if (isNestedAddress(field)) {
       var typeEl = (TypeElement) processingEnv.getTypeUtils()
           .asElement(field.typeMirror());
-      String foreignClassName = foreignClassName(typeEl);
+      String foreignClassName = foreignMemoryClassName(typeEl);
 
       out.write("""
 
@@ -1048,7 +1064,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       var typeEl = (TypeElement) processingEnv.getTypeUtils()
           .asElement(field.typeMirror());
 
-      String foreignClassName = foreignClassName(typeEl);
+      String foreignClassName = foreignMemoryClassName(typeEl);
 
       if (typeEl.getKind() == ElementKind.RECORD) {
         out.write("""
@@ -1210,17 +1226,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private boolean isNestedValue(StructField field) {
-    return isNested(field)
-        && new TypeGenerator(processingEnv, field.typeMirror(),
-            field.sequence())
-                .isValue();
+    return isNested(field) && new TypeGenerator(processingEnv,
+        field.typeMirror(), field.sequence()).isValue(); // TODO allocation?
   }
 
   private boolean isNestedAddress(StructField field) {
-    return isNested(field)
-        && new TypeGenerator(processingEnv, field.typeMirror(),
-            field.sequence())
-                .isAddress();
+    return isNested(field) && new TypeGenerator(processingEnv,
+        field.typeMirror(), field.sequence()).isAddress(); // TODO allocation?
   }
 
   private boolean isRecord(StructField field) {
@@ -1244,20 +1256,17 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     String name = field.name();
     String address = "(MemorySegment) FM$VH$" + name + ".get(" + segment + ")";
 
-    return foreignClassName(typeEl) + ".reinterpret(" + address + ")";
+    return foreignMemoryClassName(typeEl) + ".reinterpret(" + address + ")";
   }
 
   private String nestedAddressValue(StructField field, String value) {
-    if (isRecord(field)) {
-      var typeEl = (TypeElement) processingEnv.getTypeUtils()
-          .asElement(field.typeMirror());
-      return foreignClassName(typeEl)
-          + ".toMemorySegment(Arena.ofAuto(), " + value + ")";
-    }
-
     var typeEl = (TypeElement) processingEnv.getTypeUtils()
         .asElement(field.typeMirror());
-    return "((" + foreignClassName(typeEl) + ")" + value + ").ms";
+    String className = foreignMemoryClassName(typeEl);
+
+    return isRecord(field)
+        ? className + ".toMemorySegment(Arena.ofAuto(), " + value + ")"
+        : "((" + className + ")" + value + ").ms";
   }
 
   private String capitalize(String name) {

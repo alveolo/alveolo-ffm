@@ -14,6 +14,29 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesDispatchTableNameOverrideInSourcePackage() {
+    var c = compile("dispatch/RenamedVtbl.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.RenamedVtblFD", "dispatch/RenamedVtblFD.java");
+  }
+
+  @Test
+  void failsQualifiedDispatchTableNameOverride() {
+    var source = forSourceString("test.BadVtbl", """
+        package test;
+        @org.alveolo.ffm.DispatchTable(name = "other.BadVtblFD")
+        public interface BadVtbl {
+          @org.alveolo.ffm.Slot(0) void bad();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@DispatchTable name must be a simple Java class name");
+  }
+
+  @Test
   void failsOnNonInterface() {
     var source = forSourceString("test.BadClass", """
         package test;

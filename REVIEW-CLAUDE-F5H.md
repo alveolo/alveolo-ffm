@@ -72,7 +72,7 @@ record component — accessors that were never written. A record like
 `@Struct record Foo(IntBuffer data)` produces uncompilable output with no
 diagnostic.
 
-### 6. `@Struct(name = ...)` breaks package placement
+### 6. ✅ `@Struct(name = ...)` breaks package placement
 
 `ProcessorUtils.foreignClassName`
 (`processor/src/main/java/org/alveolo/ffm/processor/ProcessorUtils.java:26`)
