@@ -41,4 +41,8 @@ public interface PassMode {
 
   @Address
   InterfaceValue addressTypeUseOverridesValueType(@Address InterfaceValue ref);
+
+  int primitiveAddress(@Address int value);
+
+  @Address int primitiveAddressReturn();
 }

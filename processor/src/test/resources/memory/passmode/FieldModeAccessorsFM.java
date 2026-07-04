@@ -10,7 +10,6 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
           org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
         pkg.InnerRecordFM.FM$LAYOUT.withName("recordDefault"),
         ValueLayout.ADDRESS.withName("interfaceDefault"),
-        ValueLayout.ADDRESS.withName("recordTypeUseAddress"),
         pkg.InnerInterfaceFM.FM$LAYOUT.withName("interfaceTypeUseValue"),
         pkg.TypeAddressRecordFM.FM$LAYOUT.withName("fieldOverridesTypeAddress"),
         ValueLayout.ADDRESS.withName("fieldOverridesTypeValue"),
@@ -21,9 +20,6 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
 
   public static final MemoryLayout.PathElement FM$PE$interfaceDefault =
       MemoryLayout.PathElement.groupElement("interfaceDefault");
-
-  public static final MemoryLayout.PathElement FM$PE$recordTypeUseAddress =
-      MemoryLayout.PathElement.groupElement("recordTypeUseAddress");
 
   public static final MemoryLayout.PathElement FM$PE$interfaceTypeUseValue =
       MemoryLayout.PathElement.groupElement("interfaceTypeUseValue");
@@ -37,10 +33,6 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
   public static final java.lang.invoke.VarHandle FM$VH$interfaceDefault =
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$interfaceDefault), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$recordTypeUseAddress =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$recordTypeUseAddress), 1, 0L);
 
   public static final java.lang.invoke.VarHandle FM$VH$fieldOverridesTypeValue =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -85,15 +77,6 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
 
   public FieldModeAccessorsFM interfaceDefault(pkg.InnerInterface value) {
     FM$VH$interfaceDefault.set(ms, ((pkg.InnerInterfaceFM)value).ms);
-    return this;
-  }
-
-  public pkg.InnerRecord recordTypeUseAddress() {
-    return pkg.InnerRecordFM.reinterpret((MemorySegment) FM$VH$recordTypeUseAddress.get(ms));
-  }
-
-  public FieldModeAccessorsFM recordTypeUseAddress(pkg.InnerRecord value) {
-    FM$VH$recordTypeUseAddress.set(ms, pkg.InnerRecordFM.toMemorySegment(Arena.ofAuto(), value));
     return this;
   }
 

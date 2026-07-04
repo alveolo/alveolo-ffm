@@ -67,6 +67,9 @@ class VariableGenerator extends TypeGenerator {
   /// * `ff$cfString$argX` for Java `@CFString String` conversion
   /// * `StructFM.toMemorySegment(ff$arena, argX)` for records conversion
   String invoke() {
+    if (isPrimitiveAddress())
+      return segmentName();
+
     if (isArrayOrBuffer())
       return segmentName();
 
@@ -115,6 +118,17 @@ class VariableGenerator extends TypeGenerator {
     return isArray()
         ? arrayInitializer()
         : bufferInitializer();
+  }
+
+  String primitiveAddressInitializer() {
+    return """
+        var <segment> = ff$arena.allocate(<layout>);
+        <segment>.set(<layout>, 0L, <name>);
+        """
+        .replace("<segment>", segmentName())
+        .replace("<layout>", valueLayout())
+        .replace("<name>", name)
+        .stripTrailing();
   }
 
   String arrayOrBufferCopyOut() {

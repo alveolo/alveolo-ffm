@@ -38,9 +38,6 @@ interface FieldModeAccessors {
 
   InnerInterface interfaceDefault();
 
-  @Address
-  InnerRecord recordTypeUseAddress();
-
   @Value
   InnerInterface interfaceTypeUseValue();
 

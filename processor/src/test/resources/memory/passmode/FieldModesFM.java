@@ -55,13 +55,7 @@ public final class FieldModesFM {
     return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static void toMemorySegment(FieldModes from, MemorySegment ms) {
-    try (var ff$arena = Arena.ofConfined()) {
-  toMemorySegment(from, ms, ff$arena);
-}
-  }
-
-  private static void toMemorySegment(
+  public static void toMemorySegment(
       FieldModes from, MemorySegment ms, SegmentAllocator ff$allocator) {
     recordDefault(ms, from.recordDefault());
     interfaceDefault(ms, from.interfaceDefault());
@@ -111,10 +105,6 @@ public final class FieldModesFM {
 
   public static pkg.InnerRecord recordTypeUseAddress(MemorySegment ms) {
     return pkg.InnerRecordFM.reinterpret((MemorySegment) FM$VH$recordTypeUseAddress.get(ms));
-  }
-
-  public static void recordTypeUseAddress(MemorySegment ms, pkg.InnerRecord value) {
-    FM$VH$recordTypeUseAddress.set(ms, pkg.InnerRecordFM.toMemorySegment(Arena.ofAuto(), value));
   }
 
   public static void recordTypeUseAddress(

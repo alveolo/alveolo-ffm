@@ -238,6 +238,40 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsNonForeignMemoryClassParameter() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(Object value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining("Type is not supported: java.lang.Object");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsAddressOnUnsupportedClassParameter() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.Address Object value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining("Type is not supported: java.lang.Object");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void failsOnNonInterface() {
     var source = forSourceString("test.BadClass", """
         package pkg;

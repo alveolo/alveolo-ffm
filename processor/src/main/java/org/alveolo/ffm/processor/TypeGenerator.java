@@ -58,6 +58,9 @@ class TypeGenerator {
 
   /// Java type name
   String typeName() {
+    if (typeMirror.getKind().isPrimitive())
+      return primitiveTypeName();
+
     if (typeMirror instanceof DeclaredType dt)
       return elements.getBinaryName((TypeElement) dt.asElement()).toString();
 
@@ -72,26 +75,25 @@ class TypeGenerator {
   ///   primitive arrays
   // TODO support nested struct/union and reference arrays
   String layout() {
+    if (hasConflictingPassModeAnnotations())
+      return VALUE_LAYOUT_NOT_SUPPORTED;
+
+    if (isPrimitiveAddress())
+      return "ValueLayout.ADDRESS";
+
     if (typeElement != null) {
       if (isForeignMemory()) {
-        if (hasConflictingPassModeAnnotations())
-          return VALUE_LAYOUT_NOT_SUPPORTED;
         return isValue()
             ? foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT"
             : "ValueLayout.ADDRESS";
       }
 
       if (typeElement.getKind() == ElementKind.CLASS) {
-        if (hasConflictingPassModeAnnotations())
-          return VALUE_LAYOUT_NOT_SUPPORTED;
-
         if (!hasTypeUseAddress() && !hasTypeUseValue()
             && !hasTypeAddress() && !hasTypeValue())
           return primitiveLayout();
 
-        if (isValue())
-          return foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT";
-        if (isAddress()) return "ValueLayout.ADDRESS";
+        return primitiveLayout();
       }
     }
 
@@ -99,16 +101,10 @@ class TypeGenerator {
   }
 
   private String primitiveLayout() {
-    return switch (typeName()) {
-      case "boolean" -> "ValueLayout.JAVA_BOOLEAN";
-      case "byte" -> "ValueLayout.JAVA_BYTE";
-      case "char" -> "ValueLayout.JAVA_CHAR";
-      case "short" -> "ValueLayout.JAVA_SHORT";
-      case "int" -> "ValueLayout.JAVA_INT";
-      case "long" -> "ValueLayout.JAVA_LONG";
-      case "float" -> "ValueLayout.JAVA_FLOAT";
-      case "double" -> "ValueLayout.JAVA_DOUBLE";
+    if (typeMirror.getKind().isPrimitive())
+      return valueLayout();
 
+    return switch (typeName()) {
       case "java.lang.String" -> "ValueLayout.ADDRESS";
       case "java.lang.foreign.MemorySegment" -> "ValueLayout.ADDRESS";
 
@@ -130,6 +126,36 @@ class TypeGenerator {
       // TODO more custom structures
 
       default -> VALUE_LAYOUT_NOT_SUPPORTED;
+    };
+  }
+
+  String valueLayout() {
+    return switch (typeMirror.getKind()) {
+      case BOOLEAN -> "ValueLayout.JAVA_BOOLEAN";
+      case BYTE -> "ValueLayout.JAVA_BYTE";
+      case CHAR -> "ValueLayout.JAVA_CHAR";
+      case SHORT -> "ValueLayout.JAVA_SHORT";
+      case INT -> "ValueLayout.JAVA_INT";
+      case LONG -> "ValueLayout.JAVA_LONG";
+      case FLOAT -> "ValueLayout.JAVA_FLOAT";
+      case DOUBLE -> "ValueLayout.JAVA_DOUBLE";
+      default -> throw new IllegalArgumentException(
+          "Unexpected primitive type: " + typeMirror);
+    };
+  }
+
+  private String primitiveTypeName() {
+    return switch (typeMirror.getKind()) {
+      case BOOLEAN -> "boolean";
+      case BYTE -> "byte";
+      case CHAR -> "char";
+      case SHORT -> "short";
+      case INT -> "int";
+      case LONG -> "long";
+      case FLOAT -> "float";
+      case DOUBLE -> "double";
+      default -> throw new IllegalArgumentException(
+          "Unexpected primitive type: " + typeMirror);
     };
   }
 
@@ -208,7 +234,8 @@ class TypeGenerator {
   }
 
   boolean needsConfinedArena() {
-    return isRecord() || (isString() && !isCFString());
+    return isPrimitiveAddress()
+        || isRecord() || (isString() && !isCFString());
   }
 
   boolean isMemorySegment() {
@@ -220,7 +247,7 @@ class TypeGenerator {
   }
 
   boolean isAddress() {
-    if (isPrimitive()) return false;
+    if (isPrimitive()) return isPrimitiveAddress();
 
     if (hasTypeUseAddress()) return true;
     if (hasTypeUseValue()) return false;
@@ -235,8 +262,16 @@ class TypeGenerator {
     return false;
   }
 
+  boolean hasAddressAnnotation() {
+    return hasTypeUseAddress() || hasTypeAddress();
+  }
+
+  boolean isPrimitiveAddress() {
+    return isPrimitive() && hasTypeUseAddress();
+  }
+
   boolean isValue() {
-    if (isPrimitive()) return true;
+    if (isPrimitive()) return !isPrimitiveAddress();
 
     if (hasTypeUseAddress()) return false;
     if (hasTypeUseValue()) return true;

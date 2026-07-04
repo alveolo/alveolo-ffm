@@ -51,6 +51,87 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsAddressRecordFieldOnInterfaceStruct() {
+    var source = forSourceString("test.BadStruct", """
+        package test;
+
+        @org.alveolo.ffm.Struct
+        record Pair(int left, int right) {}
+
+        @org.alveolo.ffm.Struct
+        interface BadStruct {
+          @org.alveolo.ffm.Address Pair pair();
+        }
+        """);
+    var generatedUse = forSourceString("test.BadStructUse", """
+        package test;
+
+        class BadStructUse {
+          Class<?> generatedClass = BadStructFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "@Address record fields are not supported on memory-backed "
+            + "@Struct or @Union interfaces");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void generatesTransitiveRecordAddressValueField() {
+    var c = compile("memory/address/TransitiveRecords.java");
+
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.PairBoxFM", "memory/address/PairBoxFM.java");
+    assertGenerated(c, "pkg.IntBoxFM", "memory/address/IntBoxFM.java");
+    assertGenerated(c, "pkg.OuterFM", "memory/address/OuterFM.java");
+  }
+
+  @Test
+  void failsStringFieldOnMemoryStruct() {
+    var source = forSourceString("test.BadStruct", """
+        package test;
+
+        @org.alveolo.ffm.Struct
+        record BadStruct(String value) {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "String fields are not supported on @Struct or @Union memory types");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsAddressPrimitiveFieldOnInterfaceStruct() {
+    var source = forSourceString("test.BadStruct", """
+        package test;
+
+        @org.alveolo.ffm.Struct
+        interface BadStruct {
+          @org.alveolo.ffm.Address long pointer();
+        }
+        """);
+    var generatedUse = forSourceString("test.BadStructUse", """
+        package test;
+
+        class BadStructUse {
+          Class<?> generatedClass = BadStructFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "@Address primitive fields are not supported on memory-backed "
+            + "@Struct or @Union interfaces");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void generatesSimpleNameOverridesInSourcePackage() {
     var c = compile("memory/override/SimpleOverrides.java");
     assertThat(c).succeeded();

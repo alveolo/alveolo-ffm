@@ -196,6 +196,9 @@ class ExecutableGenerator {
     if (returnGenerator.isCFString())
       return returnGenerator.typeName();
 
+    if (returnGenerator.isPrimitive())
+      return returnGenerator.typeName();
+
     return element.getReturnType().toString();
   }
 
@@ -207,6 +210,9 @@ class ExecutableGenerator {
     var returnType = element.getReturnType();
     var call = methodHandleExpression + ".invokeExact(" + params() + ")";
     var copyOut = copyOut().toList();
+
+    if (returnGenerator.isPrimitiveAddress())
+      return primitiveAddressInvoke(call, copyOut);
 
     if (returnGenerator.isPrimitive())
       return returnWithCopyOut("(" + returnType + ") " + call, copyOut);
@@ -316,6 +322,21 @@ class ExecutableGenerator {
         .lines();
   }
 
+  private Stream<String> primitiveAddressInvoke(
+      String call, List<String> copyOut) {
+    var layout = returnGenerator.valueLayout();
+    var all = Stream.of(
+        ("var ff$address$r = (MemorySegment) " + call + ";").lines(),
+        copyOut.stream(),
+        """
+            return ff$address$r.reinterpret(<layout>.byteSize())
+                .get(<layout>, 0L);"""
+            .replace("<layout>", layout)
+            .lines());
+
+    return all.flatMap(identity());
+  }
+
   private String foreignMemoryExpression(TypeMirror returnType, String call) {
     var type = (TypeElement) types.asElement(returnType);
     String className = foreignMemoryClassName(type, elements);
@@ -350,6 +371,9 @@ class ExecutableGenerator {
   }
 
   private Stream<String> paramInitializers(VariableGenerator p) {
+    if (p.isPrimitiveAddress())
+      return p.primitiveAddressInitializer().lines();
+
     if (p.isCFString())
       return Stream.of(p.cfStringName()
           + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
@@ -454,7 +478,7 @@ class ExecutableGenerator {
         hasUnsupported = true;
 
         messager.printError(
-            "Type is not supported: " + paramGen.typeMirror, paramGen.element);
+            "Type is not supported: " + paramGen.typeName(), paramGen.element);
       }
     }
 
@@ -463,7 +487,7 @@ class ExecutableGenerator {
       hasUnsupported = true;
 
       messager.printError(
-          "Type is not supported: " + returnGenerator.typeMirror, element);
+          "Type is not supported: " + returnGenerator.typeName(), element);
     }
 
     if (returnGenerator.isCFString() && !returnGenerator.isString()) {

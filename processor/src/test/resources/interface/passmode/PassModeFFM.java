@@ -124,4 +124,41 @@ public final class PassModeFFM implements PassMode {
       throw new AssertionError(ff$t);
     }
   }
+
+  private static final MethodHandle FF$MH$6 = FF$LINKER.downcallHandle(
+      FF$LOOKUP.findOrThrow("primitiveAddress"),
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_INT,
+          ValueLayout.ADDRESS));
+
+  public int primitiveAddress(
+      int value) {
+    try (var ff$arena = Arena.ofConfined()) {
+      var ff$ms$value = ff$arena.allocate(ValueLayout.JAVA_INT);
+      ff$ms$value.set(ValueLayout.JAVA_INT, 0L, value);
+      return (int) FF$MH$6.invokeExact(
+          ff$ms$value);
+    } catch (RuntimeException|Error ff$e) {
+      throw ff$e;
+    } catch (Throwable ff$t) {
+      throw new AssertionError(ff$t);
+    }
+  }
+
+  private static final MethodHandle FF$MH$7 = FF$LINKER.downcallHandle(
+      FF$LOOKUP.findOrThrow("primitiveAddressReturn"),
+      FunctionDescriptor.of(
+          ValueLayout.ADDRESS));
+
+  public int primitiveAddressReturn() {
+    try {
+      var ff$address$r = (MemorySegment) FF$MH$7.invokeExact();
+      return ff$address$r.reinterpret(ValueLayout.JAVA_INT.byteSize())
+          .get(ValueLayout.JAVA_INT, 0L);
+    } catch (RuntimeException|Error ff$e) {
+      throw ff$e;
+    } catch (Throwable ff$t) {
+      throw new AssertionError(ff$t);
+    }
+  }
 }
