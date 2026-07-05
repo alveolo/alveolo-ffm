@@ -116,7 +116,9 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
       for (var i = 0; i < generators.size(); i++) {
         var generator = generators.get(i);
-        writeMethodDescriptor(out, generator, i);
+        if (!generator.hasErrors) {
+          writeMethodDescriptor(out, generator, i);
+        }
         out.write(generator.methodWithHandle());
       }
 
@@ -244,6 +246,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
       List<ExecutableElement> methods) {
     var result = new StringBuilder();
     for (var i = 0; i < generators.size(); i++) {
+      if (generators.get(i).hasErrors) continue;
+
       result.append("""
           this.<mh> = FF$MD$<index>.bindTo(
               ms.getAtIndex(ValueLayout.ADDRESS, <slot>L));

@@ -400,10 +400,41 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
           @org.alveolo.ffm.Symbol("bad") Object bad();
         }
         """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
 
-    var c = compile(nativeApi, source);
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(nativeApi, source, generatedUse);
 
     assertThat(c).hadErrorContaining("Type is not supported: java.lang.Object");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsUnsupportedVirtualMethodTypeWithoutGeneratedCompileErrors() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct(vtable = true)
+        public interface Bad {
+          @org.alveolo.ffm.Virtual(0) Object bad();
+        }
+        """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
+
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining("Type is not supported: java.lang.Object");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test
@@ -415,10 +446,18 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         @Struct
         public record BadRecord(List<String> data) {}
         """);
+    var generatedUse = forSourceString("test.BadRecordUse", """
+        package test;
 
-    var c = compile(source);
+        class BadRecordUse {
+          Class<?> generatedClass = BadRecordFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining("Type is not supported: java.util.List");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test
@@ -430,10 +469,97 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
           Bad x(int value);
         }
         """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
 
-    var c = compile(source);
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining("Field 'x' has no accessor");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsUnsupportedStructSetterWithoutGeneratedCompileErrors() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          int x();
+          void x(int value);
+        }
+        """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
+
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "Unsupported accessor signature for field 'x'");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsUnsupportedNestedRecordSetterWithoutGeneratedCompileErrors() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        record Pair(int x) {}
+
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          Pair pair();
+          void pair(Pair value);
+        }
+        """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
+
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "Unsupported accessor signature for field 'pair'");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsUnsupportedBufferOverloadWithoutGeneratedCompileErrors() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          @org.alveolo.ffm.Sequence(3)
+          java.nio.IntBuffer data();
+          void data(int value);
+        }
+        """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
+
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "Unsupported accessor signature for field 'data'");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test
@@ -445,11 +571,19 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
           int[] data();
         }
         """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
 
-    var c = compile(source);
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
         "Array fields are not supported, use java.nio.IntBuffer instead");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test
@@ -459,11 +593,19 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         @org.alveolo.ffm.Struct
         public record BadRecord(double[] data) {}
         """);
+    var generatedUse = forSourceString("test.BadRecordUse", """
+        package test;
 
-    var c = compile(source);
+        class BadRecordUse {
+          Class<?> generatedClass = BadRecordFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
         "Array fields are not supported, use java.nio.DoubleBuffer instead");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test
@@ -473,10 +615,18 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         @org.alveolo.ffm.Struct
         public record BadRecord(java.nio.IntBuffer data) {}
         """);
+    var generatedUse = forSourceString("test.BadRecordUse", """
+        package test;
 
-    var c = compile(source);
+        class BadRecordUse {
+          Class<?> generatedClass = BadRecordFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
         "Buffer fields are not supported on records");
+    assertThat(c).hadErrorCount(1);
   }
 }

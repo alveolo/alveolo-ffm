@@ -137,9 +137,17 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
           @org.alveolo.ffm.Slot(index = 0) Object bad();
         }
         """);
+    var generatedUse = forSourceString("test.BadVtblUse", """
+        package test;
 
-    var c = compile(source);
+        class BadVtblUse {
+          Class<?> generatedClass = BadVtblFD.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining("Type is not supported: java.lang.Object");
+    assertThat(c).hadErrorCount(1);
   }
 }

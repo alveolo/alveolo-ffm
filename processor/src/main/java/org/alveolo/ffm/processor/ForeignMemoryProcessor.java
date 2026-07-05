@@ -60,7 +60,21 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   /// Represents a struct field inferred from accessor methods.
   static record StructField(
-      String name, TypeMirror typeMirror, long sequence, Element errorElement
+      String name, TypeMirror typeMirror, long sequence, Element errorElement,
+      boolean writeAccessor, boolean throwingAccessors,
+      boolean writeBufferIndexGetter, boolean writeBufferIndexSetter,
+      boolean writeBufferArraySetter
+  ) {
+    StructField(String name, TypeMirror typeMirror, long sequence,
+        Element errorElement) {
+      this(name, typeMirror, sequence, errorElement, true, false,
+          true, true, true);
+    }
+  }
+
+  record StructFields(
+      List<StructField> fields,
+      List<ExecutableElement> unsupportedMethods
   ) {}
 
   record ObjectMethods(
@@ -177,17 +191,19 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   /// Infer struct fields from interface accessor methods.
-  private List<StructField> inferFields(
+  private StructFields inferFields(
       TypeElement iface, boolean excludeObjectMethods) {
     if (iface.getKind() == ElementKind.RECORD) {
       var rcGens = iface.getRecordComponents().stream()
           .map(rc -> new VariableGenerator(processingEnv, rc))
           .toList();
 
-      return rcGens.stream()
+      return new StructFields(rcGens.stream()
           .map(v -> new StructField(v.name,
-              v.typeMirror, v.sequence, v.element))
-          .toList();
+              v.typeMirror, v.sequence, v.element, true,
+              unsupportedRecordComponent(v.element.asType()),
+              true, true, true))
+          .toList(), List.of());
     }
 
     // Group methods by name
@@ -206,34 +222,29 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     var fields = new ArrayList<StructField>();
+    var unsupportedMethods = new ArrayList<ExecutableElement>();
     for (var entry : methodsByName.entrySet()) {
       String fieldName = entry.getKey();
       var methods = entry.getValue();
 
       ExecutableElement accessor = null;
-      var reportedError = false;
+      var fieldMethods = new ArrayList<ExecutableElement>();
 
       for (var m : methods) {
         var params = m.getParameters();
         if (params.isEmpty() && m.getReturnType().getKind() != TypeKind.VOID) {
           accessor = m;
-        } else if (params.size() == 1
-            && m.getReturnType().getKind() == TypeKind.DECLARED) {
-              // TODO check if setter signature
-            } else {
-              reportedError = true;
-              processingEnv.getMessager().printError(
-                  "Unsupported accessor signature for field '"
-                      + fieldName + "': " + m,
-                  m);
-            }
+        } else {
+          fieldMethods.add(m);
+        }
       }
 
       if (accessor == null) {
-        if (!reportedError) {
-          processingEnv.getMessager().printError(
-              "Field '" + fieldName + "' has no accessor",
-              methods.get(0));
+        processingEnv.getMessager().printError(
+            "Field '" + fieldName + "' has no accessor",
+            methods.get(0));
+        for (var m : methods) {
+          addUnsupportedMethod(unsupportedMethods, m);
         }
         continue;
       }
@@ -247,20 +258,129 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                 + bufferSuggestion(((ArrayType) fieldType).getComponentType())
                 + " instead",
             accessor);
+        for (var m : methods) {
+          addUnsupportedMethod(unsupportedMethods, m);
+        }
         continue;
       }
 
       long sequence = 1;
-      if (isNioBufferType(fieldType)) {
+      var bufferField = isNioBufferType(fieldType);
+      if (bufferField) {
         // NIO Buffer type — extract element type
         sequence = getSequenceFromMethod(accessor);
         fieldType = extractBufferElementType(fieldType);
       }
 
-      fields.add(new StructField(fieldName, fieldType, sequence, accessor));
+      var writeAccessor = true;
+      var writeBufferIndexGetter = true;
+      var writeBufferIndexSetter = true;
+      var writeBufferArraySetter = true;
+      for (var method : fieldMethods) {
+        if (bufferField && isGeneratedBufferMethod(method, fieldType)) {
+          continue;
+        }
+
+        if (!bufferField && validSetter(iface, method, fieldType)) {
+          continue;
+        }
+
+        processingEnv.getMessager().printError(
+            "Unsupported accessor signature for field '"
+                + fieldName + "': " + method,
+            method);
+        addUnsupportedMethod(unsupportedMethods, method);
+        if (bufferField) {
+          writeBufferIndexGetter &=
+              !hasBufferIndexGetterSignature(method);
+          writeBufferIndexSetter &=
+              !hasBufferIndexSetterSignature(method, fieldType);
+          writeBufferArraySetter &=
+              !hasBufferArraySetterSignature(method, fieldType);
+        } else if (setterConflictsWithGeneratedAccessor(method, fieldType)) {
+          writeAccessor = false;
+        }
+      }
+
+      if (memoryBackedAddressFieldCannotWrite(fieldType, sequence)) {
+        writeAccessor = false;
+        for (var method : fieldMethods) {
+          addUnsupportedMethod(unsupportedMethods, method);
+        }
+      }
+
+      fields.add(new StructField(fieldName, fieldType, sequence, accessor,
+          writeAccessor, false, writeBufferIndexGetter,
+          writeBufferIndexSetter, writeBufferArraySetter));
     }
 
-    return fields;
+    return new StructFields(fields, unsupportedMethods);
+  }
+
+  private void addUnsupportedMethod(
+      List<ExecutableElement> unsupportedMethods, ExecutableElement method) {
+    if (!unsupportedMethods.contains(method)) {
+      unsupportedMethods.add(method);
+    }
+  }
+
+  private boolean validSetter(
+      TypeElement iface, ExecutableElement setter, TypeMirror fieldType) {
+    var typeUtils = processingEnv.getTypeUtils();
+    var params = setter.getParameters();
+    return params.size() == 1
+        && typeUtils.isSameType(params.get(0).asType(), fieldType)
+        && setter.getReturnType().getKind() == TypeKind.DECLARED
+        && typeUtils.isAssignable(iface.asType(), setter.getReturnType());
+  }
+
+  private boolean setterConflictsWithGeneratedAccessor(
+      ExecutableElement setter, TypeMirror fieldType) {
+    var params = setter.getParameters();
+    return params.size() == 1
+        && processingEnv.getTypeUtils()
+            .isSameType(params.get(0).asType(), fieldType);
+  }
+
+  private boolean isGeneratedBufferMethod(
+      ExecutableElement method, TypeMirror elementType) {
+    return (hasBufferIndexGetterSignature(method)
+        && processingEnv.getTypeUtils()
+            .isSameType(method.getReturnType(), elementType))
+        || (hasBufferIndexSetterSignature(method, elementType)
+            && method.getReturnType().getKind() == TypeKind.VOID)
+        || (hasBufferArraySetterSignature(method, elementType)
+            && method.getReturnType().getKind() == TypeKind.VOID);
+  }
+
+  private boolean hasBufferIndexGetterSignature(ExecutableElement method) {
+    var params = method.getParameters();
+    return params.size() == 1
+        && params.get(0).asType().getKind() == TypeKind.INT;
+  }
+
+  private boolean hasBufferIndexSetterSignature(
+      ExecutableElement method, TypeMirror elementType) {
+    var params = method.getParameters();
+    return params.size() == 2
+        && params.get(0).asType().getKind() == TypeKind.INT
+        && processingEnv.getTypeUtils()
+            .isSameType(params.get(1).asType(), elementType);
+  }
+
+  private boolean hasBufferArraySetterSignature(
+      ExecutableElement method, TypeMirror elementType) {
+    var params = method.getParameters();
+    return params.size() == 1
+        && processingEnv.getTypeUtils().isSameType(
+            params.get(0).asType(),
+            processingEnv.getTypeUtils().getArrayType(elementType));
+  }
+
+  private boolean memoryBackedAddressFieldCannotWrite(
+      TypeMirror fieldType, long sequence) {
+    var gen = new TypeGenerator(processingEnv, fieldType, sequence);
+    return gen.isPrimitiveAddress() || (gen.isRecord() && gen.isAddress());
   }
 
   private boolean isObjectMethod(ExecutableElement method) {
@@ -413,6 +533,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return valid;
   }
 
+  private boolean unsupportedRecordComponent(TypeMirror componentType) {
+    return componentType.getKind() == TypeKind.ARRAY
+        || isNioBufferType(componentType);
+  }
+
   private String bufferSuggestion(TypeMirror componentType) {
     return switch (componentType.getKind()) {
       case BYTE -> "java.nio.ByteBuffer";
@@ -472,7 +597,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   private void writeFile(TypeElement iface, String kind, boolean vtable)
       throws IOException {
-    if (!validateRecordComponents(iface)) return;
+    validateRecordComponents(iface);
 
     var elements = processingEnv.getElementUtils();
     String packageName = packageName(iface, elements);
@@ -495,13 +620,15 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         : foreignInterfaceClassName(symbolOwner);
     var symbolGenerators = symbolGenerators(objectMethods,
         symbolOwnerClassName);
+    var virtualGenerators = virtualGenerators(objectMethods.virtualMethods());
 
     if (objectMethods.hasVirtualMethods()) {
       writeDispatchTable(iface, packageName, ifaceSimpleName,
-          vtableSimpleName, objectMethods.virtualMethods());
+          vtableSimpleName, virtualGenerators);
     }
 
-    var fields = inferFields(iface, isStructInterface);
+    var structFields = inferFields(iface, isStructInterface);
+    var fields = structFields.fields();
     validateFields(fields);
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
@@ -518,8 +645,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           writeConstructors(out, simpleClassName, vtableSimpleName,
               objectMethods.hasVirtualMethods());
           writeFieldAccessors(out, simpleClassName, fields);
+          writeUnsupportedMethods(out, structFields.unsupportedMethods());
           writeSymbolHolder(out, symbolGenerators);
-          writeObjectMethods(out, objectMethods, symbolGenerators);
+          writeObjectMethods(out, objectMethods, symbolGenerators,
+              virtualGenerators);
           break;
         case RECORD:
           writeRecordConverters(out, ifaceSimpleName, iface);
@@ -563,7 +692,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   private void writeDispatchTable(TypeElement iface, String packageName,
       String ifaceSimpleName, String vtableSimpleName,
-      List<ExecutableElement> methods) throws IOException {
+      List<ExecutableGenerator> generators) throws IOException {
     String vtableClassName = qualifyName(packageName, vtableSimpleName);
 
     var file = processingEnv.getFiler()
@@ -583,7 +712,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           .replace("<generator>", getClass().getCanonicalName())
           .replace("<name>", ifaceSimpleName));
 
-      for (var method : methods) {
+      for (var generator : generators) {
+        if (generator.hasErrors) continue;
+
+        var method = generator.element;
         out.write("""
 
               @org.alveolo.ffm.Slot(<slot>)
@@ -621,6 +753,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return generators;
   }
 
+  private List<ExecutableGenerator> virtualGenerators(
+      List<ExecutableElement> methods) {
+    return methods.stream()
+        .map(method -> new ExecutableGenerator(
+            processingEnv, method, "FF$VH$unused", true))
+        .toList();
+  }
+
   private void writeSymbolHolder(
       Writer out, List<ExecutableGenerator> symbolGenerators)
       throws IOException {
@@ -644,12 +784,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeObjectMethods(Writer out, ObjectMethods objectMethods,
-      List<ExecutableGenerator> symbolGenerators)
+      List<ExecutableGenerator> symbolGenerators,
+      List<ExecutableGenerator> virtualGenerators)
       throws IOException {
     var symbolIndex = 0;
+    var virtualIndex = 0;
     for (var method : objectMethods.methods()) {
       if (method.getAnnotation(Virtual.class) != null) {
-        writeVirtualMethod(out, method);
+        writeVirtualMethod(out, virtualGenerators.get(virtualIndex++));
       } else {
         var generator = symbolGenerators.get(symbolIndex++);
         out.write(generator.methodOnly(
@@ -668,10 +810,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         symbolOwnerClassName + ".FF$LOOKUP");
   }
 
-  private void writeVirtualMethod(Writer out, ExecutableElement method)
+  private void writeVirtualMethod(Writer out, ExecutableGenerator generator)
       throws IOException {
-    var generator = new ExecutableGenerator(
-        processingEnv, method, "FF$VH$unused", true);
+    if (generator.hasErrors) {
+      out.write(generator.methodOnly(""));
+      return;
+    }
+
+    var method = generator.element;
     var args = new ArrayList<String>();
     args.add("this");
     args.addAll(method.getParameters().stream()
@@ -697,6 +843,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   private String sourceReturnType(ExecutableElement method) {
     return method.getReturnType().toString();
+  }
+
+  private String sourceMethodSignature(ExecutableElement method) {
+    return "public " + sourceReturnType(method) + " "
+        + method.getSimpleName()
+        + method.getParameters().stream()
+            .map(this::sourceParameter)
+            .collect(joining(",\n      ", "(\n      ", ")"));
   }
 
   private String sourceParameter(VariableElement parameter) {
@@ -957,6 +1111,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     String name = field.name();
     String type = typeName(field);
 
+    if (fieldAccessorsShouldThrow(field)) {
+      writeThrowingStaticAccessors(out, field);
+      return;
+    }
+
     if (isPrimitiveAddress(field)) {
       String layout = valueLayout(field);
       out.write("""
@@ -998,6 +1157,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             .replace("<foreignClassName>", fieldClassName)
             .replace("<name>", name)
             .replace("<type>", type));
+
+        if (!field.writeAccessor()) return;
 
         if (needsAllocator) {
           out.write("""
@@ -1111,6 +1272,70 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
+  private void writeUnsupportedMethods(Writer out,
+      List<ExecutableElement> unsupportedMethods) throws IOException {
+    for (var method : unsupportedMethods) {
+      out.write("""
+
+            <signature> {
+              throw new RuntimeException("Check compile errors!");
+            }
+          """
+          .replace("<signature>", sourceMethodSignature(method)));
+    }
+  }
+
+  private void writeThrowingStaticAccessors(Writer out, StructField field)
+      throws IOException {
+    String name = field.name();
+    String type = typeName(field);
+
+    out.write("""
+
+          public static <type> <name>(MemorySegment ms) {
+            throw new RuntimeException("Check compile errors!");
+          }
+
+          public static void <name>(MemorySegment ms, <type> value) {
+            throw new RuntimeException("Check compile errors!");
+          }
+
+          public static void <name>(
+              MemorySegment ms, SegmentAllocator allocator, <type> value) {
+            throw new RuntimeException("Check compile errors!");
+          }
+        """
+        .replace("<name>", name)
+        .replace("<type>", type));
+  }
+
+  private void writeThrowingFieldAccessors(Writer out, String className,
+      StructField field, boolean writeAccessor) throws IOException {
+    String name = field.name();
+    String type = typeName(field);
+
+    out.write("""
+
+          public <type> <name>() {
+            throw new RuntimeException("Check compile errors!");
+          }
+        """
+        .replace("<name>", name)
+        .replace("<type>", type));
+
+    if (!writeAccessor) return;
+
+    out.write("""
+
+          public <class> <name>(<type> value) {
+            throw new RuntimeException("Check compile errors!");
+          }
+        """
+        .replace("<class>", className)
+        .replace("<name>", name)
+        .replace("<type>", type));
+  }
+
   private void writeAccessorsSimple(Writer out, String className,
       StructField field) throws IOException {
     String name = field.name();
@@ -1118,16 +1343,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     if (isPrimitiveAddress(field)) {
       reportMemoryBackedPrimitiveAddressField(field);
+      writeThrowingFieldAccessors(out, className, field, false);
+      return;
+    }
 
-      out.write("""
-
-            public <type> <name>() {
-              return <getter>;
-            }
-          """
-          .replace("<name>", name)
-          .replace("<type>", type)
-          .replace("<getter>", primitiveAddressGetter(field, "ms")));
+    if (fieldAccessorsShouldThrow(field)) {
+      writeThrowingFieldAccessors(out, className, field,
+          field.writeAccessor());
       return;
     }
 
@@ -1150,6 +1372,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             .replace("<foreignClassName>", fieldClassName)
             .replace("<name>", name)
             .replace("<type>", type));
+
+        if (!field.writeAccessor()) return;
 
         if (needsAllocator) {
           out.write("""
@@ -1191,6 +1415,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                     FM$LAYOUT.byteOffset(FM$PE$<name>),
                     FM$LAYOUT.select(FM$PE$<name>).byteSize()));
               }
+            """
+            .replace("<foreignClassName>", fieldClassName)
+            .replace("<name>", name)
+            .replace("<type>", type));
+
+        if (!field.writeAccessor()) return;
+
+        out.write("""
 
               public <class> <name>(<type> value) {
                 var layout = FM$LAYOUT.select(FM$PE$<name>);
@@ -1209,6 +1441,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     } else if (isNestedAddress(field)) {
       if (typeEl.getKind() == ElementKind.RECORD) {
         reportMemoryBackedRecordAddressField(field);
+        writeThrowingFieldAccessors(out, className, field, false);
+      } else {
+        String fieldClassName = foreignMemoryClassName(typeEl);
 
         out.write("""
 
@@ -1219,14 +1454,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             .replace("<name>", name)
             .replace("<type>", type)
             .replace("<getter>", nestedAddressGetter(field, "ms")));
-      } else {
-        String fieldClassName = foreignMemoryClassName(typeEl);
+
+        if (!field.writeAccessor()) return;
 
         out.write("""
-
-              public <type> <name>() {
-                return <getter>;
-              }
 
               public <class> <name>(<type> value) {
                 FM$VH$<name>.set(ms, ((<fieldClass>) value).ms);
@@ -1236,7 +1467,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             .replace("<class>", className)
             .replace("<name>", name)
             .replace("<type>", type)
-            .replace("<getter>", nestedAddressGetter(field, "ms"))
             .replace("<fieldClass>", fieldClassName));
       }
     } else {
@@ -1245,6 +1475,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             public <type> <name>() {
               return (<type>) FM$VH$<name>.get(ms);
             }
+          """
+          .replace("<name>", name)
+          .replace("<type>", type));
+
+      if (!field.writeAccessor()) return;
+
+      out.write("""
 
             public <class> <name>(<type> value) {
               FM$VH$<name>.set(ms, value);
@@ -1299,33 +1536,51 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .replace("<buffer>", type.equals("byte")
             ? "" : ".as" + capType + "Buffer()"));
 
-    out.write("""
+    if (field.writeBufferIndexGetter()) {
+      out.write("""
 
-          /** get element at index */
-          public <type> <name>(int index) {
-            return <name>$MemorySegment()
-              .getAtIndex(ValueLayout.JAVA_<TYPE>, index);
-          }
-
-          /** set element at index */
-          public void <name>(int index, <type> value) {
-            <name>$MemorySegment()
-              .setAtIndex(ValueLayout.JAVA_<TYPE>, index, value);
-          }
-
-          /** replace values from array */
-          public void <name>(<type>[] value) {
-            if (value.length != <size>) {
-              throw new IllegalArgumentException();
+            /** get element at index */
+            public <type> <name>(int index) {
+              return <name>$MemorySegment()
+                .getAtIndex(ValueLayout.JAVA_<TYPE>, index);
             }
-            MemorySegment.copy(value, 0,
-                <name>$MemorySegment(), ValueLayout.JAVA_<TYPE>, 0, <size>);
-          }
-        """
-        .replace("<name>", name)
-        .replace("<type>", type)
-        .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
-        .replace("<size>", Long.toString(size)));
+          """
+          .replace("<name>", name)
+          .replace("<type>", type)
+          .replace("<TYPE>", type.toUpperCase(Locale.ROOT)));
+    }
+
+    if (field.writeBufferIndexSetter()) {
+      out.write("""
+
+            /** set element at index */
+            public void <name>(int index, <type> value) {
+              <name>$MemorySegment()
+                .setAtIndex(ValueLayout.JAVA_<TYPE>, index, value);
+            }
+          """
+          .replace("<name>", name)
+          .replace("<type>", type)
+          .replace("<TYPE>", type.toUpperCase(Locale.ROOT)));
+    }
+
+    if (field.writeBufferArraySetter()) {
+      out.write("""
+
+            /** replace values from array */
+            public void <name>(<type>[] value) {
+              if (value.length != <size>) {
+                throw new IllegalArgumentException();
+              }
+              MemorySegment.copy(value, 0,
+                  <name>$MemorySegment(), ValueLayout.JAVA_<TYPE>, 0, <size>);
+            }
+          """
+          .replace("<name>", name)
+          .replace("<type>", type)
+          .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
+          .replace("<size>", Long.toString(size)));
+    }
   }
 
   private boolean isNested(StructField field) {
@@ -1353,6 +1608,15 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           field.errorElement());
       return;
     }
+  }
+
+  private boolean fieldAccessorsShouldThrow(StructField field) {
+    var gen = new TypeGenerator(processingEnv,
+        field.typeMirror(), field.sequence());
+
+    return field.throwingAccessors()
+        || gen.isString()
+        || gen.layout() == TypeGenerator.VALUE_LAYOUT_NOT_SUPPORTED;
   }
 
   private void reportMemoryBackedRecordAddressField(StructField field) {
