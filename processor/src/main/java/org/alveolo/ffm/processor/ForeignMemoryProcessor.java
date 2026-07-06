@@ -59,15 +59,16 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       "java.nio.FloatBuffer", "java.nio.DoubleBuffer");
 
   /// Represents a struct field inferred from accessor methods.
+  // TODO simplify, too polluted...
   static record StructField(
       String name, TypeMirror typeMirror, long sequence, Element errorElement,
-      boolean writeAccessor, boolean throwingAccessors,
+      boolean bufferField, boolean writeAccessor, boolean throwingAccessors,
       boolean writeBufferIndexGetter, boolean writeBufferIndexSetter,
       boolean writeBufferArraySetter
   ) {
     StructField(String name, TypeMirror typeMirror, long sequence,
         Element errorElement) {
-      this(name, typeMirror, sequence, errorElement, true, false,
+      this(name, typeMirror, sequence, errorElement, false, true, false,
           true, true, true);
     }
   }
@@ -200,7 +201,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
       return new StructFields(rcGens.stream()
           .map(v -> new StructField(v.name,
-              v.typeMirror, v.sequence, v.element, true,
+              v.typeMirror, v.sequence, v.element, false, true,
               unsupportedRecordComponent(v.element.asType()),
               true, true, true))
           .toList(), List.of());
@@ -310,6 +311,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       }
 
       fields.add(new StructField(fieldName, fieldType, sequence, accessor,
+          bufferField,
           writeAccessor, false, writeBufferIndexGetter,
           writeBufferIndexSetter, writeBufferArraySetter));
     }
@@ -378,7 +380,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private boolean memoryBackedAddressFieldCannotWrite(
-      TypeMirror fieldType, long sequence) {
+      TypeMirror fieldType, long sequence) { // TODO allocation?
     var gen = new TypeGenerator(processingEnv, fieldType, sequence);
     return gen.isPrimitiveAddress() || (gen.isRecord() && gen.isAddress());
   }
@@ -713,7 +715,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           .replace("<name>", ifaceSimpleName));
 
       for (var generator : generators) {
-        if (generator.hasErrors) continue;
+        if (generator.hasErrors) {
+          continue;
+        }
 
         var method = generator.element;
         out.write("""
@@ -888,10 +892,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     var layoutFields = fields.stream()
         .map(f -> {
           var typeGen = new TypeGenerator(processingEnv,
-              f.typeMirror(), f.sequence());
+              f.typeMirror(), f.sequence()); // TODO allocation?
 
           return new MemoryLayoutGenerator.LayoutField(f.name(),
-              typeGen.layout(), typeGen.typeName(), f.errorElement());
+              layout(f, typeGen), typeGen.typeName(), f.errorElement());
         })
         .toList();
 
@@ -899,6 +903,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     out.write(layoutGen.layout());
 
     out.write("      }));\n");
+  }
+
+  private String layout(StructField field, TypeGenerator typeGen) {
+    if (!field.bufferField()) return typeGen.layout();
+
+    return "MemoryLayout.sequenceLayout(" + field.sequence() + "L, "
+        + typeGen.layout() + ")";
   }
 
   private void writeAllocate(Writer out, String className) throws IOException {
@@ -1074,7 +1085,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     for (var field : fields) {
-      if (isNestedValue(field)) {
+      if (field.bufferField() || isNestedValue(field)) {
         continue; // TODO complex/structured/indexed accessors
       }
 
@@ -1161,19 +1172,20 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         if (!field.writeAccessor()) return;
 
         if (needsAllocator) {
-          out.write("""
-
-                public static void <name>(
-                    MemorySegment ms, SegmentAllocator allocator, <type> value) {
-                  var layout = FM$LAYOUT.select(FM$PE$<name>);
-                  var slice = ms.asSlice(
-                      FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-                  <foreignClassName>.toMemorySegment(value, slice, allocator);
-                }
+          out.write(
               """
-              .replace("<foreignClassName>", fieldClassName)
-              .replace("<name>", name)
-              .replace("<type>", type));
+
+                    public static void <name>(
+                        MemorySegment ms, SegmentAllocator allocator, <type> value) {
+                      var layout = FM$LAYOUT.select(FM$PE$<name>);
+                      var slice = ms.asSlice(
+                          FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+                      <foreignClassName>.toMemorySegment(value, slice, allocator);
+                    }
+                  """
+                  .replace("<foreignClassName>", fieldClassName)
+                  .replace("<name>", name)
+                  .replace("<type>", type));
         } else {
           out.write("""
 
@@ -1264,7 +1276,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeFieldAccessors(Writer out, String className,
       List<StructField> fields) throws IOException {
     for (var field : fields) {
-      if (field.sequence() > 1 && !isPrimitiveAddress(field)) {
+      if (field.bufferField()) {
         writeAccessorsBuffer(out, field);
       } else {
         writeAccessorsSimple(out, className, field);
@@ -1600,7 +1612,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   private void validateField(StructField field) {
     var gen = new TypeGenerator(processingEnv,
-        field.typeMirror(), field.sequence());
+        field.typeMirror(), field.sequence()); // TODO allocation?
 
     if (gen.isString()) {
       processingEnv.getMessager().printError(
@@ -1612,7 +1624,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   private boolean fieldAccessorsShouldThrow(StructField field) {
     var gen = new TypeGenerator(processingEnv,
-        field.typeMirror(), field.sequence());
+        field.typeMirror(), field.sequence()); // TODO allocation?
 
     return field.throwingAccessors()
         || gen.isString()
@@ -1689,7 +1701,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         field.typeMirror(), field.sequence()).valueLayout(); // TODO allocation?
   }
 
-  private boolean isPrimitiveAddress(StructField field) {
+  private boolean isPrimitiveAddress(StructField field) { // TODO allocation?
     return new TypeGenerator(processingEnv,
         field.typeMirror(), field.sequence()).isPrimitiveAddress();
   }

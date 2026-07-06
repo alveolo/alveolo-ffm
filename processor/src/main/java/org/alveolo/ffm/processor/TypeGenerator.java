@@ -41,13 +41,12 @@ class TypeGenerator {
   final TypeElement typeElement;
   final long sequence;
 
-  TypeGenerator(ProcessingEnvironment processingEnv,
-      TypeMirror typeMirror) {
+  TypeGenerator(ProcessingEnvironment processingEnv, TypeMirror typeMirror) {
     this(processingEnv, typeMirror, sequence(typeMirror));
   }
 
-  TypeGenerator(ProcessingEnvironment processingEnv,
-      TypeMirror typeMirror, long sequence) {
+  TypeGenerator(ProcessingEnvironment processingEnv, TypeMirror typeMirror,
+      long sequence) {
     this.processingEnv = processingEnv;
     elements = processingEnv.getElementUtils();
     this.typeMirror = typeMirror;
@@ -82,11 +81,9 @@ class TypeGenerator {
       return "ValueLayout.ADDRESS";
 
     if (typeElement != null) {
-      if (isForeignMemory()) {
-        return isValue()
-            ? foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT"
-            : "ValueLayout.ADDRESS";
-      }
+      if (isForeignMemory()) return isValue()
+          ? foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT"
+          : "ValueLayout.ADDRESS";
 
       if (typeElement.getKind() == ElementKind.CLASS) {
         if (!hasTypeUseAddress() && !hasTypeUseValue()

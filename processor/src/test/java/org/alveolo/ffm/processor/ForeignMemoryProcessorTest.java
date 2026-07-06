@@ -3,9 +3,23 @@ package org.alveolo.ffm.processor;
 import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.JavaFileObjects.forSourceString;
 
+import java.lang.foreign.Linker;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class ForeignMemoryProcessorTest extends AbstractProcessorTest {
+  @Test
+  @Disabled
+  void printNativeLinkerCanonicalLayouts() {
+    Linker.nativeLinker().canonicalLayouts()
+        .forEach((name, value) -> IO.println("type: " + name
+            + ",\tvalue: " + value.toString()
+            + ",\tbyteSize: " + value.byteSize()
+            + ",\tbyteAlignment: " + value.byteAlignment()
+            + ",\tbyteOffset: " + value.byteOffset()));
+  }
+
   @Test
   void generatesStructClass() {
     var c = compile("memory/struct/timeval.java");
@@ -48,6 +62,14 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         "memory/passmode/FieldModesFM.java");
     assertGenerated(c, "pkg.FieldModeAccessorsFM",
         "memory/passmode/FieldModeAccessorsFM.java");
+  }
+
+  @Test
+  void generatesBufferStructField() {
+    var c = compile("memory/buffer/BufferStruct.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.BufferStructFM",
+        "memory/buffer/BufferStructFM.java");
   }
 
   @Test

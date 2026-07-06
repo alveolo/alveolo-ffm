@@ -3,21 +3,9 @@ package org.alveolo.ffm.processor;
 import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.JavaFileObjects.forSourceString;
 
-import java.lang.foreign.Linker;
-
 import org.junit.jupiter.api.Test;
 
 class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
-  @Test
-  void x() {
-    Linker.nativeLinker().canonicalLayouts()
-        .forEach((name, value) -> IO.println("type: " + name
-            + ",\tvalue: " + value.toString()
-            + ",\tbyteSize: " + value.byteSize()
-            + ",\tbyteAlignment: " + value.byteAlignment()
-            + ",\tbyteOffset: " + value.byteOffset()));
-  }
-
   @Test
   void generatesEmptyFFM() {
     var c = compile("interface/Empty.java");
