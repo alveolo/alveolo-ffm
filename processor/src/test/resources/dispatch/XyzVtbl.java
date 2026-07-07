@@ -10,12 +10,12 @@ public interface XyzVtbl {
   @Slot(1)
   int add(int a, int b);
 
-  @Slot(index = 3)
+  @Slot(3)
   int sub(int a, int b);
 
-  @Slot(index = 2)
+  @Slot(2)
   long strlen(String utf8z);
 
-  @Slot(index = 0)
+  @Slot(0)
   int sum(@In @Sequence(3L) int[] values);
 }

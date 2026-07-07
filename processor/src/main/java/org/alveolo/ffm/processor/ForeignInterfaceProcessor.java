@@ -84,7 +84,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 
-    try (var out = file.openWriter()) {
+    try (var out = new PlatformWriter(file.openWriter())) {
       if (!packageName.isEmpty()) {
         out.write("package " + packageName + ";\n\n");
       }
@@ -126,8 +126,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       int index = 0;
       for (var member : iface.getEnclosedElements()) {
         if (member instanceof ExecutableElement method) {
-          if (method.getKind() != ElementKind.METHOD || method.isDefault()
-              || method.getModifiers().contains(Modifier.STATIC)) {
+          if (method.getKind() != ElementKind.METHOD
+              || !method.getModifiers().contains(Modifier.ABSTRACT)) {
             continue;
           }
 

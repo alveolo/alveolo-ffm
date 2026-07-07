@@ -121,17 +121,16 @@ reading the vtable lazily.
   `Elements.getPackageOf`, while `ForeignInterfaceProcessor` and
   `DispatchTableProcessor` do `lastIndexOf('.')` on the qualified name — wrong
   for nested interfaces (`a.b.Outer.Inner` → "package" `a.b.Outer`).
-- **Method filtering**: `ForeignMemoryProcessor` selects methods by `ABSTRACT`
-  modifier; `ForeignInterfaceProcessor` filters out only `default`/`static`, so
-  a `private` interface helper method would get a generated native binding.
+- ✅ **Method filtering**: `ForeignInterfaceProcessor` now selects only
+  `ABSTRACT` methods, so private interface helpers are ignored like
+  default/static methods.
 - ✅ **`VALUE_LAYOUT_NOT_SUPPORTED`** (`TypeGenerator.java:27`) was a
   `public static` *non-final* `String` compared by `==` in multiple places. It
   worked, but it was an accident waiting for a refactor. The sentinel is now
   private/final and checked through `TypeGenerator.unsupported()`.
-- **`Slot.value()` vs `Slot.index()`**: two attributes meaning the same thing,
-  plus ~40 lines of validation (`hasSlotValue` mirror-walking) to police them.
-  Unless there's a planned semantic difference, one attribute would delete real
-  complexity. `@Virtual` gets by with just `value()`.
+- ✅ **`Slot.value()` vs `Slot.index()`**: `Slot` now exposes only `value()`,
+  matching `@Virtual` and removing the mirror-walking validation that policed
+  duplicate attributes.
 - **Error duplication for virtual methods**: `writeVirtualMethod` constructs an
   `ExecutableGenerator` (which prints parameter-type errors) and the generated
   `*Vtbl` interface is then processed by `DispatchTableProcessor`, which prints

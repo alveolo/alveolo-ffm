@@ -9,6 +9,7 @@ public interface LibC {
 
   default int skip() { return abs(0); }
   static int ignore() { return 0; }
+  private int helper() { return 0; }
 
   @Symbol("abs")
   int renamed(int number);

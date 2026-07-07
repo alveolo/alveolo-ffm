@@ -10,6 +10,8 @@ import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -84,7 +86,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 
-    try (var out = file.openWriter()) {
+    try (var out = new PlatformWriter(file.openWriter())) {
       if (!packageName.isEmpty()) {
         out.write("package " + packageName + ";\n\n");
       }
@@ -114,7 +116,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
           .replace("<slotCount>", Long.toString(slotCount(methods))));
 
       var generators = generators(methods);
-      writeConstructor(out, simpleClassName, generators, methods);
+      writeConstructor(out, simpleClassName, generators);
 
       for (var i = 0; i < generators.size(); i++) {
         var generator = generators.get(i);
@@ -139,7 +141,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
   private boolean validateSlots(List<ExecutableElement> methods) {
     var valid = true;
-    var indexes = new HashMap<Integer, ExecutableElement>();
+    var slotIndexes = new HashMap<Integer, ExecutableElement>();
 
     for (var method : methods) {
       var slot = method.getAnnotation(Slot.class);
@@ -150,28 +152,15 @@ public class DispatchTableProcessor extends AbstractProcessor {
         continue;
       }
 
-      var index = slot.index();
-      var value = slot.value();
-      var hasIndex = hasSlotValue(method, "index");
-      var hasValue = hasSlotValue(method, "value");
-      if (hasIndex == hasValue) {
+      var slotIndex = slot.value();
+      if (slotIndex < 0) {
         processingEnv.getMessager().printError(
-            hasIndex
-                ? "@Slot value and index cannot both be set"
-                : "@Slot index is required",
-            method);
+            "@Slot value must be non-negative", method);
         valid = false;
         continue;
       }
 
-      var slotIndex = hasIndex ? index : value;
-      if (slotIndex < 0) {
-        processingEnv.getMessager().printError(
-            "@Slot index must be non-negative", method);
-        valid = false;
-      }
-
-      var previous = indexes.putIfAbsent(slotIndex, method);
+      var previous = slotIndexes.putIfAbsent(slotIndex, method);
       if (previous != null) {
         processingEnv.getMessager().printError(
             "Duplicate @Slot index: " + slotIndex, method);
@@ -184,21 +173,6 @@ public class DispatchTableProcessor extends AbstractProcessor {
     return valid;
   }
 
-  private boolean hasSlotValue(ExecutableElement method, String name) {
-    for (var mirror : method.getAnnotationMirrors()) {
-      if (!mirror.getAnnotationType().toString()
-          .equals(Slot.class.getCanonicalName())) {
-        continue;
-      }
-
-      for (var entry : mirror.getElementValues().entrySet()) {
-        if (entry.getKey().getSimpleName().contentEquals(name)) return true;
-      }
-    }
-
-    return false;
-  }
-
   private long slotCount(List<ExecutableElement> methods) {
     return methods.stream()
         .mapToLong(this::slot)
@@ -206,10 +180,10 @@ public class DispatchTableProcessor extends AbstractProcessor {
         .orElse(-1L) + 1L;
   }
 
-  private List<ExecutableGenerator>
-      generators(List<ExecutableElement> methods) {
+  private List<ExecutableGenerator> generators(
+      List<ExecutableElement> methods) {
     var index = 0;
-    var generators = new java.util.ArrayList<ExecutableGenerator>();
+    var generators = new ArrayList<ExecutableGenerator>();
     for (var method : methods) {
       generators.add(new ExecutableGenerator(
           processingEnv, method, "FF$MH$" + index++, true));
@@ -217,21 +191,19 @@ public class DispatchTableProcessor extends AbstractProcessor {
     return generators;
   }
 
-  private void writeMethodDescriptor(
-      java.io.Writer out, ExecutableGenerator generator, int index)
-      throws IOException {
+  private void writeMethodDescriptor(Writer out,
+      ExecutableGenerator generator, int index) throws IOException {
     out.write("""
 
           private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
               <descriptor>);
         """
-        .replace("<mh>", "FF$MD$" + Integer.toString(index))
+        .replace("<mh>", "FF$MD$" + index)
         .replace("<descriptor>", generator.descriptor()));
   }
 
-  private void writeConstructor(java.io.Writer out, String className,
-      List<ExecutableGenerator> generators, List<ExecutableElement> methods)
-      throws IOException {
+  private void writeConstructor(Writer out, String className,
+      List<ExecutableGenerator> generators) throws IOException {
     out.write("""
           public <class>(MemorySegment ms) {
             this.ms = ms;
@@ -239,30 +211,33 @@ public class DispatchTableProcessor extends AbstractProcessor {
           }
         """
         .replace("<class>", className)
-        .replace("<initializers>", methodHandleInitializers(generators, methods)
+        .replace("<initializers>", methodHandleInitializers(generators)
             .indent(4)
             .stripTrailing()));
   }
 
-  private String methodHandleInitializers(List<ExecutableGenerator> generators,
-      List<ExecutableElement> methods) {
+  private String methodHandleInitializers(
+      List<ExecutableGenerator> generators) {
     var result = new StringBuilder();
     for (var i = 0; i < generators.size(); i++) {
-      if (generators.get(i).hasErrors) continue;
+      var generator = generators.get(i);
+
+      if (generator.hasErrors) {
+        continue;
+      }
 
       result.append("""
           this.<mh> = FF$MD$<index>.bindTo(
               ms.getAtIndex(ValueLayout.ADDRESS, <slot>L));
           """
-          .replace("<mh>", generators.get(i).methodHandleName)
+          .replace("<mh>", generator.methodHandleName)
           .replace("<index>", Integer.toString(i))
-          .replace("<slot>", Integer.toString(slot(methods.get(i)))));
+          .replace("<slot>", Integer.toString(slot(generator.element))));
     }
-    return result.toString().stripTrailing();
+    return result.toString();
   }
 
   private int slot(ExecutableElement method) {
-    var slot = method.getAnnotation(Slot.class);
-    return hasSlotValue(method, "index") ? slot.index() : slot.value();
+    return method.getAnnotation(Slot.class).value();
   }
 }

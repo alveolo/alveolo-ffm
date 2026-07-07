@@ -87,7 +87,7 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void failsOnSlotWithoutIndex() {
+  void failsOnSlotWithoutValue() {
     var source = forSourceString("test.BadVtbl", """
         package test;
         @org.alveolo.ffm.DispatchTable
@@ -98,23 +98,7 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
 
     var c = compile(source);
 
-    assertThat(c).hadErrorContaining("@Slot index is required");
-  }
-
-  @Test
-  void failsOnSlotValueAndIndex() {
-    var source = forSourceString("test.BadVtbl", """
-        package test;
-        @org.alveolo.ffm.DispatchTable
-        public interface BadVtbl {
-          @org.alveolo.ffm.Slot(value = 1, index = 1) void bad();
-        }
-        """);
-
-    var c = compile(source);
-
-    assertThat(c).hadErrorContaining(
-        "@Slot value and index cannot both be set");
+    assertThat(c).hadErrorContaining("@Slot value must be non-negative");
   }
 
   @Test
@@ -123,8 +107,8 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
         package test;
         @org.alveolo.ffm.DispatchTable
         public interface BadVtbl {
-          @org.alveolo.ffm.Slot(index = 1) void a();
-          @org.alveolo.ffm.Slot(index = 1) void b();
+          @org.alveolo.ffm.Slot(1) void a();
+          @org.alveolo.ffm.Slot(1) void b();
         }
         """);
 
@@ -139,13 +123,13 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
         package test;
         @org.alveolo.ffm.DispatchTable
         public interface BadVtbl {
-          @org.alveolo.ffm.Slot(index = -1) void bad();
+          @org.alveolo.ffm.Slot(-1) void bad();
         }
         """);
 
     var c = compile(source);
 
-    assertThat(c).hadErrorContaining("@Slot index must be non-negative");
+    assertThat(c).hadErrorContaining("@Slot value must be non-negative");
   }
 
   @Test
@@ -154,7 +138,7 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
         package test;
         @org.alveolo.ffm.DispatchTable
         public interface BadVtbl {
-          @org.alveolo.ffm.Slot(index = 0) Object bad();
+          @org.alveolo.ffm.Slot(0) Object bad();
         }
         """);
     var generatedUse = forSourceString("test.BadVtblUse", """

@@ -599,9 +599,31 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 
-    try (var out = file.openWriter()) {
-      writeClassHeader(out, packageName, simpleClassName,
-          ifaceSimpleName, iface, objectMethods.hasSymbolMethods());
+    try (var out = new PlatformWriter(file.openWriter())) {
+      if (!packageName.isEmpty()) {
+        out.append("package ").append(packageName).append(";\n\n");
+      }
+
+      String declaration = switch (iface.getKind()) {
+        case INTERFACE -> simpleClassName + " implements "
+            + ifaceSimpleName;
+        case RECORD -> simpleClassName;
+        case ElementKind k1 -> throw new IllegalArgumentException(
+            "Unexpected value: " + k1);
+      };
+
+      out.write("""
+          import java.lang.foreign.*;
+          <methodHandleImport>
+          @javax.annotation.processing.Generated(
+              "<generator>")
+          public final class <declaration> {
+          """
+          .replace("<generator>", getClass().getCanonicalName())
+          .replace("<declaration>", declaration)
+          .replace("<methodHandleImport>", objectMethods.hasSymbolMethods()
+              ? "import java.lang.invoke.MethodHandle;\n" : ""));
+
       writeLayout(out, fields, kind, vtable);
       writePathElements(out, simpleClassName, fields, vtable);
       writeVarHandles(out, simpleClassName, fields, vtable);
@@ -618,42 +640,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           break;
         case RECORD:
           writeRecordConverters(out, ifaceSimpleName, iface);
-          writeStaticAccessors(out, simpleClassName, fields);
+          writeStaticAccessors(out, fields);
           break;
         case ElementKind k:
           throw new IllegalArgumentException("Unexpected value: " + k);
       }
+
       out.write("}\n");
     }
-  }
-
-  private void writeClassHeader(Writer out, String packageName,
-      String className, String sourceTypeName, TypeElement srcType,
-      boolean hasSymbolMethods)
-      throws IOException {
-    if (!packageName.isEmpty()) {
-      out.append("package ").append(packageName).append(";\n\n");
-    }
-
-    String declaration = switch (srcType.getKind()) {
-      case INTERFACE -> className + " implements "
-          + sourceTypeName;
-      case RECORD -> className;
-      case ElementKind k -> throw new IllegalArgumentException(
-          "Unexpected value: " + k);
-    };
-
-    out.write("""
-        import java.lang.foreign.*;
-        <methodHandleImport>
-        @javax.annotation.processing.Generated(
-            "<generator>")
-        public final class <declaration> {
-        """
-        .replace("<generator>", getClass().getCanonicalName())
-        .replace("<declaration>", declaration)
-        .replace("<methodHandleImport>", hasSymbolMethods
-            ? "import java.lang.invoke.MethodHandle;\n" : ""));
   }
 
   private void writeDispatchTable(TypeElement iface, String packageName,
@@ -664,7 +658,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     var file = processingEnv.getFiler()
         .createSourceFile(vtableClassName, iface);
 
-    try (var out = file.openWriter()) {
+    try (var out = new PlatformWriter(file.openWriter())) {
       if (!packageName.isEmpty()) {
         out.write("package " + packageName + ";\n\n");
       }
@@ -1037,7 +1031,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     for (var field : fields) {
-      if (field.isNioBuffer() || isNestedValue(field)) {
+      if (field.isNioBuffer()
+          || (field.isForeignMemory() && field.isValue())) {
         continue; // TODO complex/structured/indexed accessors
       }
 
@@ -1062,15 +1057,15 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private void writeStaticAccessors(Writer out, String className,
-      List<StructField> fields) throws IOException {
+  private void writeStaticAccessors(Writer out, List<StructField> fields)
+      throws IOException {
     for (var field : fields) {
-      writeStaticAccessorsSimple(out, className, field);
+      writeStaticAccessorsSimple(out, field);
     }
   }
 
-  private void writeStaticAccessorsSimple(Writer out, String className,
-      StructField field) throws IOException {
+  private void writeStaticAccessorsSimple(Writer out, StructField field)
+      throws IOException {
     String name = field.name();
     String type = field.typeName();
 
@@ -1544,14 +1539,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private boolean isNested(StructField field) {
-    var typeElement = field.typeElement;
-
-    return typeElement != null
-        && (typeElement.getAnnotation(Struct.class) != null
-            || typeElement.getAnnotation(Union.class) != null);
-  }
-
   private void validateFields(List<StructField> fields) {
     for (var field : fields) {
       if (field.isString()) {
@@ -1584,11 +1571,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private boolean isNestedValue(StructField field) {
-    return isNested(field) && field.isValue();
+    return field.isForeignMemory() && field.isValue();
   }
 
   private boolean isNestedAddress(StructField field) {
-    return isNested(field) && field.isAddress();
+    return field.isForeignMemory() && field.isAddress();
   }
 
   private boolean isRecordAddress(VariableGenerator variable) {
