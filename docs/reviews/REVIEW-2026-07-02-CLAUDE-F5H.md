@@ -89,7 +89,7 @@ targets `METHOD` only, so it can never be present on a `TypeElement`. Given
 commit d4caa5 says "use @Symbol for binding to native", it looks like `@Symbol`
 was meant to gain a `TYPE` target and never did.
 
-### 7. Nested-record address setter uses `Arena.ofAuto()` — dangling pointer risk
+### 7. ✅ Nested-record address setter uses `Arena.ofAuto()` — dangling pointer risk
 
 `nestedAddressValue` (`ForeignMemoryProcessor.java:1215`) allocates a segment
 from an auto arena and stores its address into native memory. Nothing in Java
@@ -110,14 +110,14 @@ reading the vtable lazily.
 
 ## Inconsistencies
 
-- **Leftover debug logging**: `ForeignInterfaceProcessor.process`
+- ✅ **Leftover debug logging**: `ForeignInterfaceProcessor.process`
   (`ForeignInterfaceProcessor.java:31`) prints `printNote` for every round,
   every annotation, and every element, including the full `rootElements` list.
   Every downstream consumer's build log gets this spam. The other two processors
   are silent — delete these.
 - **Stale error message**: `ForeignInterfaceProcessor.java:170` says "unless
   kind is DEFAULT_LOOKUP", but `Library.Kind` has no such constant.
-- **Package derivation**: `ForeignMemoryProcessor` correctly uses
+- ✅ **Package derivation**: `ForeignMemoryProcessor` correctly uses
   `Elements.getPackageOf`, while `ForeignInterfaceProcessor` and
   `DispatchTableProcessor` do `lastIndexOf('.')` on the qualified name — wrong
   for nested interfaces (`a.b.Outer.Inner` → "package" `a.b.Outer`).

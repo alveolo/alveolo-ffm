@@ -12,7 +12,7 @@ Saved: 2026-07-04
 
 ## Findings
 
-### P1: Record address fields can store dangling native pointers
+### P1: ✅ Record address fields can store dangling native pointers
 
 `ForeignMemoryProcessor` knows nested record-address fields need allocator
 ownership, but the public two-argument conversion still opens and closes a
@@ -100,7 +100,7 @@ Evidence:
 Details:
 
 - `@Library` validation mentions a non-existent `DEFAULT_LOOKUP` kind.
-- One processor test prints native canonical layouts during every build.
+- ✅ One processor test prints native canonical layouts during every build.
 - Benchmark compilation uses deprecated `forceJavacCompilerUse`.
 - Benchmark shading emits module-info warnings.
 
@@ -108,7 +108,7 @@ Details:
 
 - Add focused compile tests for plain `String` returns, generated-name
   overrides, invalid accessor pairs, and unsafe record-address conversion.
-- Share generated class-name policy across processors without broad helper
+- ✅ Share generated class-name policy across processors without broad helper
   churn.
 - Keep runtime FFM tests in the benchmark module, but add only the smallest
   native cases that prove a behavior.
@@ -124,4 +124,3 @@ Details:
 - Upcall/callback generation.
 - Packed/aligned struct options.
 - Richer platform library lookup for app-local native libraries and frameworks.
-
