@@ -167,7 +167,7 @@ class ExecutableGenerator {
         leadingNativeArguments.stream().map(NativeArgument::layout),
         parameterGenerators.stream()
             .filter(not(TypeGenerator::isSegmentAllocator))
-            .map(TypeGenerator::layout))
+            .map(VariableGenerator::argumentLayout))
         .flatMap(identity());
 
     String prefix = isVoid

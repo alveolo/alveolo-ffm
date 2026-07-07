@@ -75,8 +75,8 @@ sealed class TypeGenerator permits VariableGenerator {
   /// * `ValueLayout.JAVA_INT` for primitive types
   /// * `Nested.FM$LAYOUT` for nested structs/unions
   /// * `ValueLayout.ADDRESS` for reference types
-  /// * `MemoryLayout.sequenceLayout(5L, ValueLayout.JAVA_INT)` for
-  ///   primitive arrays
+  /// * `MemoryLayout.sequenceLayout(5L, ValueLayout.JAVA_INT)` for primitive
+  ///   arrays and NIO buffers
   // TODO support nested struct/union and reference arrays
   String layout() {
     if (hasConflictingPassModeAnnotations())
@@ -85,59 +85,101 @@ sealed class TypeGenerator permits VariableGenerator {
     if (isPrimitiveAddress())
       return "ValueLayout.ADDRESS";
 
-    if (typeElement != null) {
-      if (isForeignMemory()) return isValue()
+    if (isForeignMemory())
+      return isValue()
           ? foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT"
           : "ValueLayout.ADDRESS";
 
-      if (typeElement.getKind() == ElementKind.CLASS) {
-        if (!hasTypeUseAddress() && !hasTypeUseValue()
-            && !hasTypeAddress() && !hasTypeValue())
-          return primitiveLayout();
-
-        return primitiveLayout();
-      }
-    }
-
-    return primitiveLayout();
+    return directLayout();
   }
 
-  private String primitiveLayout() {
+  private String directLayout() {
     if (typeMirror.getKind().isPrimitive())
       return valueLayout();
 
-    return switch (typeName()) {
-      case "java.lang.String" -> "ValueLayout.ADDRESS";
-      case "java.lang.foreign.MemorySegment" -> "ValueLayout.ADDRESS";
+    var elementLayout = elementLayout();
+    if (elementLayout != null)
+      return sequenceLayout(elementLayout);
 
-      case "byte[]", "java.nio.ByteBuffer" -> sequenceLayout(
-          "ValueLayout.JAVA_BYTE");
-      case "char[]", "java.nio.CharBuffer" -> sequenceLayout(
-          "ValueLayout.JAVA_CHAR");
-      case "short[]", "java.nio.ShortBuffer" -> sequenceLayout(
-          "ValueLayout.JAVA_SHORT");
-      case "int[]", "java.nio.IntBuffer" -> sequenceLayout(
-          "ValueLayout.JAVA_INT");
-      case "long[]", "java.nio.LongBuffer" -> sequenceLayout(
-          "ValueLayout.JAVA_LONG");
-      case "float[]", "java.nio.FloatBuffer" -> sequenceLayout(
-          "ValueLayout.JAVA_FLOAT");
-      case "double[]", "java.nio.DoubleBuffer" -> sequenceLayout(
-          "ValueLayout.JAVA_DOUBLE");
+    if (isString() || isMemorySegment())
+      return "ValueLayout.ADDRESS";
 
-      // TODO more custom structures
-
-      default -> VALUE_LAYOUT_NOT_SUPPORTED;
-    };
+    // TODO more custom structures
+    return VALUE_LAYOUT_NOT_SUPPORTED;
   }
 
   private String sequenceLayout(String elementLayout) {
-    return "MemoryLayout.sequenceLayout(" + sequence + "L, "
-        + elementLayout + ")";
+    return "MemoryLayout.sequenceLayout("
+        + sequence + "L, " + elementLayout + ")";
   }
 
   boolean unsupported() {
-    return layout() == VALUE_LAYOUT_NOT_SUPPORTED;
+    return VALUE_LAYOUT_NOT_SUPPORTED.equals(layout());
+  }
+
+  boolean isArrayOrBuffer() {
+    return elementLayout() != null;
+  }
+
+  boolean isArray() {
+    return typeMirror.getKind() == TypeKind.ARRAY;
+  }
+
+  boolean isNioBuffer() {
+    return bufferElementKind() != null;
+  }
+
+  TypeMirror elementType() {
+    if (typeMirror.getKind() == TypeKind.ARRAY) {
+      var componentType = ((ArrayType) typeMirror).getComponentType();
+      return componentType.getKind().isPrimitive() ? componentType : null;
+    }
+
+    var kind = bufferElementKind();
+    return kind == null ? null
+        : processingEnv.getTypeUtils().getPrimitiveType(kind);
+  }
+
+  String elementTypeName() {
+    var elementType = elementType();
+    return elementType == null ? null : elementType.toString();
+  }
+
+  String elementLayout() {
+    var kind = elementKind();
+    return kind == null ? null : switch (kind) {
+      case BYTE -> "ValueLayout.JAVA_BYTE";
+      case CHAR -> "ValueLayout.JAVA_CHAR";
+      case SHORT -> "ValueLayout.JAVA_SHORT";
+      case INT -> "ValueLayout.JAVA_INT";
+      case LONG -> "ValueLayout.JAVA_LONG";
+      case FLOAT -> "ValueLayout.JAVA_FLOAT";
+      case DOUBLE -> "ValueLayout.JAVA_DOUBLE";
+      default -> null;
+    };
+  }
+
+  private TypeKind elementKind() {
+    if (typeMirror.getKind() == TypeKind.ARRAY) {
+      var componentKind = ((ArrayType) typeMirror)
+          .getComponentType().getKind();
+      return componentKind.isPrimitive() ? componentKind : null;
+    }
+
+    return bufferElementKind();
+  }
+
+  private TypeKind bufferElementKind() {
+    return switch (typeName()) {
+      case "java.nio.ByteBuffer" -> TypeKind.BYTE;
+      case "java.nio.CharBuffer" -> TypeKind.CHAR;
+      case "java.nio.ShortBuffer" -> TypeKind.SHORT;
+      case "java.nio.IntBuffer" -> TypeKind.INT;
+      case "java.nio.LongBuffer" -> TypeKind.LONG;
+      case "java.nio.FloatBuffer" -> TypeKind.FLOAT;
+      case "java.nio.DoubleBuffer" -> TypeKind.DOUBLE;
+      default -> null;
+    };
   }
 
   String valueLayout() {
@@ -245,8 +287,7 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   boolean needsConfinedArena() {
-    return isPrimitiveAddress()
-        || isRecord() || (isString() && !isCFString());
+    return isPrimitiveAddress() || isRecord() || (isString() && !isCFString());
   }
 
   boolean isMemorySegment() {

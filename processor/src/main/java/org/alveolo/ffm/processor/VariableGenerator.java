@@ -7,13 +7,12 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
-import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Out;
 
-final class VariableGenerator extends TypeGenerator {
+non-sealed class VariableGenerator extends TypeGenerator {
   final Element element;
   final String name;
   final boolean hasExplicitSequence;
@@ -21,19 +20,23 @@ final class VariableGenerator extends TypeGenerator {
   VariableGenerator(
       ProcessingEnvironment processingEnv,
       VariableElement element) {
-    super(processingEnv, element.asType(), sequence(element.asType(), element));
-    this.element = element;
-    name = element.getSimpleName().toString();
-    hasExplicitSequence = hasSequence(element.asType(), element);
+    this(processingEnv, element.getSimpleName().toString(), element.asType(),
+        sequence(element.asType(), element), element);
   }
 
   VariableGenerator(
       ProcessingEnvironment processingEnv,
       RecordComponentElement element) {
-    super(processingEnv, element.asType(), sequence(element.asType(), element));
+    this(processingEnv, element.getSimpleName().toString(), element.asType(),
+        sequence(element.asType(), element), element);
+  }
+
+  VariableGenerator(ProcessingEnvironment processingEnv, String name,
+      TypeMirror typeMirror, long sequence, Element element) {
+    super(processingEnv, typeMirror, sequence);
     this.element = element;
-    name = element.getSimpleName().toString();
-    hasExplicitSequence = hasSequence(element.asType(), element);
+    this.name = name;
+    hasExplicitSequence = hasSequence(typeMirror, element);
   }
 
   /// Variable name
@@ -46,11 +49,15 @@ final class VariableGenerator extends TypeGenerator {
     return typeName() + " " + name();
   }
 
-  @Override
-  String layout() {
+  String argumentLayout() {
     return isArrayOrBuffer()
         ? "ValueLayout.ADDRESS"
-        : super.layout();
+        : layout();
+  }
+
+  @Override
+  boolean unsupported() {
+    return VALUE_LAYOUT_NOT_SUPPORTED.equals(argumentLayout());
   }
 
   @Override
@@ -94,10 +101,6 @@ final class VariableGenerator extends TypeGenerator {
 
   String cfStringName() {
     return "ff$cfString$" + name();
-  }
-
-  boolean isArrayOrBuffer() {
-    return elementLayout() != null;
   }
 
   boolean hasInAnnotation() {
@@ -260,35 +263,6 @@ final class VariableGenerator extends TypeGenerator {
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())
         .stripTrailing();
-  }
-
-  private boolean isArray() {
-    return typeMirror.getKind() == TypeKind.ARRAY;
-  }
-
-  private String elementLayout() {
-    if (typeMirror.getKind() == TypeKind.ARRAY)
-      return switch (((ArrayType) typeMirror).getComponentType().getKind()) {
-        case BYTE -> "ValueLayout.JAVA_BYTE";
-        case CHAR -> "ValueLayout.JAVA_CHAR";
-        case SHORT -> "ValueLayout.JAVA_SHORT";
-        case INT -> "ValueLayout.JAVA_INT";
-        case LONG -> "ValueLayout.JAVA_LONG";
-        case FLOAT -> "ValueLayout.JAVA_FLOAT";
-        case DOUBLE -> "ValueLayout.JAVA_DOUBLE";
-        default -> null;
-      };
-
-    return switch (typeName()) {
-      case "java.nio.ByteBuffer" -> "ValueLayout.JAVA_BYTE";
-      case "java.nio.CharBuffer" -> "ValueLayout.JAVA_CHAR";
-      case "java.nio.ShortBuffer" -> "ValueLayout.JAVA_SHORT";
-      case "java.nio.IntBuffer" -> "ValueLayout.JAVA_INT";
-      case "java.nio.LongBuffer" -> "ValueLayout.JAVA_LONG";
-      case "java.nio.FloatBuffer" -> "ValueLayout.JAVA_FLOAT";
-      case "java.nio.DoubleBuffer" -> "ValueLayout.JAVA_DOUBLE";
-      default -> null;
-    };
   }
 
   private String segmentName() {
