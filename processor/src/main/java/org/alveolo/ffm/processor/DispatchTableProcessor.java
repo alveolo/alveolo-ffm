@@ -5,6 +5,7 @@ import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -45,6 +46,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
             var dt = type.getAnnotation(DispatchTable.class);
             if (dt != null) {
               validateSimpleClassName(annotation, dt, dt.name());
+              validateTopLevelType(type, dt);
               writeFile(type);
             }
           } catch (ProcessorError e) {

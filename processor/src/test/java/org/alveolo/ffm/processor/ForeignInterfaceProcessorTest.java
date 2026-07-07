@@ -96,6 +96,22 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsWhenLibraryValueIsMissing() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        @org.alveolo.ffm.Library
+        public interface Lib {}
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining("@Library value is required");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void failsWhenMemorySegmentWrapperReturnHasNoAllocator() {
     var struct = forSourceString("test.Div", """
         package test;
@@ -271,5 +287,24 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
 
     assertThat(c).hadErrorContaining(
         "@ForeignInterface is only allowed on interfaces");
+  }
+
+  @Test
+  void failsNestedForeignInterface() {
+    var source = forSourceString("test.Outer", """
+        package test;
+        class Outer {
+          @org.alveolo.ffm.ForeignInterface
+          interface Lib {
+            void f();
+          }
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Nested @ForeignInterface types are not yet supported");
+    assertThat(c).hadErrorCount(1);
   }
 }

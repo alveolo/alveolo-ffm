@@ -22,7 +22,7 @@ setter would otherwise store a pointer to hidden temporary storage.
 Each issue below is covered by a processor test that encodes the desired
 behavior and guards the corresponding fix.
 
-## P1: Allocator need is not transitive through nested record-by-value fields
+## P1: ✅ Allocator need is not transitive through nested record-by-value fields
 
 `ForeignMemoryProcessor.writeRecordConverters` currently detects allocator
 need only for direct record components whose own pass mode is address. A record
@@ -56,7 +56,7 @@ Expected fix direction:
 - Use it for record converter branch selection and for nested record value
   setters on both generated record helpers and memory-backed wrappers.
 
-## P2: String memory fields use address layout but have no string conversion
+## P2: ✅ String memory fields use address layout but have no string conversion
 
 `TypeGenerator` maps `String` to `ValueLayout.ADDRESS`, but generated memory
 field accessors use generic VarHandle get/set code. That makes getters cast a
@@ -79,7 +79,7 @@ Expected fix direction:
 - Reject `String` fields for `@Struct` / `@Union` memory types until explicit
   allocator/string field semantics are designed.
 
-## P2: Arbitrary non-FFM classes are under-validated
+## P2: ✅ Arbitrary non-FFM classes are under-validated
 
 An arbitrary class such as `Object` is not a supported FFI type. An explicit
 `@Address` annotation must not turn that unsupported base type into
@@ -106,7 +106,7 @@ Expected fix direction:
   instead of allowing `@Address` to select pointer layout and later generating
   code that relies on a nonexistent `.ms` member.
 
-## P3: Primitive `@Address` needs explicit lifetime semantics
+## P3: ✅ Primitive `@Address` needs explicit lifetime semantics
 
 `TypeGenerator.isAddress()` returned `false` immediately for primitive types,
 so an annotation such as `@Address long` was treated as a plain scalar value

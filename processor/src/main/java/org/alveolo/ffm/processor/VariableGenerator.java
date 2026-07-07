@@ -13,7 +13,7 @@ import javax.lang.model.type.TypeKind;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Out;
 
-class VariableGenerator extends TypeGenerator {
+final class VariableGenerator extends TypeGenerator {
   final Element element;
   final String name;
   final boolean hasExplicitSequence;
@@ -48,9 +48,9 @@ class VariableGenerator extends TypeGenerator {
 
   @Override
   String layout() {
-    if (isArrayOrBuffer()) return "ValueLayout.ADDRESS";
-
-    return super.layout();
+    return isArrayOrBuffer()
+        ? "ValueLayout.ADDRESS"
+        : super.layout();
   }
 
   @Override

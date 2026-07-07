@@ -5,6 +5,7 @@ import static javax.lang.model.SourceVersion.isKeyword;
 
 import java.lang.annotation.Annotation;
 
+import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
@@ -24,6 +25,15 @@ public class ProcessorUtils {
       throw new ProcessorError(element, "@"
           + annotation.annotationType().getSimpleName()
           + " name must be a simple Java class name, not: " + name);
+  }
+
+  static <T extends Annotation> void validateTopLevelType(
+      TypeElement element, T annotation) throws ProcessorError {
+    if (element.getNestingKind() == NestingKind.TOP_LEVEL) return;
+
+    throw new ProcessorError(element,
+        "Nested @" + annotation.annotationType().getSimpleName()
+            + " types are not yet supported");
   }
 
   static String foreignMemoryClassName(TypeElement element, Elements elements) {

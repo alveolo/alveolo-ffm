@@ -51,6 +51,26 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsNestedDispatchTable() {
+    var source = forSourceString("test.Outer", """
+        package test;
+        class Outer {
+          @org.alveolo.ffm.DispatchTable
+          interface Vtbl {
+            @org.alveolo.ffm.Slot(0)
+            void call();
+          }
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Nested @DispatchTable types are not yet supported");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void failsOnMissingSlot() {
     var source = forSourceString("test.BadVtbl", """
         package test;

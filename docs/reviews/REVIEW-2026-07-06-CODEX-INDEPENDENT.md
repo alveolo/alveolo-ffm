@@ -89,7 +89,7 @@ Suggested fix: reject source identifiers using reserved generated prefixes such
 as `ff$`, `FF$`, and `FM$`, or synthesize collision-proof names from a reserved
 name allocator.
 
-### P2: Nested annotated types are likely broken
+### P2: ✅ Nested annotated types are likely broken
 
 Generated class names and `implements` clauses use simple names. A nested source
 type such as `Outer.Inner` would tend to generate a top-level `InnerFFM
@@ -100,9 +100,8 @@ Relevant code:
 - `processor/src/main/java/org/alveolo/ffm/processor/ProcessorUtils.java:79`
 - `processor/src/main/java/org/alveolo/ffm/processor/ForeignInterfaceProcessor.java:76`
 
-Suggested fix: add tests for nested annotated types. If support is not intended,
-reject them explicitly; if support is intended, generate safe top-level names and
-refer to source types by qualified or canonical nested names.
+Suggested fix: ✅ nested annotated types are now explicitly rejected with a
+focused diagnostic because support is not intended yet.
 
 ### P3: ✅ Processor module is not JPMS-service friendly
 
@@ -119,9 +118,9 @@ Relevant code:
 Suggested fix: add a `provides` clause for all three processors if JPMS
 processor-path usage is supported.
 
-### P3: Diagnostic references a non-existent enum value
+### P3: ✅ Diagnostic references a non-existent enum value
 
-The diagnostic says:
+The diagnostic used to say:
 
 ```text
 @Library value is required unless kind is DEFAULT_LOOKUP
@@ -175,11 +174,11 @@ Relevant code:
 Consider generating accessor bodies from shared field-operation descriptions,
 then wrapping them in static or instance method shells.
 
-### Replace string sentinel checks
+### ✅ Replace string sentinel checks
 
-Unsupported layouts are represented by the string constant
-`VALUE_LAYOUT_NOT_SUPPORTED`, and checks use reference equality against that
-constant. This works only because the same constant instance is returned.
+Unsupported layouts were represented by a public string constant
+`VALUE_LAYOUT_NOT_SUPPORTED`, and checks used reference equality against that
+constant. That worked only because the same constant instance was returned.
 
 Relevant code:
 
@@ -187,12 +186,13 @@ Relevant code:
 - `processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:477`
 - `processor/src/main/java/org/alveolo/ffm/processor/MemoryLayoutGenerator.java:33`
 
-A small result type or enum would be more robust and clearer.
+`TypeGenerator.unsupported()` now encapsulates the unsupported-layout sentinel
+check. A future result type or enum would still be a larger cleanup.
 
-### Align documentation style
+### ✅ Align documentation style
 
-The project instructions call for Markdown style JavaDoc. Most public docs use
-`///`, but `Sequence.java` still uses block JavaDoc.
+The project instructions call for Markdown style JavaDoc. Most public docs used
+`///`, but `Sequence.java` still used block JavaDoc.
 
 Relevant code:
 
@@ -237,5 +237,6 @@ Result: passed, with shade warnings.
 mvn -pl benchmark -am package -DskipTests
 ```
 
-Result: failed due to the benchmark module not pulling
-`alveolo-ffm-processor` into the selected reactor.
+Result: ✅ now passes after adding `alveolo-ffm-processor` as a provided
+benchmark dependency. The original review observed a failure because the
+benchmark module did not pull the processor into the selected reactor.

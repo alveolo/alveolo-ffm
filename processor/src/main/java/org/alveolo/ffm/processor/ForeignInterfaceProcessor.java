@@ -5,6 +5,7 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -45,6 +46,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
             var fi = type.getAnnotation(ForeignInterface.class);
             if (fi != null) {
               validateSimpleClassName(annotation, fi, fi.name());
+              validateTopLevelType(type, fi);
               writeFile(type);
             }
           } catch (ProcessorError e) {
@@ -166,8 +168,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     var messager = processingEnv.getMessager();
 
     if (value.isEmpty()) {
-      messager.printError(annotation
-          + " value is required unless kind is DEFAULT_LOOKUP", type);
+      messager.printError(annotation + " value is required", type);
       return false;
     }
 

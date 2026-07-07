@@ -23,8 +23,13 @@ import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Value;
 import org.alveolo.ffm.macos.CFString;
 
-class TypeGenerator {
-  public static String VALUE_LAYOUT_NOT_SUPPORTED = "((ValueLayout) null)";
+sealed class TypeGenerator permits VariableGenerator {
+  /// Dedicated #layout() value representing invalid type.
+  ///
+  /// Intentionally spoiling runtime to throw on use but keeping the generated
+  /// code compilable.
+  protected static final String VALUE_LAYOUT_NOT_SUPPORTED =
+      "((ValueLayout) null)";
 
   public static final String MEMORY_SEGMENT =
       MemorySegment.class.getCanonicalName();
@@ -70,7 +75,7 @@ class TypeGenerator {
   /// * `ValueLayout.JAVA_INT` for primitive types
   /// * `Nested.FM$LAYOUT` for nested structs/unions
   /// * `ValueLayout.ADDRESS` for reference types
-  /// * `MemoryLayout.sequenceLayout(5, ValueLayout.JAVA_INT)` for
+  /// * `MemoryLayout.sequenceLayout(5L, ValueLayout.JAVA_INT)` for
   ///   primitive arrays
   // TODO support nested struct/union and reference arrays
   String layout() {
@@ -105,25 +110,34 @@ class TypeGenerator {
       case "java.lang.String" -> "ValueLayout.ADDRESS";
       case "java.lang.foreign.MemorySegment" -> "ValueLayout.ADDRESS";
 
-      case "byte[]", "java.nio.ByteBuffer" -> "MemoryLayout.sequenceLayout("
-          + sequence + ", ValueLayout.JAVA_BYTE)";
-      case "char[]", "java.nio.CharBuffer" -> "MemoryLayout.sequenceLayout("
-          + sequence + ", ValueLayout.JAVA_CHAR)";
-      case "short[]", "java.nio.ShortBuffer" -> "MemoryLayout.sequenceLayout("
-          + sequence + ", ValueLayout.JAVA_SHORT)";
-      case "int[]", "java.nio.IntBuffer" -> "MemoryLayout.sequenceLayout("
-          + sequence + ", ValueLayout.JAVA_INT)";
-      case "long[]", "java.nio.LongBuffer" -> "MemoryLayout.sequenceLayout("
-          + sequence + ", ValueLayout.JAVA_LONG)";
-      case "float[]", "java.nio.FloatBuffer" -> "MemoryLayout.sequenceLayout("
-          + sequence + ", ValueLayout.JAVA_FLOAT)";
-      case "double[]", "java.nio.DoubleBuffer" -> "MemoryLayout.sequenceLayout("
-          + sequence + ", ValueLayout.JAVA_DOUBLE)";
+      case "byte[]", "java.nio.ByteBuffer" -> sequenceLayout(
+          "ValueLayout.JAVA_BYTE");
+      case "char[]", "java.nio.CharBuffer" -> sequenceLayout(
+          "ValueLayout.JAVA_CHAR");
+      case "short[]", "java.nio.ShortBuffer" -> sequenceLayout(
+          "ValueLayout.JAVA_SHORT");
+      case "int[]", "java.nio.IntBuffer" -> sequenceLayout(
+          "ValueLayout.JAVA_INT");
+      case "long[]", "java.nio.LongBuffer" -> sequenceLayout(
+          "ValueLayout.JAVA_LONG");
+      case "float[]", "java.nio.FloatBuffer" -> sequenceLayout(
+          "ValueLayout.JAVA_FLOAT");
+      case "double[]", "java.nio.DoubleBuffer" -> sequenceLayout(
+          "ValueLayout.JAVA_DOUBLE");
 
       // TODO more custom structures
 
       default -> VALUE_LAYOUT_NOT_SUPPORTED;
     };
+  }
+
+  private String sequenceLayout(String elementLayout) {
+    return "MemoryLayout.sequenceLayout(" + sequence + "L, "
+        + elementLayout + ")";
+  }
+
+  boolean unsupported() {
+    return layout() == VALUE_LAYOUT_NOT_SUPPORTED;
   }
 
   String valueLayout() {

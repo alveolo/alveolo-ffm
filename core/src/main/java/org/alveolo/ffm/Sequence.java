@@ -8,12 +8,12 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/**
- * Specifies the length/count for a sequence/buffer layout.
- * Can be placed on a type (TYPE_USE) or on a method (METHOD).
- */
+/// Specifies the length/count for a sequence/buffer layout.
+///
+/// Can be placed on a type use, method, or parameter.
 @Target({TYPE_USE, METHOD, PARAMETER})
 @Retention(SOURCE)
 public @interface Sequence {
+  /// Number of elements in the sequence.
   long value() default 1;
 }

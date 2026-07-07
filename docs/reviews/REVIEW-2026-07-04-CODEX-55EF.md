@@ -99,14 +99,14 @@ Evidence:
 
 Details:
 
-- `@Library` validation mentions a non-existent `DEFAULT_LOOKUP` kind.
+- ✅ `@Library` validation mentioned a non-existent `DEFAULT_LOOKUP` kind.
 - ✅ One processor test prints native canonical layouts during every build.
-- Benchmark compilation uses deprecated `forceJavacCompilerUse`.
+- ✅ Benchmark compilation used deprecated `forceJavacCompilerUse`.
 - Benchmark shading emits module-info warnings.
 
 ## Improvement Targets
 
-- Add focused compile tests for plain `String` returns, generated-name
+- ✅ Add focused compile tests for plain `String` returns, generated-name
   overrides, invalid accessor pairs, and unsafe record-address conversion.
 - ✅ Share generated class-name policy across processors without broad helper
   churn.

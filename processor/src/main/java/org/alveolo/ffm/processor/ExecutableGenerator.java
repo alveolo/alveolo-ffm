@@ -4,7 +4,6 @@ import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
-import static org.alveolo.ffm.processor.TypeGenerator.VALUE_LAYOUT_NOT_SUPPORTED;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -472,9 +471,7 @@ class ExecutableGenerator {
         continue;
       }
 
-      String layout = paramGen.layout();
-
-      if (layout == VALUE_LAYOUT_NOT_SUPPORTED) {
+      if (paramGen.unsupported()) {
         hasUnsupported = true;
 
         messager.printError(
@@ -483,7 +480,7 @@ class ExecutableGenerator {
     }
 
     if (element.getReturnType().getKind() != TypeKind.VOID
-        && returnGenerator.layout() == VALUE_LAYOUT_NOT_SUPPORTED) {
+        && returnGenerator.unsupported()) {
       hasUnsupported = true;
 
       messager.printError(

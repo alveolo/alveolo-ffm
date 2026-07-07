@@ -16,7 +16,7 @@ class MemoryLayoutGenerator {
    * Lightweight descriptor for a layout field.
    */
   record LayoutField(
-      String name, String layout,
+      String name, String layout, boolean unsupported,
       String typeName, Element errorElement
   ) {}
 
@@ -30,7 +30,7 @@ class MemoryLayoutGenerator {
     var buf = new StringBuilder();
 
     for (var field : fields) {
-      if (field.layout() == TypeGenerator.VALUE_LAYOUT_NOT_SUPPORTED) {
+      if (field.unsupported()) {
         processingEnv.getMessager().printError(
             "Type is not supported: " + field.typeName(), field.errorElement());
       }

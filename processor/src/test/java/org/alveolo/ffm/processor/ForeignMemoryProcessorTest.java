@@ -224,6 +224,25 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsNestedStruct() {
+    var source = forSourceString("test.Outer", """
+        package test;
+        class Outer {
+          @org.alveolo.ffm.Struct
+          interface Nested {
+            int value();
+          }
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Nested @Struct types are not yet supported");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void failsUnionOnEnum() {
     var source = forSourceString("test.BadEnum", """
         package test;
@@ -233,6 +252,25 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile(source);
     assertThat(c).hadErrorContaining(
         "@Union can only be applied to an interface, not ENUM");
+  }
+
+  @Test
+  void failsNestedUnion() {
+    var source = forSourceString("test.Outer", """
+        package test;
+        class Outer {
+          @org.alveolo.ffm.Union
+          interface Nested {
+            int value();
+          }
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Nested @Union types are not yet supported");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test

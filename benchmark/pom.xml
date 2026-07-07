@@ -62,7 +62,6 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
         <configuration>
           <showWarnings>true</showWarnings>
           <fork>true</fork>
-          <forceJavacCompilerUse>true</forceJavacCompilerUse>
           <annotationProcessorPaths>
             <path>
               <groupId>org.alveolo.ffm</groupId>

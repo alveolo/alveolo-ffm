@@ -9,6 +9,7 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassN
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.qualifyName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -120,6 +121,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                 var struct = type.getAnnotation(Struct.class);
                 if (struct != null) {
                   validateSimpleClassName(annotation, struct, struct.name());
+                  validateTopLevelType(type, struct);
                   if (struct.vtable()
                       && type.getKind() == ElementKind.RECORD) {
                     messager.printError(
@@ -134,6 +136,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                 var union = type.getAnnotation(Union.class);
                 if (union != null) {
                   validateSimpleClassName(annotation, union, union.name());
+                  validateTopLevelType(type, union);
                   if (type.getKind() == ElementKind.RECORD) {
                     messager.printError("@" + annotation.getSimpleName()
                         + " can only be applied to an interface, not "
@@ -267,10 +270,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
       long sequence = 1;
       var bufferField = isNioBufferType(fieldType);
+      var bufferElementType = fieldType;
       if (bufferField) {
-        // NIO Buffer type — extract element type
         sequence = getSequenceFromMethod(accessor);
-        fieldType = extractBufferElementType(fieldType);
+        bufferElementType = extractBufferElementType(fieldType);
       }
 
       var writeAccessor = true;
@@ -278,7 +281,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       var writeBufferIndexSetter = true;
       var writeBufferArraySetter = true;
       for (var method : fieldMethods) {
-        if (bufferField && isGeneratedBufferMethod(method, fieldType)) {
+        if (bufferField && isGeneratedBufferMethod(
+            method, bufferElementType)) {
           continue;
         }
 
@@ -295,9 +299,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           writeBufferIndexGetter &=
               !hasBufferIndexGetterSignature(method);
           writeBufferIndexSetter &=
-              !hasBufferIndexSetterSignature(method, fieldType);
+              !hasBufferIndexSetterSignature(method, bufferElementType);
           writeBufferArraySetter &=
-              !hasBufferArraySetterSignature(method, fieldType);
+              !hasBufferArraySetterSignature(method, bufferElementType);
         } else if (setterConflictsWithGeneratedAccessor(method, fieldType)) {
           writeAccessor = false;
         }
@@ -895,7 +899,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
               f.typeMirror(), f.sequence()); // TODO allocation?
 
           return new MemoryLayoutGenerator.LayoutField(f.name(),
-              layout(f, typeGen), typeGen.typeName(), f.errorElement());
+              typeGen.layout(), typeGen.unsupported(),
+              typeGen.typeName(), f.errorElement());
         })
         .toList();
 
@@ -903,13 +908,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     out.write(layoutGen.layout());
 
     out.write("      }));\n");
-  }
-
-  private String layout(StructField field, TypeGenerator typeGen) {
-    if (!field.bufferField()) return typeGen.layout();
-
-    return "MemoryLayout.sequenceLayout(" + field.sequence() + "L, "
-        + typeGen.layout() + ")";
   }
 
   private void writeAllocate(Writer out, String className) throws IOException {
@@ -1509,7 +1507,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeAccessorsBuffer(Writer out, StructField field)
       throws IOException {
     String name = field.name();
-    String type = field.typeMirror().toString();
+    String type = extractBufferElementType(field.typeMirror()).toString();
     String capType = capitalize(type);
     long size = field.sequence();
 
@@ -1626,9 +1624,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     var gen = new TypeGenerator(processingEnv,
         field.typeMirror(), field.sequence()); // TODO allocation?
 
-    return field.throwingAccessors()
-        || gen.isString()
-        || gen.layout() == TypeGenerator.VALUE_LAYOUT_NOT_SUPPORTED;
+    return field.throwingAccessors() || gen.isString() || gen.unsupported();
   }
 
   private void reportMemoryBackedRecordAddressField(StructField field) {

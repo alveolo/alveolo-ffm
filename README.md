@@ -2,9 +2,9 @@
 
 Alveolo FFM is a small annotation-processor layer over the Java Foreign
 Function and Memory API. It lets you describe native functions, C structs,
-unions, buffers, and library loading in ordinary Java declarations, then
-generates the repetitive `Linker`, `FunctionDescriptor`, `MemoryLayout`,
-`VarHandle`, and copy glue for you.
+unions, dispatch tables, buffers, and library loading in ordinary Java
+declarations, then generates the repetitive `Linker`, `FunctionDescriptor`,
+`MemoryLayout`, `VarHandle`, and copy glue for you.
 
 The goal is not to hide FFM. The generated code still uses Java's native FFM
 types where they matter. The goal is to keep binding code readable:
@@ -34,10 +34,12 @@ NativeMathFFM.INSTANCE.scale(values, values.length, 10);
 
 - `@ForeignInterface` bindings for native functions.
 - `@Struct` and `@Union` memory wrappers.
+- `@DispatchTable` wrappers and `@Struct(vtable = true)` virtual calls.
 - C name mapping with `@Symbol`.
 - Native library lookup with `@Library`.
 - Pass-by-value and pass-by-address control with `@Value` and `@Address`.
 - Java array and `java.nio.*Buffer` pointer parameters.
+- Fixed-size `java.nio.*Buffer` fields on memory-backed struct interfaces.
 - Input/output transfer control with `@In`, `@Out`, and `@Sequence`.
 - UTF-8 native string parameters.
 - macOS CoreFoundation `CFStringRef` helpers.
@@ -47,6 +49,9 @@ Generated names are intentionally predictable:
 - `NativeMath` -> `NativeMathFFM`
 - `timeval` -> `timevalFM`
 - `Pair` -> `PairFM`
+
+Annotated types must currently be top-level declarations; nested annotated
+types are rejected with a compile-time diagnostic.
 
 ## Requirements
 
@@ -101,6 +106,13 @@ processor:
 </build>
 ```
 
+The processor jar also declares JPMS service providers. Maven's
+`annotationProcessorPaths` setup is the usual choice for Maven projects; builds
+that use javac's processor module path can discover the same processors through
+`provides javax.annotation.processing.Processor`. Keep `alveolo-ffm-core` as a
+normal dependency and keep `alveolo-ffm-processor` on the annotation processor
+path rather than on the application runtime path.
+
 The core module exports:
 
 ```java
@@ -109,6 +121,9 @@ module org.alveolo.ffm {
   exports org.alveolo.ffm.macos;
 }
 ```
+
+Named-module applications should add `requires org.alveolo.ffm;` to their own
+`module-info.java`.
 
 ## Native Functions
 
@@ -132,7 +147,8 @@ var length = LibCFFM.INSTANCE.stringLength("hello");
 ```
 
 Default and static methods are ignored by the processor, so the interface can
-still contain ordinary Java helpers.
+still contain ordinary Java helpers. Native methods must currently be declared
+directly on the annotated interface; inherited abstract methods are not scanned.
 
 ## Library Loading
 
@@ -172,6 +188,41 @@ public interface CoreFoundation {
 Multiple `@Library` annotations are allowed. The generated lookup combines the
 matching libraries and falls back to the platform default lookup when no library
 entry applies.
+
+## Dispatch Tables
+
+Use `@DispatchTable` for native tables of function pointers:
+
+```java
+@DispatchTable
+public interface XyzVtbl {
+  @Slot(0)
+  int add(int left, int right);
+}
+```
+
+The generated `XyzVtblFD` wrapper reads function pointers from address-sized
+slots and exposes Java methods with the declared signatures.
+
+For object-style native structs, `@Struct(vtable = true)` reserves the first
+field for a dispatch table pointer. Methods annotated with `@Virtual` call
+through the generated dispatch table wrapper; ordinary abstract methods still
+describe fields, and methods with `@Symbol` call direct native symbols.
+
+```java
+@Struct(vtable = true, symbols = NativeApi.class)
+public interface NativeObject {
+  int field();
+
+  NativeObject field(int value);
+
+  @Virtual(2)
+  int method(int arg);
+
+  @Symbol("native_symbol")
+  int call(int arg);
+}
+```
 
 ## Structs and Unions
 
@@ -225,6 +276,22 @@ public interface NumberBits {
 }
 ```
 
+Memory-backed struct interfaces can also expose fixed-size NIO buffer fields:
+
+```java
+@Struct
+public interface Samples {
+  @Sequence(3)
+  IntBuffer values();
+}
+```
+
+Here `@Sequence(3)` is part of the native field layout. The generated layout
+uses a sequence of three elements and exposes `values()`, `values$MemorySegment()`,
+indexed get/set methods, and an array replacement helper. Buffer fields are
+supported on memory-backed interfaces only; records should use primitive or
+nested annotated fields instead.
+
 ## Value vs Address
 
 The processor has defaults that match the common Java shape:
@@ -248,9 +315,21 @@ public interface NativePairs {
 }
 ```
 
-If a generated wrapper needs caller-owned memory for a returned value, the
-processor requires a `SegmentAllocator` parameter and reports a compile error if
-it is missing.
+If a `@ForeignInterface` method returns a struct by value, the generated wrapper
+needs caller-owned memory for the returned value. In that case the source method
+must declare a `SegmentAllocator` parameter, as shown by `make_pair(...)`, and
+the processor reports a compile error if it is missing. This requirement is
+about returned values, not ordinary `@Address` arguments.
+
+`@Address` on a primitive or record stores a native pointer instead of inline
+data. For foreign-call arguments, the generated wrapper uses call-scoped
+temporary storage when it has to materialize pointed-to data; the Java method
+signature does not need an allocator for that. Explicit allocator-taking APIs
+are generated on `*FM` conversion helpers and setters when a record struct
+contains `@Address` components and the generated code must allocate pointed-to
+native storage. Memory-backed interface structs reject primitive address fields
+and record address fields because an accessor-only wrapper has no hidden
+allocator for the pointed-to memory.
 
 ## Arrays and Buffers
 
@@ -278,6 +357,9 @@ Supported array element types:
 byte, char, short, int, long, float, double
 ```
 
+`char` means Java's 16-bit `char`. For C `char*` data, use `byte`/`ByteBuffer`
+or `String` depending on the native API contract.
+
 Supported buffer types:
 
 ```text
@@ -302,6 +384,10 @@ Transfer rules:
 
 Without `@Sequence`, the generated temporary native segment uses the passed
 array length or buffer remaining size.
+
+On struct interface buffer fields, `@Sequence(n)` defines the fixed native field
+size instead of validating an argument. Java array fields are not generated as
+struct fields; use a typed NIO buffer field for fixed-size inline storage.
 
 ## CoreFoundation Strings
 
@@ -341,6 +427,12 @@ mvn -pl processor -am test
 The benchmark module contains end-to-end native tests. They compile a small C
 library during the JUnit setup and exercise generated bindings against the real
 FFM runtime.
+
+Build the benchmark module and its dependencies:
+
+```sh
+mvn -pl benchmark -am package -DskipTests
+```
 
 ## Status
 

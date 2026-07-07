@@ -115,8 +115,8 @@ reading the vtable lazily.
   every annotation, and every element, including the full `rootElements` list.
   Every downstream consumer's build log gets this spam. The other two processors
   are silent — delete these.
-- **Stale error message**: `ForeignInterfaceProcessor.java:170` says "unless
-  kind is DEFAULT_LOOKUP", but `Library.Kind` has no such constant.
+- ✅ **Stale error message**: `ForeignInterfaceProcessor.java:170` said
+  "unless kind is DEFAULT_LOOKUP", but `Library.Kind` has no such constant.
 - ✅ **Package derivation**: `ForeignMemoryProcessor` correctly uses
   `Elements.getPackageOf`, while `ForeignInterfaceProcessor` and
   `DispatchTableProcessor` do `lastIndexOf('.')` on the qualified name — wrong
@@ -124,10 +124,10 @@ reading the vtable lazily.
 - **Method filtering**: `ForeignMemoryProcessor` selects methods by `ABSTRACT`
   modifier; `ForeignInterfaceProcessor` filters out only `default`/`static`, so
   a `private` interface helper method would get a generated native binding.
-- **`VALUE_LAYOUT_NOT_SUPPORTED`** (`TypeGenerator.java:27`) is a
-  `public static` *non-final* `String` compared by `==` in two places. It works
-  today, but it's an accident waiting for a refactor. Make it final at minimum;
-  better, return `Optional<String>` or null and test explicitly.
+- ✅ **`VALUE_LAYOUT_NOT_SUPPORTED`** (`TypeGenerator.java:27`) was a
+  `public static` *non-final* `String` compared by `==` in multiple places. It
+  worked, but it was an accident waiting for a refactor. The sentinel is now
+  private/final and checked through `TypeGenerator.unsupported()`.
 - **`Slot.value()` vs `Slot.index()`**: two attributes meaning the same thing,
   plus ~40 lines of validation (`hasSlotValue` mirror-walking) to police them.
   Unless there's a planned semantic difference, one attribute would delete real
