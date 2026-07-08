@@ -7,7 +7,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.foreign.SymbolLookup;
 
-/// @see SymbolLookup
+/// Marks a struct object method as a direct native symbol call.
+///
+/// Symbols are resolved with [SymbolLookup].
 @Target(METHOD)
 @Retention(SOURCE)
 public @interface Symbol {

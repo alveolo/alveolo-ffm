@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Repeatable(Libraries.class)
 public @interface Library {
   /// Logical library name, path, or framework name, depending on
-  /// {@link #kind()}.
+  /// [kind()][#kind()].
   String value() default "";
 
   /// Optional ABI or framework version.

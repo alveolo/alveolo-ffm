@@ -248,7 +248,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
       // Determine type from accessor return.
       var fieldType = accessor.getReturnType();
-
       if (fieldType.getKind() == TypeKind.ARRAY) {
         processingEnv.getMessager().printError(
             "Array fields are not supported, use "
@@ -1233,19 +1232,19 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             return FM$BB$<name>;
           }
 
-          /** get element at index */
+          /// Get element at index.
           public <type> <name>(int index) {
             return <name>$MemorySegment()
               .getAtIndex(ValueLayout.JAVA_<TYPE>, index);
           }
 
-          /** set element at index */
+          /// Set element at index.
           public void <name>(int index, <type> value) {
             <name>$MemorySegment()
               .setAtIndex(ValueLayout.JAVA_<TYPE>, index, value);
           }
 
-          /** replace values from array */
+          /// Replace values from array.
           public void <name>(<type>[] value) {
             if (value.length != <size>) {
               throw new IllegalArgumentException();

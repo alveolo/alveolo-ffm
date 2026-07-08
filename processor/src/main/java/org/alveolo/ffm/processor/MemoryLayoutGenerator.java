@@ -5,16 +5,12 @@ import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 
-/**
- * Generates the padded array of layout expressions for a struct/union.
- */
+/// Generates the padded array of layout expressions for a struct/union.
 class MemoryLayoutGenerator {
   final ProcessingEnvironment processingEnv;
   final List<LayoutField> fields;
 
-  /**
-   * Lightweight descriptor for a layout field.
-   */
+  /// Lightweight descriptor for a layout field.
   record LayoutField(
       String name, String layout, boolean unsupported,
       String typeName, Element errorElement

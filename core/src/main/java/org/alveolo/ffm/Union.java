@@ -9,8 +9,8 @@ import java.lang.annotation.Target;
 /// Marks an interface as a C union definition. Fields are inferred from
 /// accessor methods.
 ///
-/// @see Struct
-/// @see Sequence
+/// @see [Struct] for C structs
+/// @see [Sequence] for fixed-size array/buffer fields.
 @Target(TYPE)
 @Retention(SOURCE)
 public @interface Union {

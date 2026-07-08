@@ -401,9 +401,7 @@ class ExecutableGenerator {
     return " finally {\n" + releases + "\n    }";
   }
 
-  /**
-   * @return true if any of the method parameters has unsupported type
-   */
+  /// @return true if any method parameter has an unsupported type.
   boolean checkParameterTypes() {
     boolean hasUnsupported = false;
 

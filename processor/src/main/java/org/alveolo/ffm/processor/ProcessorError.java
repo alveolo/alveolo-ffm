@@ -8,6 +8,7 @@ import javax.lang.model.element.Element;
 /// more errors in generated files than necessary. Replace respective target
 /// source fragments with placeholders so that only actual cause of the error
 /// is reported.
+@SuppressWarnings("serial")
 public class ProcessorError extends Exception {
   private final Element element;
 

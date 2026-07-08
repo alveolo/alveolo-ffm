@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 /// Direct buffer parameters are always passed directly to native code without
 /// copying, so this annotation has no effect for direct buffers.
 ///
-/// @see Out
+/// @see [Out] for output-only parameters.
 @Target({PARAMETER, TYPE_USE})
 @Retention(SOURCE)
 public @interface In {}

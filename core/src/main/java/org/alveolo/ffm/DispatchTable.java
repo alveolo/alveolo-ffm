@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 ///
 /// Each abstract method must declare its vtable pointer index with [Slot].
 ///
-/// @see Slot
+/// @see [Slot]
 @Target(TYPE)
 @Retention(SOURCE)
 public @interface DispatchTable {

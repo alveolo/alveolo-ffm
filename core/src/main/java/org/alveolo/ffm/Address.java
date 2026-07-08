@@ -6,9 +6,9 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/// Marks a parameter, accessor or class for use as an address or pointer
+/// Marks a parameter, accessor or class for use as an address or pointer.
 ///
-/// @see Value
+/// @see [Value] for pass-by or nested-value semantics.
 @Target(TYPE_USE)
 @Retention(CLASS)
 public @interface Address {}

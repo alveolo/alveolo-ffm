@@ -9,13 +9,13 @@ import java.lang.annotation.Target;
 
 /// Marks an array or buffer parameter as output-only.
 ///
-/// The generated wrapper does not copy Java values into native memory before
-/// the call and copies native memory back after the call.
+/// The generated wrapper does not copy Java values into native memory before the
+/// call and copies native memory back after the call.
 ///
 /// Direct buffer parameters are always passed directly to native code without
 /// copying, so this annotation has no effect for direct buffers.
 ///
-/// @see In
+/// @see [In] for input-only parameters.
 @Target({PARAMETER, TYPE_USE})
 @Retention(SOURCE)
 public @interface Out {}

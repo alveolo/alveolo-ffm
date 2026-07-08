@@ -57,19 +57,19 @@ public final class BufferStructFM implements BufferStruct {
     return FM$BB$data;
   }
 
-  /** get element at index */
+  /// Get element at index.
   public int data(int index) {
     return data$MemorySegment()
       .getAtIndex(ValueLayout.JAVA_INT, index);
   }
 
-  /** set element at index */
+  /// Set element at index.
   public void data(int index, int value) {
     data$MemorySegment()
       .setAtIndex(ValueLayout.JAVA_INT, index, value);
   }
 
-  /** replace values from array */
+  /// Replace values from array.
   public void data(int[] value) {
     if (value.length != 3) {
       throw new IllegalArgumentException();

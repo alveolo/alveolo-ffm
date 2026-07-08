@@ -6,9 +6,9 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/// Marks a parameter, accessor or class for use as a pass-by or nested value
+/// Marks a parameter, accessor or class for use as a pass-by or nested value.
 ///
-/// @see Value
+/// @see [Address] for pointer semantics.
 @Target(TYPE_USE)
 @Retention(CLASS)
 public @interface Value {}

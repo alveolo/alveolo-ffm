@@ -63,7 +63,18 @@ sealed class TypeGenerator permits VariableGenerator {
   /// Java type name
   String typeName() {
     if (typeMirror.getKind().isPrimitive())
-      return primitiveTypeName();
+      return switch (typeMirror.getKind()) {
+        case BOOLEAN -> "boolean";
+        case BYTE -> "byte";
+        case CHAR -> "char";
+        case SHORT -> "short";
+        case INT -> "int";
+        case LONG -> "long";
+        case FLOAT -> "float";
+        case DOUBLE -> "double";
+        default -> throw new IllegalStateException(
+            "Unexpected primitive type: " + typeMirror);
+      };
 
     if (typeMirror instanceof DeclaredType dt)
       return elements.getBinaryName((TypeElement) dt.asElement()).toString();
@@ -99,18 +110,14 @@ sealed class TypeGenerator permits VariableGenerator {
 
     var elementLayout = elementLayout();
     if (elementLayout != null)
-      return sequenceLayout(elementLayout);
+      return "MemoryLayout.sequenceLayout("
+          + sequence + "L, " + elementLayout + ")";
 
     if (isString() || isMemorySegment())
       return "ValueLayout.ADDRESS";
 
     // TODO more custom structures
     return VALUE_LAYOUT_NOT_SUPPORTED;
-  }
-
-  private String sequenceLayout(String elementLayout) {
-    return "MemoryLayout.sequenceLayout("
-        + sequence + "L, " + elementLayout + ")";
   }
 
   boolean unsupported() {
@@ -197,21 +204,6 @@ sealed class TypeGenerator permits VariableGenerator {
     };
   }
 
-  private String primitiveTypeName() {
-    return switch (typeMirror.getKind()) {
-      case BOOLEAN -> "boolean";
-      case BYTE -> "byte";
-      case CHAR -> "char";
-      case SHORT -> "short";
-      case INT -> "int";
-      case LONG -> "long";
-      case FLOAT -> "float";
-      case DOUBLE -> "double";
-      default -> throw new IllegalArgumentException(
-          "Unexpected primitive type: " + typeMirror);
-    };
-  }
-
   static long sequence(TypeMirror typeMirror) {
     return sequence(typeMirror, null);
   }
@@ -255,15 +247,6 @@ sealed class TypeGenerator permits VariableGenerator {
 
     return null;
   }
-
-  // /// Checks if using the type in a call needs allocator.
-  // ///
-  // /// @return
-  // /// - `true` for non-primitive types passed by value
-  // /// - `false` for primitive types or complex types passes as address
-  // boolean needsAllocator() {
-  // return !isPrimitive() && (isRecord() || isString() || isValue());
-  // }
 
   boolean isPrimitive() {
     return typeMirror.getKind().isPrimitive();
