@@ -544,7 +544,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void failsUnsupportedStructSetterWithoutGeneratedCompileErrors() {
+  void failsStructSetterDeclaration() {
     var source = forSourceString("test.Bad", """
         package test;
         @org.alveolo.ffm.Struct
@@ -569,7 +569,32 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void failsUnsupportedNestedRecordSetterWithoutGeneratedCompileErrors() {
+  void failsFluentStructSetterDeclaration() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          int x();
+          Bad x(int value);
+        }
+        """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
+
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "Unsupported accessor signature for field 'x'");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsNestedRecordSetterDeclaration() {
     var source = forSourceString("test.Bad", """
         package test;
         @org.alveolo.ffm.Struct
@@ -597,14 +622,14 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void failsUnsupportedBufferOverloadWithoutGeneratedCompileErrors() {
+  void failsBufferHelperDeclaration() {
     var source = forSourceString("test.Bad", """
         package test;
         @org.alveolo.ffm.Struct
         public interface Bad {
           @org.alveolo.ffm.Sequence(3)
           java.nio.IntBuffer data();
-          void data(int value);
+          int data(int index);
         }
         """);
     var generatedUse = forSourceString("test.BadUse", """

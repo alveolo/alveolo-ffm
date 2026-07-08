@@ -7,5 +7,4 @@ public interface Outer {
   Inner inner();
 
   int tag();
-  Outer tag(int value);
 }

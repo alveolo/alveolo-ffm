@@ -10,8 +10,6 @@ import org.alveolo.ffm.Virtual;
 public interface VirtualObj {
   int field();
 
-  VirtualObj field(int value);
-
   @Virtual(2)
   int method(int arg);
 

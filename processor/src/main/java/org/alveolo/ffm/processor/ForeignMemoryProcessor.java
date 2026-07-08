@@ -57,31 +57,20 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   // TODO simplify
   /// Struct field inferred from an accessor method or record component.
   static final class StructField extends VariableGenerator {
-    final boolean writeAccessor;
     final boolean throwingAccessors;
-    final boolean writeBufferIndexGetter;
-    final boolean writeBufferIndexSetter;
-    final boolean writeBufferArraySetter;
 
     StructField(ProcessingEnvironment processingEnv,
         RecordComponentElement element, boolean throwingAccessors) {
       this(processingEnv, element.getSimpleName().toString(),
-          element.asType(), element, true, throwingAccessors,
-          true, true, true);
+          element.asType(), element, throwingAccessors);
     }
 
     StructField(ProcessingEnvironment processingEnv, String name,
         TypeMirror typeMirror, Element element,
-        boolean writeAccessor, boolean throwingAccessors,
-        boolean writeBufferIndexGetter, boolean writeBufferIndexSetter,
-        boolean writeBufferArraySetter) {
+        boolean throwingAccessors) {
       super(processingEnv, name, typeMirror, sequence(typeMirror, element),
           element);
-      this.writeAccessor = writeAccessor;
       this.throwingAccessors = throwingAccessors;
-      this.writeBufferIndexGetter = writeBufferIndexGetter;
-      this.writeBufferIndexSetter = writeBufferIndexSetter;
-      this.writeBufferArraySetter = writeBufferArraySetter;
     }
   }
 
@@ -257,10 +246,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         continue;
       }
 
-      // Determine type from accessor return or setter parameter
+      // Determine type from accessor return.
       var fieldType = accessor.getReturnType();
-      var fieldGen = new VariableGenerator(processingEnv, fieldName,
-          fieldType, TypeGenerator.sequence(fieldType, accessor), accessor);
 
       if (fieldType.getKind() == TypeKind.ARRAY) {
         processingEnv.getMessager().printError(
@@ -274,54 +261,15 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         continue;
       }
 
-      var bufferField = fieldGen.isNioBuffer();
-      var bufferElementType = fieldGen.typeMirror;
-      if (bufferField) {
-        bufferElementType = fieldGen.elementType();
-      }
-
-      var writeAccessor = true;
-      var writeBufferIndexGetter = true;
-      var writeBufferIndexSetter = true;
-      var writeBufferArraySetter = true;
       for (var method : fieldMethods) {
-        if (bufferField && isGeneratedBufferMethod(method, bufferElementType)) {
-          continue;
-        }
-
-        if (!bufferField && validSetter(iface, method, fieldType)) {
-          continue;
-        }
-
         processingEnv.getMessager().printError(
             "Unsupported accessor signature for field '"
                 + fieldName + "': " + method,
             method);
-
-        addUnsupportedMethod(unsupportedMethods, method);
-
-        if (bufferField) {
-          writeBufferIndexGetter &=
-              !hasBufferIndexGetterSignature(method);
-          writeBufferIndexSetter &=
-              !hasBufferIndexSetterSignature(method, bufferElementType);
-          writeBufferArraySetter &=
-              !hasBufferArraySetterSignature(method, bufferElementType);
-        } else if (setterConflictsWithGeneratedAccessor(method, fieldType)) {
-          writeAccessor = false;
-        }
-      }
-
-      if (memoryBackedAddressFieldCannotWrite(fieldGen)) {
-        writeAccessor = false;
-        for (var method : fieldMethods) {
-          addUnsupportedMethod(unsupportedMethods, method);
-        }
       }
 
       fields.add(new StructField(processingEnv, fieldName, fieldType,
-          accessor, writeAccessor, false, writeBufferIndexGetter,
-          writeBufferIndexSetter, writeBufferArraySetter));
+          accessor, false));
     }
 
     return new StructFields(fields, unsupportedMethods);
@@ -332,64 +280,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     if (!unsupportedMethods.contains(method)) {
       unsupportedMethods.add(method);
     }
-  }
-
-  private boolean validSetter(
-      TypeElement iface, ExecutableElement setter, TypeMirror fieldType) {
-    var typeUtils = processingEnv.getTypeUtils();
-    var params = setter.getParameters();
-    return params.size() == 1
-        && typeUtils.isSameType(params.get(0).asType(), fieldType)
-        && setter.getReturnType().getKind() == TypeKind.DECLARED
-        && typeUtils.isAssignable(iface.asType(), setter.getReturnType());
-  }
-
-  private boolean setterConflictsWithGeneratedAccessor(
-      ExecutableElement setter, TypeMirror fieldType) {
-    var params = setter.getParameters();
-    return params.size() == 1
-        && processingEnv.getTypeUtils()
-            .isSameType(params.get(0).asType(), fieldType);
-  }
-
-  private boolean isGeneratedBufferMethod(
-      ExecutableElement method, TypeMirror elementType) {
-    return (hasBufferIndexGetterSignature(method)
-        && processingEnv.getTypeUtils()
-            .isSameType(method.getReturnType(), elementType))
-        || (hasBufferIndexSetterSignature(method, elementType)
-            && method.getReturnType().getKind() == TypeKind.VOID)
-        || (hasBufferArraySetterSignature(method, elementType)
-            && method.getReturnType().getKind() == TypeKind.VOID);
-  }
-
-  private boolean hasBufferIndexGetterSignature(ExecutableElement method) {
-    var params = method.getParameters();
-    return params.size() == 1
-        && params.get(0).asType().getKind() == TypeKind.INT;
-  }
-
-  private boolean hasBufferIndexSetterSignature(
-      ExecutableElement method, TypeMirror elementType) {
-    var params = method.getParameters();
-    return params.size() == 2
-        && params.get(0).asType().getKind() == TypeKind.INT
-        && processingEnv.getTypeUtils()
-            .isSameType(params.get(1).asType(), elementType);
-  }
-
-  private boolean hasBufferArraySetterSignature(
-      ExecutableElement method, TypeMirror elementType) {
-    var params = method.getParameters();
-    return params.size() == 1
-        && processingEnv.getTypeUtils().isSameType(
-            params.get(0).asType(),
-            processingEnv.getTypeUtils().getArrayType(elementType));
-  }
-
-  private boolean memoryBackedAddressFieldCannotWrite(TypeGenerator type) {
-    return type.isPrimitiveAddress()
-        || (type.isRecord() && type.isAddress());
   }
 
   private boolean isObjectMethod(ExecutableElement method) {
@@ -881,38 +771,26 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .map(gen -> gen.name() + "(ms)")
         .collect(joining(",\n        ", "\n        ", ""));
 
+    var toMemorySegmentMethod = needsAllocator
+        ? """
+            public static void toMemorySegment(
+                <src> from, MemorySegment ms, SegmentAllocator ff$allocator) {
+              <toMemorySegmentFields>
+            }
+            """
+        : """
+            public static void toMemorySegment(<src> from, MemorySegment ms) {
+              <toMemorySegmentFields>
+            }
+            """;
+
     out.write("""
 
           public static <src> reinterpret(MemorySegment ms) {
             return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
           }
-        """
-        .replace("<src>", srcClassName));
 
-    if (needsAllocator) {
-      out.write("""
-
-            public static void toMemorySegment(
-                <src> from, MemorySegment ms, SegmentAllocator ff$allocator) {
-              <toMemorySegmentFields>
-            }
-          """
-          .replace("<src>", srcClassName)
-          .replace("<toMemorySegmentFields>",
-              recordFieldWrites(rcGens, true)));
-    } else {
-      out.write("""
-
-            public static void toMemorySegment(<src> from, MemorySegment ms) {
-              <toMemorySegmentFields>
-            }
-          """
-          .replace("<src>", srcClassName)
-          .replace("<toMemorySegmentFields>",
-              recordFieldWrites(rcGens, false)));
-    }
-
-    out.write("""
+        <toMemorySegmentMethod>
 
           public static MemorySegment toMemorySegment(
               SegmentAllocator allocator, <src> from) {
@@ -925,6 +803,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             return new <src>(<fromMemorySegmentFields>);
           }
         """
+        .replace("<toMemorySegmentMethod>",
+            "  " + toMemorySegmentMethod.stripTrailing()
+                .replace("\n", "\n  "))
+        .replace("<toMemorySegmentFields>",
+            recordFieldWrites(rcGens, needsAllocator))
         .replace("<src>", srcClassName)
         .replace("<toMemorySegment>", needsAllocator
             ? "toMemorySegment(from, ms, allocator);"
@@ -1036,30 +919,27 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         continue; // TODO complex/structured/indexed accessors
       }
 
+      var initializer = field.sequence > 1
+          ? "FM$LAYOUT.varHandle(FM$PE$<name>);"
+          : """
+              java.lang.invoke.MethodHandles.insertCoordinates(
+                  FM$LAYOUT.varHandle(FM$PE$<name>), 1, 0L);
+              """.stripTrailing();
+
       out.write("""
 
             public static final java.lang.invoke.VarHandle FM$VH$<name> =
+                <initializer>
           """
+          .replace("<initializer>",
+              initializer.replace("\n", "\n      "))
           .replace("<name>", field.name()));
-
-      if (field.sequence > 1) {
-        out.write("""
-                  FM$LAYOUT.varHandle(FM$PE$<name>);
-            """
-            .replace("<name>", field.name()));
-      } else {
-        out.write("""
-                  java.lang.invoke.MethodHandles.insertCoordinates(
-                      FM$LAYOUT.varHandle(FM$PE$<name>), 1, 0L);
-            """
-            .replace("<name>", field.name()));
-      }
     }
   }
 
-  /// Receiver style for generated field accessors: records use static
-  /// accessors over an explicit MemorySegment parameter, memory-backed
-  /// interfaces use instance accessors over `this.ms` with fluent setters.
+  /// Receiver style for generated field accessors: records use static accessors
+  /// over an explicit MemorySegment parameter, memory-backed interfaces use
+  /// instance accessors over `this.ms` with fluent setters.
   private record AccessorTarget(boolean isStatic, String className) {
     static final AccessorTarget STATIC = new AccessorTarget(true, null);
 
@@ -1071,8 +951,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       return (isStatic
           ? "public static <type> <name>(MemorySegment ms)"
           : "public <type> <name>()")
-          .replace("<type>", field.typeName())
-          .replace("<name>", field.name());
+              .replace("<type>", field.typeName())
+              .replace("<name>", field.name());
     }
 
     String setterHead(StructField field, boolean needsAllocator) {
@@ -1158,34 +1038,33 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeThrowingFieldAccessors(Writer out, String className,
-      StructField field, boolean writeAccessor) throws IOException {
+      StructField field, boolean writeSetter) throws IOException {
     String name = field.name();
     String type = field.typeName();
+    var setter = writeSetter
+        ? """
+
+            public <class> <name>(<type> value) {
+              throw new RuntimeException("Check compile errors!");
+            }
+            """
+        : "";
 
     out.write("""
 
           public <type> <name>() {
             throw new RuntimeException("Check compile errors!");
           }
+          <setter>
         """
-        .replace("<name>", name)
-        .replace("<type>", type));
-
-    if (!writeAccessor) return;
-
-    out.write("""
-
-          public <class> <name>(<type> value) {
-            throw new RuntimeException("Check compile errors!");
-          }
-        """
+        .replace("<setter>", setter)
         .replace("<class>", className)
         .replace("<name>", name)
         .replace("<type>", type));
   }
 
-  /// Writes getter and setter accessors for a simple (non-buffer) field in
-  /// the accessor style selected by the target.
+  /// Writes getter and setter accessors for a simple (non-buffer) field in the
+  /// accessor style selected by the target.
   private void writeAccessorsSimple(Writer out, AccessorTarget target,
       StructField field) throws IOException {
     String name = field.name();
@@ -1301,8 +1180,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void writeSetter(Writer out, AccessorTarget target,
       StructField field, boolean needsAllocator, String body)
       throws IOException {
-    if (!field.writeAccessor) return;
-
     var statements = target.isStatic() ? body : body + "\nreturn this;";
 
     out.write("""
@@ -1320,14 +1197,12 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     if (target.isStatic()) {
       writeThrowingStaticAccessors(out, field);
     } else {
-      writeThrowingFieldAccessors(out, target.className(), field,
-          field.writeAccessor);
+      writeThrowingFieldAccessors(out, target.className(), field, true);
     }
   }
 
   private void writeAccessorsBuffer(Writer out, StructField field)
       throws IOException {
-    String name = field.name();
     String type = field.elementTypeName();
     String capType = capitalize(type);
     long size = field.sequence;
@@ -1348,10 +1223,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             }
             return FM$MS$<name>;
           }
-        """
-        .replace("<name>", name));
-
-    out.write("""
 
           private java.nio.<Type>Buffer FM$BB$<name>;
 
@@ -1361,57 +1232,35 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             }
             return FM$BB$<name>;
           }
+
+          /** get element at index */
+          public <type> <name>(int index) {
+            return <name>$MemorySegment()
+              .getAtIndex(ValueLayout.JAVA_<TYPE>, index);
+          }
+
+          /** set element at index */
+          public void <name>(int index, <type> value) {
+            <name>$MemorySegment()
+              .setAtIndex(ValueLayout.JAVA_<TYPE>, index, value);
+          }
+
+          /** replace values from array */
+          public void <name>(<type>[] value) {
+            if (value.length != <size>) {
+              throw new IllegalArgumentException();
+            }
+            MemorySegment.copy(value, 0,
+                <name>$MemorySegment(), ValueLayout.JAVA_<TYPE>, 0, <size>);
+          }
         """
-        .replace("<name>", name)
+        .replace("<name>", field.name())
         .replace("<Type>", capType)
+        .replace("<type>", type)
+        .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
         .replace("<buffer>", type.equals("byte")
-            ? "" : ".as" + capType + "Buffer()"));
-
-    if (field.writeBufferIndexGetter) {
-      out.write("""
-
-            /** get element at index */
-            public <type> <name>(int index) {
-              return <name>$MemorySegment()
-                .getAtIndex(ValueLayout.JAVA_<TYPE>, index);
-            }
-          """
-          .replace("<name>", name)
-          .replace("<type>", type)
-          .replace("<TYPE>", type.toUpperCase(Locale.ROOT)));
-    }
-
-    if (field.writeBufferIndexSetter) {
-      out.write("""
-
-            /** set element at index */
-            public void <name>(int index, <type> value) {
-              <name>$MemorySegment()
-                .setAtIndex(ValueLayout.JAVA_<TYPE>, index, value);
-            }
-          """
-          .replace("<name>", name)
-          .replace("<type>", type)
-          .replace("<TYPE>", type.toUpperCase(Locale.ROOT)));
-    }
-
-    if (field.writeBufferArraySetter) {
-      out.write("""
-
-            /** replace values from array */
-            public void <name>(<type>[] value) {
-              if (value.length != <size>) {
-                throw new IllegalArgumentException();
-              }
-              MemorySegment.copy(value, 0,
-                  <name>$MemorySegment(), ValueLayout.JAVA_<TYPE>, 0, <size>);
-            }
-          """
-          .replace("<name>", name)
-          .replace("<type>", type)
-          .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
-          .replace("<size>", Long.toString(size)));
-    }
+            ? "" : ".as" + capType + "Buffer()")
+        .replace("<size>", Long.toString(size)));
   }
 
   private void validateFields(List<StructField> fields) {

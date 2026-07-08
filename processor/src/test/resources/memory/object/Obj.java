@@ -7,8 +7,6 @@ import org.alveolo.ffm.Symbol;
 public interface Obj {
   int field();
 
-  Obj field(int value);
-
   @Symbol("native_symbol")
   int call(int arg);
 
