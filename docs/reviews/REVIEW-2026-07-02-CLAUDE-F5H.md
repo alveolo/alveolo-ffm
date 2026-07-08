@@ -145,7 +145,7 @@ reading the vtable lazily.
   enum/map (`buffer class ↔ primitive ↔ ValueLayout constant`) would replace all
   of it — `extractBufferElementType` alone would shrink from ~30 lines to a
   lookup.
-- **`writeAccessorsSimple` vs `writeStaticAccessorsSimple`**
+- ✅ **`writeAccessorsSimple` vs `writeStaticAccessorsSimple`**
   (`ForeignMemoryProcessor.java:886–1090`) are ~200 lines that differ only in
   `static`/`this` and the fluent return. A single template parameterized on
   receiver would halve it — and would have prevented bug 5 (the record/buffer

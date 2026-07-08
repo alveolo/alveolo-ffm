@@ -1057,175 +1057,65 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private void writeStaticAccessors(Writer out, List<StructField> fields)
-      throws IOException {
-    for (var field : fields) {
-      writeStaticAccessorsSimple(out, field);
+  /// Receiver style for generated field accessors: records use static
+  /// accessors over an explicit MemorySegment parameter, memory-backed
+  /// interfaces use instance accessors over `this.ms` with fluent setters.
+  private record AccessorTarget(boolean isStatic, String className) {
+    static final AccessorTarget STATIC = new AccessorTarget(true, null);
+
+    static AccessorTarget fluent(String className) {
+      return new AccessorTarget(false, className);
+    }
+
+    String getterHead(StructField field) {
+      return (isStatic
+          ? "public static <type> <name>(MemorySegment ms)"
+          : "public <type> <name>()")
+          .replace("<type>", field.typeName())
+          .replace("<name>", field.name());
+    }
+
+    String setterHead(StructField field, boolean needsAllocator) {
+      var head = isStatic
+          ? staticSetterHead(needsAllocator)
+          : fluentSetterHead(needsAllocator).replace("<class>", className);
+
+      return head
+          .replace("<type>", field.typeName())
+          .replace("<name>", field.name());
+    }
+
+    private String staticSetterHead(boolean needsAllocator) {
+      return needsAllocator
+          ? "public static void <name>(\n"
+              + "      MemorySegment ms, SegmentAllocator allocator,"
+              + " <type> value)"
+          : "public static void <name>(MemorySegment ms, <type> value)";
+    }
+
+    private String fluentSetterHead(boolean needsAllocator) {
+      return needsAllocator
+          ? "public <class> <name>(\n"
+              + "      SegmentAllocator allocator, <type> value)"
+          : "public <class> <name>(<type> value)";
     }
   }
 
-  private void writeStaticAccessorsSimple(Writer out, StructField field)
+  private void writeStaticAccessors(Writer out, List<StructField> fields)
       throws IOException {
-    String name = field.name();
-    String type = field.typeName();
-
-    if (fieldAccessorsShouldThrow(field)) {
-      writeThrowingStaticAccessors(out, field);
-      return;
-    }
-
-    if (field.isPrimitiveAddress()) {
-      String layout = field.valueLayout();
-      out.write("""
-
-            public static <type> <name>(MemorySegment ms) {
-              return <getter>;
-            }
-
-            public static void <name>(
-                MemorySegment ms, SegmentAllocator allocator, <type> value) {
-              var address = allocator.allocate(<layout>);
-              address.set(<layout>, 0L, value);
-              FM$VH$<name>.set(ms, address);
-            }
-          """
-          .replace("<name>", name)
-          .replace("<type>", type)
-          .replace("<layout>", layout)
-          .replace("<getter>", primitiveAddressGetter(field, "ms")));
-      return;
-    }
-
-    var typeElement = field.typeElement;
-
-    if (isNestedValue(field)) {
-      String fieldClassName = foreignMemoryClassName(typeElement);
-
-      if (typeElement.getKind() == ElementKind.RECORD) {
-        boolean needsAllocator = recordConverterNeedsAllocator(typeElement);
-        out.write("""
-
-              public static <type> <name>(MemorySegment ms) {
-                return <foreignClassName>.fromMemorySegment(ms.asSlice(
-                    FM$LAYOUT.byteOffset(FM$PE$<name>),
-                    FM$LAYOUT.select(FM$PE$<name>).byteSize()));
-              }
-            """
-            .replace("<foreignClassName>", fieldClassName)
-            .replace("<name>", name)
-            .replace("<type>", type));
-
-        if (!field.writeAccessor) return;
-
-        if (needsAllocator) {
-          out.write(
-              """
-
-                    public static void <name>(
-                        MemorySegment ms, SegmentAllocator allocator, <type> value) {
-                      var layout = FM$LAYOUT.select(FM$PE$<name>);
-                      var slice = ms.asSlice(
-                          FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-                      <foreignClassName>.toMemorySegment(value, slice, allocator);
-                    }
-                  """
-                  .replace("<foreignClassName>", fieldClassName)
-                  .replace("<name>", name)
-                  .replace("<type>", type));
-        } else {
-          out.write("""
-
-                public static void <name>(MemorySegment ms, <type> value) {
-                  var layout = FM$LAYOUT.select(FM$PE$<name>);
-                  var slice = ms.asSlice(
-                      FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-                  <foreignClassName>.toMemorySegment(value, slice);
-                }
-              """
-              .replace("<foreignClassName>", fieldClassName)
-              .replace("<name>", name)
-              .replace("<type>", type));
-        }
-      } else {
-        out.write("""
-
-              public static <type> <name>(MemorySegment ms) {
-                return new <foreignClassName>(ms.asSlice(
-                    FM$LAYOUT.byteOffset(FM$PE$<name>),
-                    FM$LAYOUT.select(FM$PE$<name>).byteSize()));
-              }
-
-              public static void <name>(MemorySegment ms, <type> value) {
-                var layout = FM$LAYOUT.select(FM$PE$<name>);
-                var slice = ms.asSlice(
-                    FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-                MemorySegment.copy(((<foreignClassName>)value).ms, 0,
-                    slice, 0, layout.byteSize());
-              }
-            """
-            .replace("<foreignClassName>", fieldClassName)
-            .replace("<name>", name)
-            .replace("<type>", type));
-      }
-    } else if (isNestedAddress(field)) {
-      String fieldClassName = foreignMemoryClassName(typeElement);
-
-      if (typeElement.getKind() == ElementKind.RECORD) {
-        out.write("""
-
-              public static <type> <name>(MemorySegment ms) {
-                return <getter>;
-              }
-
-              public static void <name>(
-                  MemorySegment ms, SegmentAllocator allocator, <type> value) {
-                FM$VH$<name>.set(ms,
-                    <foreignClassName>.toMemorySegment(allocator, value));
-              }
-            """
-            .replace("<getter>", nestedAddressGetter(field, "ms"))
-            .replace("<foreignClassName>", fieldClassName)
-            .replace("<name>", name)
-            .replace("<type>", type));
-      } else {
-        out.write("""
-
-              public static <type> <name>(MemorySegment ms) {
-                return <getter>;
-              }
-
-              public static void <name>(MemorySegment ms, <type> value) {
-                FM$VH$<name>.set(ms, ((<fieldClass>) value).ms);
-              }
-            """
-            .replace("<getter>", nestedAddressGetter(field, "ms"))
-            .replace("<fieldClass>", fieldClassName)
-            .replace("<name>", name)
-            .replace("<type>", type));
-      }
-    } else {
-      out.write("""
-
-            public static <type> <name>(MemorySegment ms) {
-              return (<type>) FM$VH$<name>.get(ms);
-            }
-
-            public static void <name>(MemorySegment ms, <type> value) {
-              FM$VH$<name>.set(ms, value);
-            }
-          """
-          .replace("<name>", name)
-          .replace("<type>", type));
+    for (var field : fields) {
+      writeAccessorsSimple(out, AccessorTarget.STATIC, field);
     }
   }
 
   private void writeFieldAccessors(Writer out, String className,
       List<StructField> fields) throws IOException {
+    var target = AccessorTarget.fluent(className);
     for (var field : fields) {
       if (field.isNioBuffer()) {
         writeAccessorsBuffer(out, field);
       } else {
-        writeAccessorsSimple(out, className, field);
+        writeAccessorsSimple(out, target, field);
       }
     }
   }
@@ -1294,19 +1184,31 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .replace("<type>", type));
   }
 
-  private void writeAccessorsSimple(Writer out, String className,
+  /// Writes getter and setter accessors for a simple (non-buffer) field in
+  /// the accessor style selected by the target.
+  private void writeAccessorsSimple(Writer out, AccessorTarget target,
       StructField field) throws IOException {
     String name = field.name();
-    String type = field.typeName();
 
-    if (field.isPrimitiveAddress()) {
+    if (!target.isStatic() && field.isPrimitiveAddress()) {
       reportMemoryBackedPrimitiveAddressField(field);
-      writeThrowingFieldAccessors(out, className, field, false);
+      writeThrowingFieldAccessors(out, target.className(), field, false);
       return;
     }
 
     if (fieldAccessorsShouldThrow(field)) {
-      writeThrowingFieldAccessors(out, className, field, field.writeAccessor);
+      writeThrowingAccessors(out, target, field);
+      return;
+    }
+
+    if (field.isPrimitiveAddress()) {
+      writeGetter(out, target, field, primitiveAddressGetter(field, "ms"));
+      writeSetter(out, target, field, true, """
+          var address = allocator.allocate(<layout>);
+          address.set(<layout>, 0L, value);
+          FM$VH$<name>.set(ms, address);"""
+          .replace("<layout>", field.valueLayout())
+          .replace("<name>", name));
       return;
     }
 
@@ -1316,137 +1218,110 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       String fieldClassName = foreignMemoryClassName(typeElement);
 
       if (typeElement.getKind() == ElementKind.RECORD) {
+        writeGetter(out, target, field, """
+            <foreignClassName>.fromMemorySegment(ms.asSlice(
+                FM$LAYOUT.byteOffset(FM$PE$<name>),
+                FM$LAYOUT.select(FM$PE$<name>).byteSize()))"""
+            .replace("<foreignClassName>", fieldClassName)
+            .replace("<name>", name));
+
         boolean needsAllocator = recordConverterNeedsAllocator(typeElement);
-        out.write("""
-
-              public <type> <name>() {
-                return <foreignClassName>.fromMemorySegment(ms.asSlice(
-                    FM$LAYOUT.byteOffset(FM$PE$<name>),
-                    FM$LAYOUT.select(FM$PE$<name>).byteSize()));
-              }
-            """
+        writeSetter(out, target, field, needsAllocator, """
+            var layout = FM$LAYOUT.select(FM$PE$<name>);
+            var slice = ms.asSlice(
+                FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+            <foreignClassName>.toMemorySegment(value, slice<allocator>);"""
+            .replace("<allocator>", needsAllocator ? ", allocator" : "")
             .replace("<foreignClassName>", fieldClassName)
-            .replace("<name>", name)
-            .replace("<type>", type));
-
-        if (!field.writeAccessor) return;
-
-        if (needsAllocator) {
-          out.write("""
-
-                public <class> <name>(
-                    SegmentAllocator allocator, <type> value) {
-                  var layout = FM$LAYOUT.select(FM$PE$<name>);
-                  var slice = ms.asSlice(
-                      FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-                  <foreignClassName>.toMemorySegment(value, slice, allocator);
-                  return this;
-                }
-              """
-              .replace("<class>", className)
-              .replace("<foreignClassName>", fieldClassName)
-              .replace("<name>", name)
-              .replace("<type>", type));
-        } else {
-          out.write("""
-
-                public <class> <name>(<type> value) {
-                  var layout = FM$LAYOUT.select(FM$PE$<name>);
-                  var slice = ms.asSlice(
-                      FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-                  <foreignClassName>.toMemorySegment(value, slice);
-                  return this;
-                }
-              """
-              .replace("<class>", className)
-              .replace("<foreignClassName>", fieldClassName)
-              .replace("<name>", name)
-              .replace("<type>", type));
-        }
+            .replace("<name>", name));
       } else {
-        out.write("""
-
-              public <type> <name>() {
-                return new <foreignClassName>(ms.asSlice(
-                    FM$LAYOUT.byteOffset(FM$PE$<name>),
-                    FM$LAYOUT.select(FM$PE$<name>).byteSize()));
-              }
-            """
+        writeGetter(out, target, field, """
+            new <foreignClassName>(ms.asSlice(
+                FM$LAYOUT.byteOffset(FM$PE$<name>),
+                FM$LAYOUT.select(FM$PE$<name>).byteSize()))"""
             .replace("<foreignClassName>", fieldClassName)
-            .replace("<name>", name)
-            .replace("<type>", type));
+            .replace("<name>", name));
 
-        if (!field.writeAccessor) return;
-
-        out.write("""
-
-              public <class> <name>(<type> value) {
-                var layout = FM$LAYOUT.select(FM$PE$<name>);
-                var slice = ms.asSlice(
-                    FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-                MemorySegment.copy(((<foreignClassName>)value).ms, 0,
-                    slice, 0, layout.byteSize());
-                return this;
-              }
-            """
-            .replace("<class>", className)
+        writeSetter(out, target, field, false, """
+            var layout = FM$LAYOUT.select(FM$PE$<name>);
+            var slice = ms.asSlice(
+                FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+            MemorySegment.copy(((<foreignClassName>)value).ms, 0,
+                slice, 0, layout.byteSize());"""
             .replace("<foreignClassName>", fieldClassName)
-            .replace("<name>", name)
-            .replace("<type>", type));
+            .replace("<name>", name));
       }
     } else if (isNestedAddress(field)) {
-      if (typeElement.getKind() == ElementKind.RECORD) {
+      if (!target.isStatic()
+          && typeElement.getKind() == ElementKind.RECORD) {
         reportMemoryBackedRecordAddressField(field);
-        writeThrowingFieldAccessors(out, className, field, false);
+        writeThrowingFieldAccessors(out, target.className(), field, false);
+        return;
+      }
+
+      String fieldClassName = foreignMemoryClassName(typeElement);
+
+      writeGetter(out, target, field, nestedAddressGetter(field, "ms"));
+
+      if (typeElement.getKind() == ElementKind.RECORD) {
+        writeSetter(out, target, field, true, """
+            FM$VH$<name>.set(ms,
+                <foreignClassName>.toMemorySegment(allocator, value));"""
+            .replace("<foreignClassName>", fieldClassName)
+            .replace("<name>", name));
       } else {
-        String fieldClassName = foreignMemoryClassName(typeElement);
-
-        out.write("""
-
-              public <type> <name>() {
-                return <getter>;
-              }
-            """
-            .replace("<name>", name)
-            .replace("<type>", type)
-            .replace("<getter>", nestedAddressGetter(field, "ms")));
-
-        if (!field.writeAccessor) return;
-
-        out.write("""
-
-              public <class> <name>(<type> value) {
-                FM$VH$<name>.set(ms, ((<fieldClass>) value).ms);
-                return this;
-              }
-            """
-            .replace("<class>", className)
-            .replace("<name>", name)
-            .replace("<type>", type)
-            .replace("<fieldClass>", fieldClassName));
+        writeSetter(out, target, field, false,
+            "FM$VH$<name>.set(ms, ((<fieldClass>) value).ms);"
+                .replace("<fieldClass>", fieldClassName)
+                .replace("<name>", name));
       }
     } else {
-      out.write("""
+      writeGetter(out, target, field,
+          "(<type>) FM$VH$<name>.get(ms)"
+              .replace("<type>", field.typeName())
+              .replace("<name>", name));
 
-            public <type> <name>() {
-              return (<type>) FM$VH$<name>.get(ms);
-            }
-          """
-          .replace("<name>", name)
-          .replace("<type>", type));
+      writeSetter(out, target, field, false,
+          "FM$VH$<name>.set(ms, value);".replace("<name>", name));
+    }
+  }
 
-      if (!field.writeAccessor) return;
+  private void writeGetter(Writer out, AccessorTarget target,
+      StructField field, String expression) throws IOException {
+    out.write("""
 
-      out.write("""
+          <head> {
+            return <expression>;
+          }
+        """
+        .replace("<head>", target.getterHead(field))
+        .replace("<expression>", expression.replace("\n", "\n    ")));
+  }
 
-            public <class> <name>(<type> value) {
-              FM$VH$<name>.set(ms, value);
-              return this;
-            }
-          """
-          .replace("<class>", className)
-          .replace("<name>", name)
-          .replace("<type>", type));
+  private void writeSetter(Writer out, AccessorTarget target,
+      StructField field, boolean needsAllocator, String body)
+      throws IOException {
+    if (!field.writeAccessor) return;
+
+    var statements = target.isStatic() ? body : body + "\nreturn this;";
+
+    out.write("""
+
+          <head> {
+            <statements>
+          }
+        """
+        .replace("<head>", target.setterHead(field, needsAllocator))
+        .replace("<statements>", statements.replace("\n", "\n    ")));
+  }
+
+  private void writeThrowingAccessors(Writer out, AccessorTarget target,
+      StructField field) throws IOException {
+    if (target.isStatic()) {
+      writeThrowingStaticAccessors(out, field);
+    } else {
+      writeThrowingFieldAccessors(out, target.className(), field,
+          field.writeAccessor);
     }
   }
 
@@ -1631,7 +1506,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         + ".get(" + segment + "))";
 
     return address + ".reinterpret(" + layout + ".byteSize())\n"
-        + "        .get(" + layout + ", 0L)";
+        + "    .get(" + layout + ", 0L)";
   }
 
   private String capitalize(String name) {
