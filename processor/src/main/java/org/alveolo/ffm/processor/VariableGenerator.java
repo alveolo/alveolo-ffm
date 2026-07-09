@@ -117,6 +117,10 @@ non-sealed class VariableGenerator extends TypeGenerator {
     return hasInAnnotation() && hasOutAnnotation();
   }
 
+  boolean hasSequenceOnUnsupportedType() {
+    return hasExplicitSequence && !isArrayOrBuffer();
+  }
+
   String arrayOrBufferInitializer() {
     return isArray()
         ? arrayInitializer()

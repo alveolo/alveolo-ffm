@@ -154,4 +154,22 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
     assertThat(c).hadErrorContaining("Type is not supported: java.lang.Object");
     assertThat(c).hadErrorCount(1);
   }
+
+  @Test
+  void failsWhenSequenceIsUsedOnScalarParameter() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.DispatchTable
+        public interface Bad {
+          @org.alveolo.ffm.Slot(0)
+          void call(@org.alveolo.ffm.Sequence(2) int value);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Sequence is only supported on array and Buffer types");
+    assertThat(c).hadErrorCount(1);
+  }
 }

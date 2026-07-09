@@ -459,6 +459,15 @@ class ExecutableGenerator {
         continue;
       }
 
+      if (paramGen.hasSequenceOnUnsupportedType()) {
+        hasUnsupported = true;
+
+        messager.printError(
+            "@Sequence is only supported on array and Buffer types",
+            paramGen.element);
+        continue;
+      }
+
       if ((paramGen.hasInAnnotation() || paramGen.hasOutAnnotation())
           && !paramGen.isArrayOrBuffer()) {
         hasUnsupported = true;

@@ -226,6 +226,23 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsWhenSequenceIsUsedOnScalarParameter() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.Sequence(2) int value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@Sequence is only supported on array and Buffer types");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void supportsMemorySegmentAddressReturn() {
     var lib = forSourceString("test.Lib", """
         package test;

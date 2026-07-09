@@ -52,7 +52,8 @@ public final class BufferStructFM implements BufferStruct {
 
   public java.nio.IntBuffer data() {
     if (FM$BB$data == null) {
-      FM$BB$data = data$MemorySegment().asByteBuffer().asIntBuffer();
+      FM$BB$data = data$MemorySegment().asByteBuffer()
+          .order(java.nio.ByteOrder.nativeOrder()).asIntBuffer();
     }
     return FM$BB$data;
   }

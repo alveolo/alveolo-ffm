@@ -28,7 +28,7 @@ reinterpretation, and probably separate `allocate()` from a
 `wrapInitializedNativeObject()` factory. An allocator constructor is unsafe
 unless it also requires the initial vtable.
 
-### 2. High — Typed Struct-Buffer Access Uses the Wrong Byte Order
+### 2. ✅ High — Typed Struct-Buffer Access Uses the Wrong Byte Order
 
 Generated code calls `asByteBuffer().asIntBuffer()` without setting native byte
 order. `MemorySegment` indexed access uses native order, while the buffer view
@@ -59,7 +59,7 @@ resolution, or reject interfaces with inherited abstract methods using one
 clear processor diagnostic. The README acknowledges the limitation for foreign
 interfaces, but producing invalid generated code is still undesirable.
 
-### 4. Medium — Legal `@Sequence` Placement Can Generate Broken Var Handles
+### 4. ✅ Medium — Legal `@Sequence` Placement Can Generate Broken Var Handles
 
 A primitive accessor annotated `@Sequence(2)` still receives a scalar layout,
 but var-handle generation assumes the sequence adds an index coordinate. The
@@ -131,7 +131,7 @@ Relevant code:
 Add a bounded-string annotation or configurable maximum, and prefer APIs that
 provide an explicit length.
 
-### 9. Documentation Contradicts Enforced Setter Behavior
+### 9. ✅ Documentation Contradicts Enforced Setter Behavior
 
 The README declares struct-interface setters such as
 `timeval tv_sec(int value)`, but the processor deliberately reports every

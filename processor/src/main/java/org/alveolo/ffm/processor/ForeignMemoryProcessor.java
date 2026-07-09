@@ -1199,7 +1199,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
           public java.nio.<Type>Buffer <name>() {
             if (FM$BB$<name> == null) {
-              FM$BB$<name> = <name>$MemorySegment().asByteBuffer()<buffer>;
+              FM$BB$<name> = <name>$MemorySegment().asByteBuffer()
+                  .order(java.nio.ByteOrder.nativeOrder())<buffer>;
             }
             return FM$BB$<name>;
           }
@@ -1236,6 +1237,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   private void validateFields(List<VariableGenerator> fields) {
     for (var field : fields) {
+      if (field.hasSequenceOnUnsupportedType()) {
+        processingEnv.getMessager().printError(
+            "@Sequence is only supported on array and Buffer types",
+            field.element);
+        continue;
+      }
+
       if (field.isString()) {
         processingEnv.getMessager().printError(
             "String fields are not supported on @Struct or @Union memory types",

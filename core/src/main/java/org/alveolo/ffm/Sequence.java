@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 /// Specifies the length/count for a sequence/buffer layout.
 ///
 /// Can be placed on a type use, method, or parameter.
+/// Only primitive arrays and supported NIO buffer types can be sequences.
 @Target({TYPE_USE, METHOD, PARAMETER})
 @Retention(SOURCE)
 public @interface Sequence {

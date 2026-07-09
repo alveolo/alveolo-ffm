@@ -648,6 +648,31 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsSequenceOnScalarStructField() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        public interface Bad {
+          @org.alveolo.ffm.Sequence(2)
+          int value();
+        }
+        """);
+    var generatedUse = forSourceString("test.BadUse", """
+        package test;
+
+        class BadUse {
+          Class<?> generatedClass = BadFM.class;
+        }
+        """);
+
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "@Sequence is only supported on array and Buffer types");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void failsArrayFieldOnStructInterface() {
     var source = forSourceString("test.Bad", """
         package test;

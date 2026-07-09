@@ -246,12 +246,15 @@ For mutable memory-backed wrappers, use an interface:
 @Struct
 public interface timeval {
   int tv_sec();
-  timeval tv_sec(int value);
-
   int tv_usec();
-  timeval tv_usec(int value);
 }
 ```
+
+Declare each native field with a zero-argument getter only. Do not declare
+setter or generated-helper overloads on the source interface; the processor
+rejects those signatures. The generated `*FM` implementation adds fluent
+setters for supported fields, which is why the following code can call
+`tv_sec(int)` and `tv_usec(int)` even though they are not interface methods.
 
 Generated usage:
 
@@ -269,10 +272,7 @@ Use `@Union` when fields share storage:
 @Union
 public interface NumberBits {
   int i();
-  NumberBits i(int value);
-
   float f();
-  NumberBits f(float value);
 }
 ```
 
