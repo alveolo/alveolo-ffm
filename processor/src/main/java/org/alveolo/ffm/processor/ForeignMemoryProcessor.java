@@ -24,14 +24,12 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
@@ -54,28 +52,8 @@ import org.alveolo.ffm.Virtual;
 public class ForeignMemoryProcessor extends AbstractProcessor {
   private static final String VTABLE_FIELD = "ff$vtbl";
 
-  // TODO simplify
-  /// Struct field inferred from an accessor method or record component.
-  static final class StructField extends VariableGenerator {
-    final boolean throwingAccessors;
-
-    StructField(ProcessingEnvironment processingEnv,
-        RecordComponentElement element, boolean throwingAccessors) {
-      this(processingEnv, element.getSimpleName().toString(),
-          element.asType(), element, throwingAccessors);
-    }
-
-    StructField(ProcessingEnvironment processingEnv, String name,
-        TypeMirror typeMirror, Element element,
-        boolean throwingAccessors) {
-      super(processingEnv, name, typeMirror, sequence(typeMirror, element),
-          element);
-      this.throwingAccessors = throwingAccessors;
-    }
-  }
-
-  record StructFields(
-      List<StructField> fields,
+  record InferredFields(
+      List<VariableGenerator> fields,
       List<ExecutableElement> unsupportedMethods
   ) {}
 
@@ -195,12 +173,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   /// Infer struct fields from interface accessor methods.
-  private StructFields inferFields(
+  private InferredFields inferFields(
       TypeElement iface, boolean excludeObjectMethods) {
     if (iface.getKind() == ElementKind.RECORD)
-      return new StructFields(iface.getRecordComponents().stream()
-          .map(component -> new StructField(processingEnv, component,
-              unsupportedRecordComponent(component.asType())))
+      return new InferredFields(iface.getRecordComponents().stream()
+          .map(component -> new VariableGenerator(processingEnv, component))
           .toList(), List.of());
 
     // Group methods by name
@@ -218,7 +195,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       }
     }
 
-    var fields = new ArrayList<StructField>();
+    var fields = new ArrayList<VariableGenerator>();
     var unsupportedMethods = new ArrayList<ExecutableElement>();
     for (var entry : methodsByName.entrySet()) {
       String fieldName = entry.getKey();
@@ -267,11 +244,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             method);
       }
 
-      fields.add(new StructField(processingEnv, fieldName, fieldType,
-          accessor, false));
+      fields.add(new VariableGenerator(processingEnv, fieldName, fieldType,
+          TypeGenerator.sequence(fieldType, accessor), accessor));
     }
 
-    return new StructFields(fields, unsupportedMethods);
+    return new InferredFields(fields, unsupportedMethods);
   }
 
   private void addUnsupportedMethod(
@@ -430,11 +407,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     return valid;
-  }
-
-  private boolean unsupportedRecordComponent(TypeMirror componentType) {
-    return componentType.getKind() == TypeKind.ARRAY
-        || new TypeGenerator(processingEnv, componentType).isNioBuffer();
   }
 
   private String bufferSuggestion(TypeMirror componentType) {
@@ -722,7 +694,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return method.getAnnotation(Virtual.class).value();
   }
 
-  private void writeLayout(Writer out, List<StructField> fields,
+  private void writeLayout(Writer out, List<VariableGenerator> fields,
       String kind, boolean vtable) throws IOException {
     out.write("""
           public static final MemoryLayout FM$LAYOUT =
@@ -882,7 +854,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writePathElements(Writer out, String className,
-      List<StructField> fields, boolean vtable) throws IOException {
+      List<VariableGenerator> fields, boolean vtable) throws IOException {
     if (vtable) {
       out.write("""
 
@@ -902,7 +874,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeVarHandles(Writer out, String className,
-      List<StructField> fields, boolean vtable) throws IOException {
+      List<VariableGenerator> fields, boolean vtable) throws IOException {
     if (vtable) {
       out.write("""
 
@@ -946,7 +918,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       return new AccessorTarget(false, className);
     }
 
-    String getterHead(StructField field) {
+    String getterHead(VariableGenerator field) {
       return (isStatic
           ? "public static <type> <name>(MemorySegment ms)"
           : "public <type> <name>()")
@@ -954,7 +926,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
               .replace("<name>", field.name());
     }
 
-    String setterHead(StructField field, boolean needsAllocator) {
+    String setterHead(VariableGenerator field, boolean needsAllocator) {
       var head = isStatic
           ? staticSetterHead(needsAllocator)
           : fluentSetterHead(needsAllocator).replace("<class>", className);
@@ -980,7 +952,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private void writeStaticAccessors(Writer out, List<StructField> fields)
+  private void writeStaticAccessors(Writer out, List<VariableGenerator> fields)
       throws IOException {
     for (var field : fields) {
       writeAccessorsSimple(out, AccessorTarget.STATIC, field);
@@ -988,7 +960,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeFieldAccessors(Writer out, String className,
-      List<StructField> fields) throws IOException {
+      List<VariableGenerator> fields) throws IOException {
     var target = AccessorTarget.fluent(className);
     for (var field : fields) {
       if (field.isNioBuffer()) {
@@ -1012,7 +984,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private void writeThrowingStaticAccessors(Writer out, StructField field)
+  private void writeThrowingStaticAccessors(Writer out, VariableGenerator field)
       throws IOException {
     String name = field.name();
     String type = field.typeName();
@@ -1037,7 +1009,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeThrowingFieldAccessors(Writer out, String className,
-      StructField field, boolean writeSetter) throws IOException {
+      VariableGenerator field, boolean writeSetter) throws IOException {
     String name = field.name();
     String type = field.typeName();
     var setter = writeSetter
@@ -1065,7 +1037,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   /// Writes getter and setter accessors for a simple (non-buffer) field in the
   /// accessor style selected by the target.
   private void writeAccessorsSimple(Writer out, AccessorTarget target,
-      StructField field) throws IOException {
+      VariableGenerator field) throws IOException {
     String name = field.name();
 
     if (!target.isStatic() && field.isPrimitiveAddress()) {
@@ -1074,7 +1046,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       return;
     }
 
-    if (fieldAccessorsShouldThrow(field)) {
+    if (fieldAccessorsShouldThrow(target, field)) {
       writeThrowingAccessors(out, target, field);
       return;
     }
@@ -1165,7 +1137,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeGetter(Writer out, AccessorTarget target,
-      StructField field, String expression) throws IOException {
+      VariableGenerator field, String expression) throws IOException {
     out.write("""
 
           <head> {
@@ -1177,7 +1149,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeSetter(Writer out, AccessorTarget target,
-      StructField field, boolean needsAllocator, String body)
+      VariableGenerator field, boolean needsAllocator, String body)
       throws IOException {
     var statements = target.isStatic() ? body : body + "\nreturn this;";
 
@@ -1192,7 +1164,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeThrowingAccessors(Writer out, AccessorTarget target,
-      StructField field) throws IOException {
+      VariableGenerator field) throws IOException {
     if (target.isStatic()) {
       writeThrowingStaticAccessors(out, field);
     } else {
@@ -1200,7 +1172,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private void writeAccessorsBuffer(Writer out, StructField field)
+  private void writeAccessorsBuffer(Writer out, VariableGenerator field)
       throws IOException {
     String type = field.elementTypeName();
     String capType = capitalize(type);
@@ -1262,7 +1234,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         .replace("<size>", Long.toString(size)));
   }
 
-  private void validateFields(List<StructField> fields) {
+  private void validateFields(List<VariableGenerator> fields) {
     for (var field : fields) {
       if (field.isString()) {
         processingEnv.getMessager().printError(
@@ -1273,11 +1245,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private boolean fieldAccessorsShouldThrow(StructField field) {
-    return field.throwingAccessors || field.isString() || field.unsupported();
+  private boolean fieldAccessorsShouldThrow(
+      AccessorTarget target, VariableGenerator field) {
+    return field.isString()
+        || field.unsupported()
+        || (target.isStatic() && field.isArrayOrBuffer());
   }
 
-  private void reportMemoryBackedRecordAddressField(StructField field) {
+  private void reportMemoryBackedRecordAddressField(VariableGenerator field) {
     processingEnv.getMessager().printError(
         "@Address record fields are not supported on memory-backed "
             + "@Struct or @Union interfaces; use an interface struct or "
@@ -1285,7 +1260,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         field.element);
   }
 
-  private void reportMemoryBackedPrimitiveAddressField(StructField field) {
+  private void reportMemoryBackedPrimitiveAddressField(
+      VariableGenerator field) {
     processingEnv.getMessager().printError(
         "@Address primitive fields are not supported on memory-backed "
             + "@Struct or @Union interfaces; use a memory-backed interface "
@@ -1293,11 +1269,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         field.element);
   }
 
-  private boolean isNestedValue(StructField field) {
+  private boolean isNestedValue(VariableGenerator field) {
     return field.isForeignMemory() && field.isValue();
   }
 
-  private boolean isNestedAddress(StructField field) {
+  private boolean isNestedAddress(VariableGenerator field) {
     return field.isForeignMemory() && field.isAddress();
   }
 
@@ -1342,13 +1318,15 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return false;
   }
 
-  private String nestedAddressGetter(StructField field, String segment) {
+  private String nestedAddressGetter(
+      VariableGenerator field, String segment) {
     return foreignMemoryClassName(field.typeElement)
         + ".reinterpret((MemorySegment) FM$VH$" + field.name()
         + ".get(" + segment + ")" + ")";
   }
 
-  private String primitiveAddressGetter(StructField field, String segment) {
+  private String primitiveAddressGetter(
+      VariableGenerator field, String segment) {
     String layout = field.valueLayout();
     String address = "((MemorySegment) FM$VH$" + field.name()
         + ".get(" + segment + "))";
