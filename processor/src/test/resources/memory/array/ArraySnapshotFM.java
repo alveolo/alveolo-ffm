@@ -14,50 +14,6 @@ public final class ArraySnapshotFM {
             pkg.ArrayPointFM.FM$LAYOUT).withName("points"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$bytes =
-      MemoryLayout.PathElement.groupElement("bytes");
-
-  public static final MemoryLayout.PathElement FM$PE$bytes$0 =
-      MemoryLayout.PathElement.sequenceElement();
-
-  public static final MemoryLayout FM$LAYOUT$bytes =
-      FM$LAYOUT.select(FM$PE$bytes);
-
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$bytes =
-      ValueLayout.JAVA_BYTE;
-
-  public static final long FM$OFFSET$bytes =
-      FM$LAYOUT.byteOffset(FM$PE$bytes);
-
-  public static final long FM$SIZE$bytes =
-      FM$LAYOUT$bytes.byteSize();
-
-  public static final long FM$DIMENSION$bytes$0 = 4L;
-
-  public static final MemoryLayout.PathElement FM$PE$points =
-      MemoryLayout.PathElement.groupElement("points");
-
-  public static final MemoryLayout.PathElement FM$PE$points$0 =
-      MemoryLayout.PathElement.sequenceElement();
-
-  public static final MemoryLayout FM$LAYOUT$points =
-      FM$LAYOUT.select(FM$PE$points);
-
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$points =
-      pkg.ArrayPointFM.FM$LAYOUT;
-
-  public static final long FM$OFFSET$points =
-      FM$LAYOUT.byteOffset(FM$PE$points);
-
-  public static final long FM$SIZE$points =
-      FM$LAYOUT$points.byteSize();
-
-  public static final long FM$DIMENSION$points$0 = 2L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$bytes =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$bytes, FM$PE$bytes$0), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -114,6 +70,30 @@ public final class ArraySnapshotFM {
         points(ms));
   }
 
+  public static final MemoryLayout.PathElement FM$PE$bytes =
+      MemoryLayout.PathElement.groupElement("bytes");
+
+  public static final MemoryLayout.PathElement FM$PE$bytes$0 =
+      MemoryLayout.PathElement.sequenceElement();
+
+  public static final MemoryLayout FM$LAYOUT$bytes =
+      FM$LAYOUT.select(FM$PE$bytes);
+
+  public static final MemoryLayout FM$ELEMENT_LAYOUT$bytes =
+      ValueLayout.JAVA_BYTE;
+
+  public static final long FM$OFFSET$bytes =
+      FM$LAYOUT.byteOffset(FM$PE$bytes);
+
+  public static final long FM$SIZE$bytes =
+      FM$LAYOUT$bytes.byteSize();
+
+  public static final long FM$DIMENSION$bytes$0 = 4L;
+
+  public static final java.lang.invoke.VarHandle FM$VH$bytes =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$bytes, FM$PE$bytes$0), 1, 0L);
+
   public static MemorySegment bytes$MemorySegment(MemorySegment ms) {
     return ms.asSlice(FM$OFFSET$bytes, FM$SIZE$bytes);
   }
@@ -164,6 +144,26 @@ public final class ArraySnapshotFM {
       bytes(ms, index, value[(int) index]);
     }
   }
+
+  public static final MemoryLayout.PathElement FM$PE$points =
+      MemoryLayout.PathElement.groupElement("points");
+
+  public static final MemoryLayout.PathElement FM$PE$points$0 =
+      MemoryLayout.PathElement.sequenceElement();
+
+  public static final MemoryLayout FM$LAYOUT$points =
+      FM$LAYOUT.select(FM$PE$points);
+
+  public static final MemoryLayout FM$ELEMENT_LAYOUT$points =
+      pkg.ArrayPointFM.FM$LAYOUT;
+
+  public static final long FM$OFFSET$points =
+      FM$LAYOUT.byteOffset(FM$PE$points);
+
+  public static final long FM$SIZE$points =
+      FM$LAYOUT$points.byteSize();
+
+  public static final long FM$DIMENSION$points$0 = 2L;
 
   public static MemorySegment points$MemorySegment(MemorySegment ms) {
     return ms.asSlice(FM$OFFSET$points, FM$SIZE$points);

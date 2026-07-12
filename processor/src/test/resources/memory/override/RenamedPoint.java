@@ -12,20 +12,6 @@ public final class RenamedPoint {
         ValueLayout.JAVA_INT.withName("y"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$x =
-      MemoryLayout.PathElement.groupElement("x");
-
-  public static final MemoryLayout.PathElement FM$PE$y =
-      MemoryLayout.PathElement.groupElement("y");
-
-  public static final java.lang.invoke.VarHandle FM$VH$x =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$x), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$y =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$y), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -82,6 +68,13 @@ public final class RenamedPoint {
         y(ms));
   }
 
+  public static final MemoryLayout.PathElement FM$PE$x =
+      MemoryLayout.PathElement.groupElement("x");
+
+  public static final java.lang.invoke.VarHandle FM$VH$x =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$x), 1, 0L);
+
   public static int x(MemorySegment ms) {
     return (int) FM$VH$x.get(ms);
   }
@@ -89,6 +82,13 @@ public final class RenamedPoint {
   public static void x(MemorySegment ms, int value) {
     FM$VH$x.set(ms, value);
   }
+
+  public static final MemoryLayout.PathElement FM$PE$y =
+      MemoryLayout.PathElement.groupElement("y");
+
+  public static final java.lang.invoke.VarHandle FM$VH$y =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$y), 1, 0L);
 
   public static int y(MemorySegment ms) {
     return (int) FM$VH$y.get(ms);

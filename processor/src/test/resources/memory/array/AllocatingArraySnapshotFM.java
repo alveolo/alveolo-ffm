@@ -12,26 +12,6 @@ public final class AllocatingArraySnapshotFM {
             pkg.ArrayAddressValueFM.FM$LAYOUT).withName("values"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$values =
-      MemoryLayout.PathElement.groupElement("values");
-
-  public static final MemoryLayout.PathElement FM$PE$values$0 =
-      MemoryLayout.PathElement.sequenceElement();
-
-  public static final MemoryLayout FM$LAYOUT$values =
-      FM$LAYOUT.select(FM$PE$values);
-
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$values =
-      pkg.ArrayAddressValueFM.FM$LAYOUT;
-
-  public static final long FM$OFFSET$values =
-      FM$LAYOUT.byteOffset(FM$PE$values);
-
-  public static final long FM$SIZE$values =
-      FM$LAYOUT$values.byteSize();
-
-  public static final long FM$DIMENSION$values$0 = 2L;
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -86,6 +66,26 @@ public final class AllocatingArraySnapshotFM {
     return new AllocatingArraySnapshot(
         values(ms));
   }
+
+  public static final MemoryLayout.PathElement FM$PE$values =
+      MemoryLayout.PathElement.groupElement("values");
+
+  public static final MemoryLayout.PathElement FM$PE$values$0 =
+      MemoryLayout.PathElement.sequenceElement();
+
+  public static final MemoryLayout FM$LAYOUT$values =
+      FM$LAYOUT.select(FM$PE$values);
+
+  public static final MemoryLayout FM$ELEMENT_LAYOUT$values =
+      pkg.ArrayAddressValueFM.FM$LAYOUT;
+
+  public static final long FM$OFFSET$values =
+      FM$LAYOUT.byteOffset(FM$PE$values);
+
+  public static final long FM$SIZE$values =
+      FM$LAYOUT$values.byteSize();
+
+  public static final long FM$DIMENSION$values$0 = 2L;
 
   public static MemorySegment values$MemorySegment(MemorySegment ms) {
     return ms.asSlice(FM$OFFSET$values, FM$SIZE$values);

@@ -9,9 +9,9 @@ import javax.lang.model.type.TypeMirror;
 
 /// Immutable description of an inline C array field.
 ///
-/// The element generator deliberately describes only one element.  Dimensions
-/// and the Java carrier used by record snapshots are kept separately so that a
-/// field layout is never confused with a call-side pointer carrier.
+/// The element generator deliberately describes only one element. Dimensions and
+/// the Java carrier used by record snapshots are kept separately so that a field
+/// layout is never confused with a call-side pointer carrier.
 record IndexedField(
     VariableGenerator element,
     TypeMirror declaredType,
@@ -22,29 +22,16 @@ record IndexedField(
   record Dimension(String name, String typeName, long size) {}
 
   IndexedField {
-    dimensions = List.copyOf(dimensions);
     if (dimensions.isEmpty())
       throw new IllegalArgumentException("Indexed fields need a dimension");
   }
 
-  String name() {
-    return element.name();
-  }
-
-  String elementTypeName() {
-    return element.typeName();
-  }
-
   String declaredTypeName() {
-    return recordSnapshot ? elementTypeName() + "[]" : declaredType.toString();
-  }
-
-  String elementLayout() {
-    return element.layout();
+    return recordSnapshot ? element.typeName() + "[]" : declaredType.toString();
   }
 
   String layout() {
-    var layout = elementLayout();
+    var layout = element.layout();
     for (var i = dimensions.size() - 1; i >= 0; i--) {
       layout = """
           MemoryLayout.sequenceLayout(<size>L,

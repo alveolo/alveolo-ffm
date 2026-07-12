@@ -11,10 +11,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
@@ -182,13 +182,10 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
   private List<ExecutableGenerator> generators(
       List<ExecutableElement> methods) {
-    var index = 0;
-    var generators = new ArrayList<ExecutableGenerator>();
-    for (var method : methods) {
-      generators.add(new ExecutableGenerator(
-          processingEnv, method, "FF$MH$" + index++, true));
-    }
-    return generators;
+    return IntStream.range(0, methods.size())
+        .mapToObj(index -> new ExecutableGenerator(
+            processingEnv, methods.get(index), "FF$MH$" + index++, true))
+        .toList();
   }
 
   private void writeMethodDescriptor(Writer out,

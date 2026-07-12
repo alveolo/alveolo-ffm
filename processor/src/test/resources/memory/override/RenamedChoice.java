@@ -12,20 +12,6 @@ public final class RenamedChoice implements SimpleChoice {
         ValueLayout.JAVA_FLOAT.withName("f"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$i =
-      MemoryLayout.PathElement.groupElement("i");
-
-  public static final MemoryLayout.PathElement FM$PE$f =
-      MemoryLayout.PathElement.groupElement("f");
-
-  public static final java.lang.invoke.VarHandle FM$VH$i =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$i), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$f =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$f), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -74,6 +60,13 @@ public final class RenamedChoice implements SimpleChoice {
     this.ms = ms;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$i =
+      MemoryLayout.PathElement.groupElement("i");
+
+  public static final java.lang.invoke.VarHandle FM$VH$i =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$i), 1, 0L);
+
   public int i() {
     return (int) FM$VH$i.get(ms);
   }
@@ -82,6 +75,13 @@ public final class RenamedChoice implements SimpleChoice {
     FM$VH$i.set(ms, value);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$f =
+      MemoryLayout.PathElement.groupElement("f");
+
+  public static final java.lang.invoke.VarHandle FM$VH$f =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$f), 1, 0L);
 
   public float f() {
     return (float) FM$VH$f.get(ms);

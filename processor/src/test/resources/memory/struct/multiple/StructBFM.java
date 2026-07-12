@@ -17,55 +17,6 @@ public final class StructBFM implements StructB {
         ValueLayout.JAVA_DOUBLE.withName("d"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$b =
-      MemoryLayout.PathElement.groupElement("b");
-
-  public static final MemoryLayout.PathElement FM$PE$c =
-      MemoryLayout.PathElement.groupElement("c");
-
-  public static final MemoryLayout.PathElement FM$PE$s =
-      MemoryLayout.PathElement.groupElement("s");
-
-  public static final MemoryLayout.PathElement FM$PE$i =
-      MemoryLayout.PathElement.groupElement("i");
-
-  public static final MemoryLayout.PathElement FM$PE$l =
-      MemoryLayout.PathElement.groupElement("l");
-
-  public static final MemoryLayout.PathElement FM$PE$f =
-      MemoryLayout.PathElement.groupElement("f");
-
-  public static final MemoryLayout.PathElement FM$PE$d =
-      MemoryLayout.PathElement.groupElement("d");
-
-  public static final java.lang.invoke.VarHandle FM$VH$b =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$b), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$c =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$c), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$s =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$s), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$i =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$i), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$l =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$l), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$f =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$f), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$d =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$d), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -114,6 +65,13 @@ public final class StructBFM implements StructB {
     this.ms = ms;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$b =
+      MemoryLayout.PathElement.groupElement("b");
+
+  public static final java.lang.invoke.VarHandle FM$VH$b =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$b), 1, 0L);
+
   public boolean b() {
     return (boolean) FM$VH$b.get(ms);
   }
@@ -122,6 +80,13 @@ public final class StructBFM implements StructB {
     FM$VH$b.set(ms, value);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$c =
+      MemoryLayout.PathElement.groupElement("c");
+
+  public static final java.lang.invoke.VarHandle FM$VH$c =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$c), 1, 0L);
 
   public char c() {
     return (char) FM$VH$c.get(ms);
@@ -132,6 +97,13 @@ public final class StructBFM implements StructB {
     return this;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$s =
+      MemoryLayout.PathElement.groupElement("s");
+
+  public static final java.lang.invoke.VarHandle FM$VH$s =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$s), 1, 0L);
+
   public short s() {
     return (short) FM$VH$s.get(ms);
   }
@@ -140,6 +112,13 @@ public final class StructBFM implements StructB {
     FM$VH$s.set(ms, value);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$i =
+      MemoryLayout.PathElement.groupElement("i");
+
+  public static final java.lang.invoke.VarHandle FM$VH$i =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$i), 1, 0L);
 
   public int i() {
     return (int) FM$VH$i.get(ms);
@@ -150,6 +129,13 @@ public final class StructBFM implements StructB {
     return this;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$l =
+      MemoryLayout.PathElement.groupElement("l");
+
+  public static final java.lang.invoke.VarHandle FM$VH$l =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$l), 1, 0L);
+
   public long l() {
     return (long) FM$VH$l.get(ms);
   }
@@ -159,6 +145,13 @@ public final class StructBFM implements StructB {
     return this;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$f =
+      MemoryLayout.PathElement.groupElement("f");
+
+  public static final java.lang.invoke.VarHandle FM$VH$f =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$f), 1, 0L);
+
   public float f() {
     return (float) FM$VH$f.get(ms);
   }
@@ -167,6 +160,13 @@ public final class StructBFM implements StructB {
     FM$VH$f.set(ms, value);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$d =
+      MemoryLayout.PathElement.groupElement("d");
+
+  public static final java.lang.invoke.VarHandle FM$VH$d =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$d), 1, 0L);
 
   public double d() {
     return (double) FM$VH$d.get(ms);

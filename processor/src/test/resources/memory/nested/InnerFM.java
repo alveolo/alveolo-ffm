@@ -12,20 +12,6 @@ public final class InnerFM implements Inner {
         ValueLayout.JAVA_INT.withName("b"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$a =
-      MemoryLayout.PathElement.groupElement("a");
-
-  public static final MemoryLayout.PathElement FM$PE$b =
-      MemoryLayout.PathElement.groupElement("b");
-
-  public static final java.lang.invoke.VarHandle FM$VH$a =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$a), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$b =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$b), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -74,6 +60,13 @@ public final class InnerFM implements Inner {
     this.ms = ms;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$a =
+      MemoryLayout.PathElement.groupElement("a");
+
+  public static final java.lang.invoke.VarHandle FM$VH$a =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$a), 1, 0L);
+
   public int a() {
     return (int) FM$VH$a.get(ms);
   }
@@ -82,6 +75,13 @@ public final class InnerFM implements Inner {
     FM$VH$a.set(ms, value);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$b =
+      MemoryLayout.PathElement.groupElement("b");
+
+  public static final java.lang.invoke.VarHandle FM$VH$b =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$b), 1, 0L);
 
   public int b() {
     return (int) FM$VH$b.get(ms);

@@ -16,16 +16,9 @@ public final class VirtualObjFM implements VirtualObj {
   public static final MemoryLayout.PathElement FM$PE$ff$vtbl =
       MemoryLayout.PathElement.groupElement("ff$vtbl");
 
-  public static final MemoryLayout.PathElement FM$PE$field =
-      MemoryLayout.PathElement.groupElement("field");
-
   public static final java.lang.invoke.VarHandle FM$VH$ff$vtbl =
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$ff$vtbl), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$field =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$field), 1, 0L);
 
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
@@ -81,6 +74,13 @@ public final class VirtualObjFM implements VirtualObj {
   private VirtualObjVtbl ff$vtbl() {
     return ff$vtbl;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$field =
+      MemoryLayout.PathElement.groupElement("field");
+
+  public static final java.lang.invoke.VarHandle FM$VH$field =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$field), 1, 0L);
 
   public int field() {
     return (int) FM$VH$field.get(ms);

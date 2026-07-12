@@ -12,20 +12,6 @@ public final class timevalFM implements timeval {
         ValueLayout.JAVA_INT.withName("tv_usec"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$tv_sec =
-      MemoryLayout.PathElement.groupElement("tv_sec");
-
-  public static final MemoryLayout.PathElement FM$PE$tv_usec =
-      MemoryLayout.PathElement.groupElement("tv_usec");
-
-  public static final java.lang.invoke.VarHandle FM$VH$tv_sec =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$tv_sec), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$tv_usec =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$tv_usec), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -74,6 +60,13 @@ public final class timevalFM implements timeval {
     this.ms = ms;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$tv_sec =
+      MemoryLayout.PathElement.groupElement("tv_sec");
+
+  public static final java.lang.invoke.VarHandle FM$VH$tv_sec =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$tv_sec), 1, 0L);
+
   public int tv_sec() {
     return (int) FM$VH$tv_sec.get(ms);
   }
@@ -82,6 +75,13 @@ public final class timevalFM implements timeval {
     FM$VH$tv_sec.set(ms, value);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$tv_usec =
+      MemoryLayout.PathElement.groupElement("tv_usec");
+
+  public static final java.lang.invoke.VarHandle FM$VH$tv_usec =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$tv_usec), 1, 0L);
 
   public int tv_usec() {
     return (int) FM$VH$tv_usec.get(ms);

@@ -12,30 +12,6 @@ public final class ArrayUnionFM implements ArrayUnion {
             ValueLayout.JAVA_SHORT).withName("words"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$words =
-      MemoryLayout.PathElement.groupElement("words");
-
-  public static final MemoryLayout.PathElement FM$PE$words$0 =
-      MemoryLayout.PathElement.sequenceElement();
-
-  public static final MemoryLayout FM$LAYOUT$words =
-      FM$LAYOUT.select(FM$PE$words);
-
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$words =
-      ValueLayout.JAVA_SHORT;
-
-  public static final long FM$OFFSET$words =
-      FM$LAYOUT.byteOffset(FM$PE$words);
-
-  public static final long FM$SIZE$words =
-      FM$LAYOUT$words.byteSize();
-
-  public static final long FM$DIMENSION$words$0 = 4L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$words =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$words, FM$PE$words$0), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -83,6 +59,30 @@ public final class ArrayUnionFM implements ArrayUnion {
   public ArrayUnionFM(MemorySegment ms) {
     this.ms = ms;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$words =
+      MemoryLayout.PathElement.groupElement("words");
+
+  public static final MemoryLayout.PathElement FM$PE$words$0 =
+      MemoryLayout.PathElement.sequenceElement();
+
+  public static final MemoryLayout FM$LAYOUT$words =
+      FM$LAYOUT.select(FM$PE$words);
+
+  public static final MemoryLayout FM$ELEMENT_LAYOUT$words =
+      ValueLayout.JAVA_SHORT;
+
+  public static final long FM$OFFSET$words =
+      FM$LAYOUT.byteOffset(FM$PE$words);
+
+  public static final long FM$SIZE$words =
+      FM$LAYOUT$words.byteSize();
+
+  public static final long FM$DIMENSION$words$0 = 4L;
+
+  public static final java.lang.invoke.VarHandle FM$VH$words =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$words, FM$PE$words$0), 1, 0L);
 
   public MemorySegment words$MemorySegment() {
     return ms.asSlice(FM$OFFSET$words, FM$SIZE$words);

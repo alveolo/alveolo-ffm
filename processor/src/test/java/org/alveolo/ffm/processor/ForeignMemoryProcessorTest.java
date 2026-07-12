@@ -251,25 +251,6 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void failsIndexedHelperNameCollision() {
-    var source = forSourceString("test.Bad", """
-        package test;
-        @org.alveolo.ffm.Struct
-        interface Bad {
-          int values(@org.alveolo.ffm.Sequence(2) long index);
-          java.lang.foreign.MemorySegment values$MemorySegment();
-        }
-        """);
-
-    var c = compile(source);
-
-    assertThat(c).hadErrorContaining(
-        "Generated indexed field helper 'values$MemorySegment' collides "
-            + "with a declared field");
-    assertThat(c).hadErrorCount(1);
-  }
-
-  @Test
   void failsIndexedFieldAnnotatedVirtual() {
     var source = forSourceString("test.Bad", """
         package test;

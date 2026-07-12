@@ -45,15 +45,7 @@ class ExecutableGenerator {
       ExecutableElement element, String methodHandleName,
       boolean instanceMethodHandle) {
     this(processingEnv, element, methodHandleName,
-        instanceMethodHandle, List.of());
-  }
-
-  ExecutableGenerator(ProcessingEnvironment processingEnv,
-      ExecutableElement element, String methodHandleName,
-      boolean instanceMethodHandle,
-      List<NativeArgument> leadingNativeArguments) {
-    this(processingEnv, element, methodHandleName, instanceMethodHandle,
-        leadingNativeArguments, "FF$LINKER", "FF$LOOKUP");
+        instanceMethodHandle, List.of(), "FF$LINKER", "FF$LOOKUP");
   }
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
@@ -292,7 +284,9 @@ class ExecutableGenerator {
         copyOut.stream(),
         """
             return ff$string$r.address() == 0L ? null
-                : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);"""
+                : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);
+            """
+            .stripTrailing()
             .lines());
 
     return all.flatMap(identity());
@@ -306,9 +300,13 @@ class ExecutableGenerator {
           "org.alveolo.ffm.macos.CFStringSupport.toJavaString(" + result + ")",
           copyOut);
 
-    var conversion = returnWithCopyOut("""
-        org.alveolo.ffm.macos.CFStringSupport
-            .toJavaString(ff$CFString$r)""", copyOut);
+    var conversion = returnWithCopyOut(
+        """
+            org.alveolo.ffm.macos.CFStringSupport
+                .toJavaString(ff$CFString$r)
+            """
+            .stripTrailing(),
+        copyOut);
 
     return """
         var ff$CFString$r = <result>;
@@ -316,7 +314,9 @@ class ExecutableGenerator {
         <conversion>
         } finally {
           org.alveolo.ffm.macos.CFStringSupport.release(ff$CFString$r);
-        }"""
+        }
+        """
+        .stripTrailing()
         .replace("<result>", result)
         .replace("<conversion>", conversion.collect(joining("\n  ", "  ", "")))
         .lines();
@@ -330,7 +330,9 @@ class ExecutableGenerator {
         copyOut.stream(),
         """
             return ff$address$r.reinterpret(<layout>.byteSize())
-                .get(<layout>, 0L);"""
+                .get(<layout>, 0L);
+            """
+            .stripTrailing()
             .replace("<layout>", layout)
             .lines());
 
@@ -379,7 +381,8 @@ class ExecutableGenerator {
           + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
           + p.name() + ");");
 
-    return p.isCallArrayOrBuffer() ? p.arrayOrBufferInitializer().lines()
+    return p.isCallArrayOrBuffer()
+        ? p.arrayOrBufferInitializer().lines()
         : Stream.empty();
   }
 
@@ -413,8 +416,7 @@ class ExecutableGenerator {
       if (parameterGenerators.isEmpty()
           || !parameterGenerators.get(0).isSegmentAllocator()) {
         messager.printError(
-            "SegmentAllocator is expected as first parameter",
-            element);
+            "SegmentAllocator is expected as first parameter", element);
         return true;
       }
     }

@@ -11,13 +11,6 @@ public final class PairBoxFM {
         ValueLayout.ADDRESS.withName("pair"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$pair =
-      MemoryLayout.PathElement.groupElement("pair");
-
-  public static final java.lang.invoke.VarHandle FM$VH$pair =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$pair), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -72,6 +65,13 @@ public final class PairBoxFM {
     return new PairBox(
         pair(ms));
   }
+
+  public static final MemoryLayout.PathElement FM$PE$pair =
+      MemoryLayout.PathElement.groupElement("pair");
+
+  public static final java.lang.invoke.VarHandle FM$VH$pair =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$pair), 1, 0L);
 
   public static pkg.Pair pair(MemorySegment ms) {
     return pkg.PairFM.reinterpret((MemorySegment) FM$VH$pair.get(ms));

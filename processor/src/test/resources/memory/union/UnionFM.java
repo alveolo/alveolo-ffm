@@ -12,20 +12,6 @@ public final class UnionFM implements Union {
         ValueLayout.JAVA_DOUBLE.withName("d"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$i =
-      MemoryLayout.PathElement.groupElement("i");
-
-  public static final MemoryLayout.PathElement FM$PE$d =
-      MemoryLayout.PathElement.groupElement("d");
-
-  public static final java.lang.invoke.VarHandle FM$VH$i =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$i), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$d =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$d), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -74,6 +60,13 @@ public final class UnionFM implements Union {
     this.ms = ms;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$i =
+      MemoryLayout.PathElement.groupElement("i");
+
+  public static final java.lang.invoke.VarHandle FM$VH$i =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$i), 1, 0L);
+
   public int i() {
     return (int) FM$VH$i.get(ms);
   }
@@ -82,6 +75,13 @@ public final class UnionFM implements Union {
     FM$VH$i.set(ms, value);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$d =
+      MemoryLayout.PathElement.groupElement("d");
+
+  public static final java.lang.invoke.VarHandle FM$VH$d =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$d), 1, 0L);
 
   public double d() {
     return (double) FM$VH$d.get(ms);

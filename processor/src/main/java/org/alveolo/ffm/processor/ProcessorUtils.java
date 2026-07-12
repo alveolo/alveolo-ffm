@@ -1,12 +1,15 @@
 package org.alveolo.ffm.processor;
 
+import static java.util.stream.Collectors.joining;
 import static javax.lang.model.SourceVersion.isIdentifier;
 import static javax.lang.model.SourceVersion.isKeyword;
 
 import java.lang.annotation.Annotation;
 
 import javax.lang.model.element.NestingKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.DispatchTable;
@@ -80,6 +83,22 @@ public class ProcessorUtils {
 
   static String packageName(TypeElement element, Elements elements) {
     return elements.getPackageOf(element).getQualifiedName().toString();
+  }
+
+  static String sourceMethodSignature(ExecutableElement method) {
+    return "public " + sourceReturnType(method) + " "
+        + method.getSimpleName()
+        + method.getParameters().stream()
+            .map(ProcessorUtils::sourceParameter)
+            .collect(joining(",\n      ", "(\n      ", ")"));
+  }
+
+  static String sourceReturnType(ExecutableElement method) {
+    return method.getReturnType().toString();
+  }
+
+  static String sourceParameter(VariableElement parameter) {
+    return parameter.asType() + " " + parameter.getSimpleName();
   }
 
   static String qualifyName(String packageName, String className) {

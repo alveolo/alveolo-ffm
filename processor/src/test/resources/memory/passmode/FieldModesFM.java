@@ -16,36 +16,6 @@ public final class FieldModesFM {
         ValueLayout.ADDRESS.withName("fieldOverridesTypeValue"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$recordDefault =
-      MemoryLayout.PathElement.groupElement("recordDefault");
-
-  public static final MemoryLayout.PathElement FM$PE$interfaceDefault =
-      MemoryLayout.PathElement.groupElement("interfaceDefault");
-
-  public static final MemoryLayout.PathElement FM$PE$recordTypeUseAddress =
-      MemoryLayout.PathElement.groupElement("recordTypeUseAddress");
-
-  public static final MemoryLayout.PathElement FM$PE$interfaceTypeUseValue =
-      MemoryLayout.PathElement.groupElement("interfaceTypeUseValue");
-
-  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeAddress =
-      MemoryLayout.PathElement.groupElement("fieldOverridesTypeAddress");
-
-  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeValue =
-      MemoryLayout.PathElement.groupElement("fieldOverridesTypeValue");
-
-  public static final java.lang.invoke.VarHandle FM$VH$interfaceDefault =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$interfaceDefault), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$recordTypeUseAddress =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$recordTypeUseAddress), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$fieldOverridesTypeValue =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$fieldOverridesTypeValue), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -111,6 +81,9 @@ public final class FieldModesFM {
         fieldOverridesTypeValue(ms));
   }
 
+  public static final MemoryLayout.PathElement FM$PE$recordDefault =
+      MemoryLayout.PathElement.groupElement("recordDefault");
+
   public static pkg.InnerRecord recordDefault(MemorySegment ms) {
     return pkg.InnerRecordFM.fromMemorySegment(ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$recordDefault),
@@ -124,6 +97,13 @@ public final class FieldModesFM {
     pkg.InnerRecordFM.toMemorySegment(value, slice);
   }
 
+  public static final MemoryLayout.PathElement FM$PE$interfaceDefault =
+      MemoryLayout.PathElement.groupElement("interfaceDefault");
+
+  public static final java.lang.invoke.VarHandle FM$VH$interfaceDefault =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$interfaceDefault), 1, 0L);
+
   public static pkg.InnerInterface interfaceDefault(MemorySegment ms) {
     return pkg.InnerInterfaceFM.reinterpret((MemorySegment) FM$VH$interfaceDefault.get(ms));
   }
@@ -131,6 +111,13 @@ public final class FieldModesFM {
   public static void interfaceDefault(MemorySegment ms, pkg.InnerInterface value) {
     FM$VH$interfaceDefault.set(ms, ((pkg.InnerInterfaceFM) value).ms);
   }
+
+  public static final MemoryLayout.PathElement FM$PE$recordTypeUseAddress =
+      MemoryLayout.PathElement.groupElement("recordTypeUseAddress");
+
+  public static final java.lang.invoke.VarHandle FM$VH$recordTypeUseAddress =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$recordTypeUseAddress), 1, 0L);
 
   public static pkg.InnerRecord recordTypeUseAddress(MemorySegment ms) {
     return pkg.InnerRecordFM.reinterpret((MemorySegment) FM$VH$recordTypeUseAddress.get(ms));
@@ -141,6 +128,9 @@ public final class FieldModesFM {
     FM$VH$recordTypeUseAddress.set(ms,
         pkg.InnerRecordFM.toMemorySegment(allocator, value));
   }
+
+  public static final MemoryLayout.PathElement FM$PE$interfaceTypeUseValue =
+      MemoryLayout.PathElement.groupElement("interfaceTypeUseValue");
 
   public static pkg.InnerInterface interfaceTypeUseValue(MemorySegment ms) {
     return new pkg.InnerInterfaceFM(ms.asSlice(
@@ -156,6 +146,9 @@ public final class FieldModesFM {
         slice, 0, layout.byteSize());
   }
 
+  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeAddress =
+      MemoryLayout.PathElement.groupElement("fieldOverridesTypeAddress");
+
   public static pkg.TypeAddressRecord fieldOverridesTypeAddress(MemorySegment ms) {
     return pkg.TypeAddressRecordFM.fromMemorySegment(ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$fieldOverridesTypeAddress),
@@ -168,6 +161,13 @@ public final class FieldModesFM {
         FM$LAYOUT.byteOffset(FM$PE$fieldOverridesTypeAddress), layout.byteSize());
     pkg.TypeAddressRecordFM.toMemorySegment(value, slice);
   }
+
+  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeValue =
+      MemoryLayout.PathElement.groupElement("fieldOverridesTypeValue");
+
+  public static final java.lang.invoke.VarHandle FM$VH$fieldOverridesTypeValue =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$fieldOverridesTypeValue), 1, 0L);
 
   public static pkg.TypeValueInterface fieldOverridesTypeValue(MemorySegment ms) {
     return pkg.TypeValueInterfaceFM.reinterpret((MemorySegment) FM$VH$fieldOverridesTypeValue.get(ms));

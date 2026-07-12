@@ -11,13 +11,6 @@ public final class IntBoxFM {
         ValueLayout.ADDRESS.withName("value"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$value =
-      MemoryLayout.PathElement.groupElement("value");
-
-  public static final java.lang.invoke.VarHandle FM$VH$value =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$value), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -72,6 +65,13 @@ public final class IntBoxFM {
     return new IntBox(
         value(ms));
   }
+
+  public static final MemoryLayout.PathElement FM$PE$value =
+      MemoryLayout.PathElement.groupElement("value");
+
+  public static final java.lang.invoke.VarHandle FM$VH$value =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$value), 1, 0L);
 
   public static int value(MemorySegment ms) {
     return ((MemorySegment) FM$VH$value.get(ms)).reinterpret(ValueLayout.JAVA_INT.byteSize())

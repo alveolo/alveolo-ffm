@@ -12,13 +12,6 @@ public final class ObjFM implements Obj {
         ValueLayout.JAVA_INT.withName("field"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$field =
-      MemoryLayout.PathElement.groupElement("field");
-
-  public static final java.lang.invoke.VarHandle FM$VH$field =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$field), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -66,6 +59,13 @@ public final class ObjFM implements Obj {
   public ObjFM(MemorySegment ms) {
     this.ms = ms;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$field =
+      MemoryLayout.PathElement.groupElement("field");
+
+  public static final java.lang.invoke.VarHandle FM$VH$field =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$field), 1, 0L);
 
   public int field() {
     return (int) FM$VH$field.get(ms);

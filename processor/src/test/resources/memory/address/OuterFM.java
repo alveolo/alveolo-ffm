@@ -12,12 +12,6 @@ public final class OuterFM {
         pkg.IntBoxFM.FM$LAYOUT.withName("intBox"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$box =
-      MemoryLayout.PathElement.groupElement("box");
-
-  public static final MemoryLayout.PathElement FM$PE$intBox =
-      MemoryLayout.PathElement.groupElement("intBox");
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -75,6 +69,9 @@ public final class OuterFM {
         intBox(ms));
   }
 
+  public static final MemoryLayout.PathElement FM$PE$box =
+      MemoryLayout.PathElement.groupElement("box");
+
   public static pkg.PairBox box(MemorySegment ms) {
     return pkg.PairBoxFM.fromMemorySegment(ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$box),
@@ -88,6 +85,9 @@ public final class OuterFM {
         FM$LAYOUT.byteOffset(FM$PE$box), layout.byteSize());
     pkg.PairBoxFM.toMemorySegment(value, slice, allocator);
   }
+
+  public static final MemoryLayout.PathElement FM$PE$intBox =
+      MemoryLayout.PathElement.groupElement("intBox");
 
   public static pkg.IntBox intBox(MemorySegment ms) {
     return pkg.IntBoxFM.fromMemorySegment(ms.asSlice(

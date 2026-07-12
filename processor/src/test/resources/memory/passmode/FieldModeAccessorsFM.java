@@ -15,29 +15,6 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
         ValueLayout.ADDRESS.withName("fieldOverridesTypeValue"),
       }));
 
-  public static final MemoryLayout.PathElement FM$PE$recordDefault =
-      MemoryLayout.PathElement.groupElement("recordDefault");
-
-  public static final MemoryLayout.PathElement FM$PE$interfaceDefault =
-      MemoryLayout.PathElement.groupElement("interfaceDefault");
-
-  public static final MemoryLayout.PathElement FM$PE$interfaceTypeUseValue =
-      MemoryLayout.PathElement.groupElement("interfaceTypeUseValue");
-
-  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeAddress =
-      MemoryLayout.PathElement.groupElement("fieldOverridesTypeAddress");
-
-  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeValue =
-      MemoryLayout.PathElement.groupElement("fieldOverridesTypeValue");
-
-  public static final java.lang.invoke.VarHandle FM$VH$interfaceDefault =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$interfaceDefault), 1, 0L);
-
-  public static final java.lang.invoke.VarHandle FM$VH$fieldOverridesTypeValue =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$fieldOverridesTypeValue), 1, 0L);
-
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
@@ -86,6 +63,9 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     this.ms = ms;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$recordDefault =
+      MemoryLayout.PathElement.groupElement("recordDefault");
+
   public pkg.InnerRecord recordDefault() {
     return pkg.InnerRecordFM.fromMemorySegment(ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$recordDefault),
@@ -100,6 +80,13 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     return this;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$interfaceDefault =
+      MemoryLayout.PathElement.groupElement("interfaceDefault");
+
+  public static final java.lang.invoke.VarHandle FM$VH$interfaceDefault =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$interfaceDefault), 1, 0L);
+
   public pkg.InnerInterface interfaceDefault() {
     return pkg.InnerInterfaceFM.reinterpret((MemorySegment) FM$VH$interfaceDefault.get(ms));
   }
@@ -108,6 +95,9 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     FM$VH$interfaceDefault.set(ms, ((pkg.InnerInterfaceFM) value).ms);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$interfaceTypeUseValue =
+      MemoryLayout.PathElement.groupElement("interfaceTypeUseValue");
 
   public pkg.InnerInterface interfaceTypeUseValue() {
     return new pkg.InnerInterfaceFM(ms.asSlice(
@@ -124,6 +114,9 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     return this;
   }
 
+  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeAddress =
+      MemoryLayout.PathElement.groupElement("fieldOverridesTypeAddress");
+
   public pkg.TypeAddressRecord fieldOverridesTypeAddress() {
     return pkg.TypeAddressRecordFM.fromMemorySegment(ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$fieldOverridesTypeAddress),
@@ -137,6 +130,13 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     pkg.TypeAddressRecordFM.toMemorySegment(value, slice);
     return this;
   }
+
+  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeValue =
+      MemoryLayout.PathElement.groupElement("fieldOverridesTypeValue");
+
+  public static final java.lang.invoke.VarHandle FM$VH$fieldOverridesTypeValue =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          FM$LAYOUT.varHandle(FM$PE$fieldOverridesTypeValue), 1, 0L);
 
   public pkg.TypeValueInterface fieldOverridesTypeValue() {
     return pkg.TypeValueInterfaceFM.reinterpret((MemorySegment) FM$VH$fieldOverridesTypeValue.get(ms));
