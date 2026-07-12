@@ -1,3 +1,5 @@
+## TODO
+
 * Stings in @Struct/@Union
 * Better Strings / ownership
 * long, size_t and other target-architecture dependent memory-size fields
@@ -5,3 +7,7 @@
 * COM support left-outs
 * null-safety
 * errno
+
+## Smaller ideas
+
+* copy / copy at index convenience methods for FM classes

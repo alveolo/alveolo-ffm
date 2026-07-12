@@ -9,13 +9,15 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 
+import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Out;
 
-non-sealed class VariableGenerator extends TypeGenerator {
+final class VariableGenerator extends TypeGenerator {
   final Element element;
   final String name;
   final boolean hasExplicitSequence;
+  final String countedBy;
 
   VariableGenerator(
       ProcessingEnvironment processingEnv,
@@ -37,6 +39,9 @@ non-sealed class VariableGenerator extends TypeGenerator {
     this.element = element;
     this.name = name;
     hasExplicitSequence = hasSequence(typeMirror, element);
+    var countedByAnnotation = element.getAnnotation(CountedBy.class);
+    countedBy = countedByAnnotation == null
+        ? null : countedByAnnotation.value();
   }
 
   /// Variable name
@@ -50,7 +55,7 @@ non-sealed class VariableGenerator extends TypeGenerator {
   }
 
   String argumentLayout() {
-    return isArrayOrBuffer()
+    return isCallArrayOrBuffer()
         ? "ValueLayout.ADDRESS"
         : layout();
   }
@@ -62,7 +67,7 @@ non-sealed class VariableGenerator extends TypeGenerator {
 
   @Override
   boolean needsConfinedArena() {
-    return isArrayOrBuffer() || super.needsConfinedArena();
+    return isCallArrayOrBuffer() || super.needsConfinedArena();
   }
 
   /// Source code for passing an argument to a native function
@@ -77,7 +82,7 @@ non-sealed class VariableGenerator extends TypeGenerator {
     if (isPrimitiveAddress())
       return segmentName();
 
-    if (isArrayOrBuffer())
+    if (isCallArrayOrBuffer())
       return segmentName();
 
     if (isPrimitive() || isMemorySegment() || isSegmentAllocator())
@@ -118,12 +123,41 @@ non-sealed class VariableGenerator extends TypeGenerator {
   }
 
   boolean hasSequenceOnUnsupportedType() {
-    return hasExplicitSequence && !isArrayOrBuffer();
+    return hasExplicitSequence && !isCallArrayOrBuffer();
+  }
+
+  boolean hasInvalidSequence() {
+    return hasExplicitSequence && sequence <= 0L;
+  }
+
+  boolean hasCountedBy() {
+    return countedBy != null;
+  }
+
+  String countedByName() {
+    return countedBy;
+  }
+
+  boolean hasConflictingSizeAnnotations() {
+    return hasExplicitSequence && hasCountedBy();
+  }
+
+  boolean isCountType() {
+    if (isPrimitiveAddress()) return false;
+
+    return switch (typeMirror.getKind()) {
+      case BYTE, SHORT, INT, LONG -> true;
+      default -> false;
+    };
+  }
+
+  boolean isCallArrayOrBuffer() {
+    return isArrayOrBuffer() || isValueStructRecordArray();
   }
 
   String arrayOrBufferInitializer() {
-    return isArray()
-        ? arrayInitializer()
+    return isValueStructRecordArray() ? recordArrayInitializer()
+        : isArray() ? arrayInitializer()
         : bufferInitializer();
   }
 
@@ -141,8 +175,8 @@ non-sealed class VariableGenerator extends TypeGenerator {
   String arrayOrBufferCopyOut() {
     if (!copyOut()) return "";
 
-    return isArray()
-        ? arrayCopyOut()
+    return isValueStructRecordArray() ? recordArrayCopyOut()
+        : isArray() ? arrayCopyOut()
         : bufferCopyOut();
   }
 
@@ -156,15 +190,17 @@ non-sealed class VariableGenerator extends TypeGenerator {
 
   private String arrayInitializer() {
     return """
-        var <size> = <name>.length;
-        <sequenceCheck>var <segment> = ff$arena.allocate(<layout>, <size>);
+        <sizeInitializer>
+        <sequenceCheck>
+        var <segment> = ff$arena.allocate(<layout>, <size>);
         <copyIn>
         """
-        .replace("<size>", sizeName())
-        .replace("<name>", name)
-        .replace("<sequenceCheck>", sequenceCheck("length"))
+        .replace("<sizeInitializer>\n", sizeInitializer(
+            name + ".length", "length"))
+        .replace("<sequenceCheck>\n", sequenceCheck("length"))
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())
+        .replace("<size>", sizeName())
         .replace("<copyIn>", copyIn() ? arrayCopyIn() : "")
         .stripTrailing();
   }
@@ -172,23 +208,73 @@ non-sealed class VariableGenerator extends TypeGenerator {
   private String bufferInitializer() {
     return """
         var <position> = <name>.position();
-        var <size> = <name>.remaining();
-        <sequenceCheck>var <direct> = <directExpression>;
+        <sizeInitializer>
+        <sequenceCheck>
+        <readOnlyCheck>
+        <directOrderCheck>
+        var <direct> = <directExpression>;
         var <segment> = <direct>
-            ? MemorySegment.ofBuffer(<name>)
+            ? MemorySegment.ofBuffer(<name>).asSlice(
+                0L, Math.multiplyExact(<layout>.byteSize(), (long) <size>))
             : ff$arena.allocate(<layout>, <size>);
         <copyIn>
         """
         .replace("<position>", positionName())
         .replace("<name>", name)
-        .replace("<size>", sizeName())
-        .replace("<sequenceCheck>", sequenceCheck("remaining"))
+        .replace("<sizeInitializer>\n", sizeInitializer(
+            name + ".remaining()", "remaining"))
+        .replace("<sequenceCheck>\n", sequenceCheck("remaining"))
+        .replace("<readOnlyCheck>\n", readOnlyCheck())
+        .replace("<directOrderCheck>\n", directOrderCheck())
         .replace("<direct>", directName())
         .replace("<directExpression>", directExpression())
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())
+        .replace("<size>", sizeName())
         .replace("<copyIn>", copyIn() ? bufferCopyIn() : "")
         .stripTrailing();
+  }
+
+  private String recordArrayInitializer() {
+    return """
+        <sizeInitializer>
+        <sequenceCheck>
+        var <segment> = ff$arena.allocate(
+            <foreignClass>.FM$LAYOUT, <size>);
+        <copyIn>
+        """
+        .replace("<sizeInitializer>\n", sizeInitializer(
+            name + ".length", "length"))
+        .replace("<sequenceCheck>\n", sequenceCheck("length"))
+        .replace("<segment>", segmentName())
+        .replace("<foreignClass>", recordForeignMemoryClassName())
+        .replace("<size>", sizeName())
+        .replace("<copyIn>", copyIn() ? recordArrayCopyIn() : "")
+        .stripTrailing();
+  }
+
+  private String sizeInitializer(String availableExpression,
+      String availableWord) {
+    if (!hasCountedBy())
+      return "var " + sizeName() + " = " + availableExpression + ";\n";
+
+    return """
+        var <available> = <availableExpression>;
+        var <count> = (long) <countParameter>;
+        if (<count> < 0L || <count> > <available>) {
+          throw new IllegalArgumentException(
+              "<name> count parameter '<countParameter>' must be between 0 and "
+                  + <available> + " (<availableWord>): " + <count>);
+        }
+        var <size> = (int) <count>;
+        """
+        .replace("<available>", availableName())
+        .replace("<availableExpression>", availableExpression)
+        .replace("<count>", countName())
+        .replace("<countParameter>", countedBy)
+        .replace("<name>", name)
+        .replace("<availableWord>", availableWord)
+        .replace("<size>", sizeName());
   }
 
   private String sequenceCheck(String sizeWord) {
@@ -209,7 +295,35 @@ non-sealed class VariableGenerator extends TypeGenerator {
     return name + ".isDirect()";
   }
 
+  private String readOnlyCheck() {
+    if (hasInAnnotation()) return "";
+
+    return """
+        if (<name>.isReadOnly()) {
+          throw new IllegalArgumentException(
+              "<name> must be writable unless annotated @In");
+        }
+        """
+        .replace("<name>", name);
+  }
+
+  private String directOrderCheck() {
+    if ("byte".equals(elementTypeName())) return "";
+
+    return """
+        if (<name>.isDirect()
+            && !<name>.order().equals(java.nio.ByteOrder.nativeOrder())) {
+          throw new IllegalArgumentException(
+              "direct <name> must use native byte order");
+        }
+        """
+        .replace("<name>", name);
+  }
+
   private String arrayCopyIn() {
+    if ("boolean".equals(elementTypeName()))
+      return booleanArrayCopyIn();
+
     return """
         MemorySegment.copy(<name>, 0, <segment>, <layout>, 0, <size>);
         """
@@ -217,6 +331,38 @@ non-sealed class VariableGenerator extends TypeGenerator {
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())
         .replace("<size>", sizeName())
+        .stripTrailing();
+  }
+
+  private String booleanArrayCopyIn() {
+    return """
+        for (var <index> = 0; <index> < <size>; <index>++) {
+          <segment>.setAtIndex(ValueLayout.JAVA_BOOLEAN, <index>,
+              <name>[<index>]);
+        }
+        """
+        .replace("<index>", indexName())
+        .replace("<size>", sizeName())
+        .replace("<segment>", segmentName())
+        .replace("<name>", name)
+        .stripTrailing();
+  }
+
+  private String recordArrayCopyIn() {
+    return """
+        for (var <index> = 0; <index> < <size>; <index>++) {
+          <segment>.asSlice(
+              (long) <index> * <foreignClass>.FM$LAYOUT.byteSize(),
+              <foreignClass>.FM$LAYOUT).copyFrom(
+                  <foreignClass>.toMemorySegment(
+                      ff$arena, <name>[<index>]));
+        }
+        """
+        .replace("<index>", indexName())
+        .replace("<size>", sizeName())
+        .replace("<segment>", segmentName())
+        .replace("<foreignClass>", recordForeignMemoryClassName())
+        .replace("<name>", name)
         .stripTrailing();
   }
 
@@ -240,6 +386,9 @@ non-sealed class VariableGenerator extends TypeGenerator {
   }
 
   private String arrayCopyOut() {
+    if ("boolean".equals(elementTypeName()))
+      return booleanArrayCopyOut();
+
     return """
         MemorySegment.copy(<segment>, <layout>, 0, <name>, 0, <size>);
         """
@@ -247,6 +396,37 @@ non-sealed class VariableGenerator extends TypeGenerator {
         .replace("<layout>", elementLayout())
         .replace("<name>", name)
         .replace("<size>", sizeName())
+        .stripTrailing();
+  }
+
+  private String booleanArrayCopyOut() {
+    return """
+        for (var <index> = 0; <index> < <size>; <index>++) {
+          <name>[<index>] = <segment>.getAtIndex(
+              ValueLayout.JAVA_BOOLEAN, <index>);
+        }
+        """
+        .replace("<index>", indexName())
+        .replace("<size>", sizeName())
+        .replace("<name>", name)
+        .replace("<segment>", segmentName())
+        .stripTrailing();
+  }
+
+  private String recordArrayCopyOut() {
+    return """
+        for (var <index> = 0; <index> < <size>; <index>++) {
+          <name>[<index>] = <foreignClass>.fromMemorySegment(
+              <segment>.asSlice(
+                  (long) <index> * <foreignClass>.FM$LAYOUT.byteSize(),
+                  <foreignClass>.FM$LAYOUT));
+        }
+        """
+        .replace("<index>", indexName())
+        .replace("<size>", sizeName())
+        .replace("<name>", name)
+        .replace("<foreignClass>", recordForeignMemoryClassName())
+        .replace("<segment>", segmentName())
         .stripTrailing();
   }
 
@@ -287,5 +467,18 @@ non-sealed class VariableGenerator extends TypeGenerator {
 
   private String indexName() {
     return "ff$i$" + name;
+  }
+
+  private String availableName() {
+    return "ff$available$" + name;
+  }
+
+  private String countName() {
+    return "ff$count$" + name;
+  }
+
+  private String recordForeignMemoryClassName() {
+    return foreignMemoryClassName(arrayComponentGenerator().typeElement,
+        elements);
   }
 }

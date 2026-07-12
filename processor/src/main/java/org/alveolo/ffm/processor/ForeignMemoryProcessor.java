@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,6 +29,7 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
@@ -54,6 +54,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
   record InferredFields(
       List<VariableGenerator> fields,
+      Map<String, IndexedField> indexedFields,
       List<ExecutableElement> unsupportedMethods
   ) {}
 
@@ -176,9 +177,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private InferredFields inferFields(
       TypeElement iface, boolean excludeObjectMethods) {
     if (iface.getKind() == ElementKind.RECORD)
-      return new InferredFields(iface.getRecordComponents().stream()
-          .map(component -> new VariableGenerator(processingEnv, component))
-          .toList(), List.of());
+      return inferRecordFields(iface);
 
     // Group methods by name
     Map<String, List<ExecutableElement>> methodsByName = new LinkedHashMap<>();
@@ -196,27 +195,61 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     var fields = new ArrayList<VariableGenerator>();
+    var indexedFields = new LinkedHashMap<String, IndexedField>();
     var unsupportedMethods = new ArrayList<ExecutableElement>();
     for (var entry : methodsByName.entrySet()) {
       String fieldName = entry.getKey();
       var methods = entry.getValue();
 
       ExecutableElement accessor = null;
+      var indexedCandidates = new ArrayList<ExecutableElement>();
       var fieldMethods = new ArrayList<ExecutableElement>();
 
       for (var m : methods) {
         var params = m.getParameters();
         if (params.isEmpty() && m.getReturnType().getKind() != TypeKind.VOID) {
           accessor = m;
+        } else if (!params.isEmpty()
+            && m.getReturnType().getKind() != TypeKind.VOID) {
+          indexedCandidates.add(m);
         } else {
           fieldMethods.add(m);
         }
       }
 
+      if (accessor == null && indexedCandidates.size() == 1
+          && fieldMethods.isEmpty()) {
+        var indexedMethod = indexedCandidates.getFirst();
+        var indexed = indexedInterfaceField(indexedMethod);
+        if (indexed != null) {
+          var collision = indexedHelperCollision(
+              methodsByName.keySet(), indexed);
+          if (collision == null) {
+            fields.add(indexed.element());
+            indexedFields.put(fieldName, indexed);
+          } else {
+            reportIndexedHelperCollision(indexed, collision);
+            addUnsupportedMethod(unsupportedMethods, indexedMethod);
+          }
+        } else {
+          addUnsupportedMethod(unsupportedMethods, indexedMethod);
+        }
+        continue;
+      }
+
       if (accessor == null) {
-        processingEnv.getMessager().printError(
-            "Field '" + fieldName + "' has no accessor",
-            methods.get(0));
+        if (indexedCandidates.size() > 1) {
+          for (var candidate : indexedCandidates) {
+            processingEnv.getMessager().printError(
+                "Field '" + fieldName
+                    + "' has multiple indexed accessor declarations",
+                candidate);
+          }
+        } else {
+          processingEnv.getMessager().printError(
+              "Field '" + fieldName + "' has no accessor",
+              methods.get(0));
+        }
         for (var m : methods) {
           addUnsupportedMethod(unsupportedMethods, m);
         }
@@ -227,9 +260,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       var fieldType = accessor.getReturnType();
       if (fieldType.getKind() == TypeKind.ARRAY) {
         processingEnv.getMessager().printError(
-            "Array fields are not supported, use "
-                + bufferSuggestion(((ArrayType) fieldType).getComponentType())
-                + " instead",
+            "Array-returning interface fields are not supported; declare an "
+                + "indexed element accessor whose int or long parameters "
+                + "carry @Sequence",
             accessor);
         for (var m : methods) {
           addUnsupportedMethod(unsupportedMethods, m);
@@ -237,18 +270,250 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
         continue;
       }
 
-      for (var method : fieldMethods) {
+      var accessorGenerator = new VariableGenerator(processingEnv, fieldName,
+          fieldType, TypeGenerator.sequence(fieldType, accessor), accessor);
+      var bufferField = accessorGenerator.isNioBuffer();
+      if (bufferField) {
         processingEnv.getMessager().printError(
-            "Unsupported accessor signature for field '"
-                + fieldName + "': " + method,
-            method);
+            "NIO Buffer types are not supported as @Struct or @Union fields; "
+                + "declare an indexed element accessor, for example 'int "
+                + fieldName + "(@Sequence(N) long index)'",
+            accessor);
       }
 
-      fields.add(new VariableGenerator(processingEnv, fieldName, fieldType,
-          TypeGenerator.sequence(fieldType, accessor), accessor));
+      for (var method : indexedCandidates) {
+        fieldMethods.add(method);
+      }
+      for (var method : fieldMethods) {
+        if (!bufferField) {
+          processingEnv.getMessager().printError(
+              "Unsupported accessor signature for field '"
+                  + fieldName + "': " + method,
+              method);
+        }
+        if (bufferField) {
+          addUnsupportedMethod(unsupportedMethods, method);
+        }
+      }
+
+      fields.add(accessorGenerator);
     }
 
-    return new InferredFields(fields, unsupportedMethods);
+    return new InferredFields(fields, indexedFields, unsupportedMethods);
+  }
+
+  private InferredFields inferRecordFields(TypeElement record) {
+    var fields = new ArrayList<VariableGenerator>();
+    var indexedFields = new LinkedHashMap<String, IndexedField>();
+
+    var componentNames = record.getRecordComponents().stream()
+        .map(component -> component.getSimpleName().toString())
+        .collect(java.util.stream.Collectors.toSet());
+    for (var component : record.getRecordComponents()) {
+      if (component.asType().getKind() != TypeKind.ARRAY) {
+        fields.add(new VariableGenerator(processingEnv, component));
+        continue;
+      }
+
+      var indexed = indexedRecordField(component);
+      if (indexed == null) {
+        // Keep a generated, throwing converter after reporting the focused
+        // diagnostic.  This avoids secondary "generated class not found"
+        // errors in clients that compile alongside the invalid declaration.
+        fields.add(new VariableGenerator(processingEnv, component));
+        continue;
+      }
+
+      var collision = indexedHelperCollision(componentNames, indexed);
+      if (collision != null) {
+        reportIndexedHelperCollision(indexed, collision);
+        fields.add(new VariableGenerator(processingEnv, component));
+        continue;
+      }
+
+      fields.add(indexed.element());
+      indexedFields.put(indexed.name(), indexed);
+    }
+
+    return new InferredFields(fields, indexedFields, List.of());
+  }
+
+  private String indexedHelperCollision(
+      Set<String> declaredNames, IndexedField indexed) {
+    var generatedNames = new ArrayList<String>();
+    generatedNames.add(indexed.name() + "$MemorySegment");
+    if (indexed.addressElement())
+      generatedNames.add(indexed.name() + "$Address");
+    if (indexed.oneDimensional() && indexed.primitive()) {
+      generatedNames.add(indexed.name() + "$Buffer");
+      generatedNames.add(indexed.name() + "$Array");
+    } else if (indexed.recordSnapshot()) {
+      generatedNames.add(indexed.name() + "$Array");
+    }
+
+    return generatedNames.stream()
+        .filter(declaredNames::contains)
+        .findFirst().orElse(null);
+  }
+
+  private void reportIndexedHelperCollision(
+      IndexedField indexed, String helperName) {
+    processingEnv.getMessager().printError(
+        "Generated indexed field helper '" + helperName
+            + "' collides with a declared field",
+        indexed.declaration());
+  }
+
+  private IndexedField indexedInterfaceField(ExecutableElement accessor) {
+    var valid = true;
+    var dimensions = new ArrayList<IndexedField.Dimension>();
+    for (var parameter : accessor.getParameters()) {
+      var kind = parameter.asType().getKind();
+      if (kind != TypeKind.INT && kind != TypeKind.LONG) {
+        processingEnv.getMessager().printError(
+            "Indexed field parameters must be int or long", parameter);
+        valid = false;
+      }
+
+      if (!TypeGenerator.hasSequence(parameter.asType(), parameter)) {
+        processingEnv.getMessager().printError(
+            "Each indexed field parameter must carry @Sequence", parameter);
+        valid = false;
+        continue;
+      }
+
+      var size = TypeGenerator.sequence(parameter.asType(), parameter);
+      if (size <= 0) {
+        processingEnv.getMessager().printError(
+            "Indexed field @Sequence value must be positive", parameter);
+        valid = false;
+      }
+      if (parameter.asType().getKind() == TypeKind.INT
+          && size > Integer.MAX_VALUE) {
+        processingEnv.getMessager().printError(
+            "An int indexed field parameter cannot address a dimension "
+                + "larger than Integer.MAX_VALUE",
+            parameter);
+        valid = false;
+      }
+      dimensions.add(new IndexedField.Dimension(
+          parameter.getSimpleName().toString(),
+          kind == TypeKind.INT ? "int" : "long",
+          size));
+    }
+
+    var type = accessor.getReturnType();
+    var name = accessor.getSimpleName().toString();
+    var element = new VariableGenerator(
+        processingEnv, name, type, 1L, accessor);
+
+    if (TypeGenerator.hasSequence(type, accessor)) {
+      processingEnv.getMessager().printError(
+          "Place @Sequence on each indexed field parameter, not on the "
+              + "accessor return",
+          accessor);
+      valid = false;
+    }
+
+    if (type.getKind() == TypeKind.ARRAY || element.isNioBuffer()) {
+      processingEnv.getMessager().printError(
+          "Indexed fields must return one element, not an array or Buffer",
+          accessor);
+      valid = false;
+    }
+
+    if (!validIndexedElement(element, false)) valid = false;
+    if (dimensions.size() == 1 && element.isPrimitive()
+        && dimensions.getFirst().size() > Integer.MAX_VALUE) {
+      processingEnv.getMessager().printError(
+          "One-dimensional primitive indexed fields cannot exceed "
+              + "Integer.MAX_VALUE because Java array and Buffer views use "
+              + "int sizes",
+          accessor);
+      valid = false;
+    }
+    if (!valid) return null;
+
+    return new IndexedField(element, type, dimensions, accessor, false);
+  }
+
+  private IndexedField indexedRecordField(RecordComponentElement component) {
+    var arrayType = (ArrayType) component.asType();
+    var componentType = arrayType.getComponentType();
+    var valid = true;
+
+    if (componentType.getKind() == TypeKind.ARRAY) {
+      processingEnv.getMessager().printError(
+          "Multidimensional Java array record fields are not supported",
+          component);
+      valid = false;
+    }
+
+    if (!TypeGenerator.hasSequence(component.asType(), component)) {
+      processingEnv.getMessager().printError(
+          "Record array fields must carry one positive @Sequence",
+          component);
+      valid = false;
+    }
+
+    var size = TypeGenerator.sequence(component.asType(), component);
+    if (size <= 0) {
+      processingEnv.getMessager().printError(
+          "Record array field @Sequence value must be positive", component);
+      valid = false;
+    }
+    if (size > Integer.MAX_VALUE) {
+      processingEnv.getMessager().printError(
+          "Record array field @Sequence value cannot exceed "
+              + "Integer.MAX_VALUE",
+          component);
+      valid = false;
+    }
+
+    var element = new VariableGenerator(processingEnv,
+        component.getSimpleName().toString(), componentType, 1L, component);
+    if (!validIndexedElement(element, true)) valid = false;
+    if (!valid) return null;
+
+    var dimension = new IndexedField.Dimension(
+        "index", "long", size);
+    return new IndexedField(element, component.asType(), List.of(dimension),
+        component, true);
+  }
+
+  private boolean validIndexedElement(
+      VariableGenerator element, boolean recordSnapshot) {
+    if (element.isPrimitiveAddress()) {
+      processingEnv.getMessager().printError(
+          "@Address primitive array elements are not supported",
+          element.element);
+      return false;
+    }
+
+    if (element.isPrimitive()) return true;
+
+    if (recordSnapshot) {
+      if (!element.isForeignMemory()
+          || !element.isRecord()
+          || !element.isValue()) {
+        processingEnv.getMessager().printError(
+            "Record arrays support primitives and value-style @Struct "
+                + "record elements only",
+            element.element);
+        return false;
+      }
+      return true;
+    }
+
+    if (element.isMemorySegment()) return true;
+    if (element.isForeignMemory()
+        && (element.isValue() || element.isAddress())) return true;
+
+    processingEnv.getMessager().printError(
+        "Indexed fields support primitives, MemorySegment, and @Struct or "
+            + "@Union elements",
+        element.element);
+    return false;
   }
 
   private void addUnsupportedMethod(
@@ -312,6 +577,16 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       valid = false;
     }
 
+    for (var method : objectMethods.methods()) {
+      if (indexedFieldShape(method)) {
+        processingEnv.getMessager().printError(
+            "Indexed field declarations cannot be annotated @Virtual or "
+                + "@Symbol",
+            method);
+        valid = false;
+      }
+    }
+
     var slots = new LinkedHashMap<Integer, ExecutableElement>();
     for (var method : objectMethods.virtualMethods()) {
       if (method.getAnnotation(Symbol.class) != null) {
@@ -339,6 +614,16 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     return valid;
+  }
+
+  private boolean indexedFieldShape(ExecutableElement method) {
+    return method.getReturnType().getKind() != TypeKind.VOID
+        && !method.getParameters().isEmpty()
+        && method.getParameters().stream().allMatch(parameter -> {
+          var kind = parameter.asType().getKind();
+          return (kind == TypeKind.INT || kind == TypeKind.LONG)
+              && TypeGenerator.hasSequence(parameter.asType(), parameter);
+        });
   }
 
   private TypeElement symbolOwner(
@@ -380,8 +665,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     return null;
   }
 
-  /// Validate record components. Array and buffer components are not supported
-  /// in record converters yet.
+  /// Buffer snapshots are intentionally not part of the record model.  Array
+  /// snapshots are validated while inferring their element and dimensions.
   private boolean validateRecordComponents(TypeElement type) {
     if (type.getKind() != ElementKind.RECORD) return true;
 
@@ -389,37 +674,19 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     for (var component : type.getRecordComponents()) {
       var componentType = component.asType();
       if (componentType.getKind() == TypeKind.ARRAY) {
+        continue;
+      }
+      if (new TypeGenerator(processingEnv, componentType).isNioBuffer()) {
         processingEnv.getMessager().printError(
-            "Array fields are not supported, use "
-                + bufferSuggestion(
-                    ((ArrayType) componentType).getComponentType())
-                + " instead",
+            "NIO Buffer types are not supported as record components; "
+                + "use a one-dimensional array component annotated "
+                + "@Sequence",
             component);
         valid = false;
-      } else if (new TypeGenerator(processingEnv, componentType)
-          .isNioBuffer()) {
-            processingEnv.getMessager().printError(
-                "Buffer fields are not supported on records, use an interface "
-                    + "@Struct instead",
-                component);
-            valid = false;
-          }
+      }
     }
 
     return valid;
-  }
-
-  private String bufferSuggestion(TypeMirror componentType) {
-    return switch (componentType.getKind()) {
-      case BYTE -> "java.nio.ByteBuffer";
-      case CHAR -> "java.nio.CharBuffer";
-      case SHORT -> "java.nio.ShortBuffer";
-      case INT -> "java.nio.IntBuffer";
-      case LONG -> "java.nio.LongBuffer";
-      case FLOAT -> "java.nio.FloatBuffer";
-      case DOUBLE -> "java.nio.DoubleBuffer";
-      default -> "a java.nio Buffer type";
-    };
   }
 
   private void writeFile(TypeElement iface, String kind, boolean vtable)
@@ -456,7 +723,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     var structFields = inferFields(iface, isStructInterface);
     var fields = structFields.fields();
-    validateFields(fields);
+    var indexedFields = structFields.indexedFields();
+    validateFields(fields, indexedFields);
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 
@@ -485,23 +753,26 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           .replace("<methodHandleImport>", objectMethods.hasSymbolMethods()
               ? "import java.lang.invoke.MethodHandle;\n" : ""));
 
-      writeLayout(out, fields, kind, vtable);
-      writePathElements(out, simpleClassName, fields, vtable);
-      writeVarHandles(out, simpleClassName, fields, vtable);
-      writeAllocate(out, simpleClassName);
+      writeLayout(out, fields, indexedFields, kind, vtable);
+      writePathElements(out, simpleClassName, fields, indexedFields, vtable);
+      writeVarHandles(out, simpleClassName, fields, indexedFields, vtable);
+      writeAllocators(out);
+      writeReinterprets(out, iface, simpleClassName);
+      writeArrayElementHelpers(out, iface, simpleClassName);
       switch (iface.getKind()) {
         case INTERFACE:
           writeConstructors(out, simpleClassName, vtableSimpleName,
               objectMethods.hasVirtualMethods());
-          writeFieldAccessors(out, simpleClassName, fields);
+          writeFieldAccessors(out, simpleClassName, fields, indexedFields);
           writeUnsupportedMethods(out, structFields.unsupportedMethods());
           writeSymbolHolder(out, symbolGenerators);
           writeObjectMethods(out, objectMethods, symbolGenerators,
               virtualGenerators);
           break;
         case RECORD:
-          writeRecordConverters(out, ifaceSimpleName, iface);
-          writeStaticAccessors(out, fields);
+          writeRecordConverters(
+              out, ifaceSimpleName, iface, fields, indexedFields);
+          writeStaticAccessors(out, fields, indexedFields);
           break;
         case ElementKind k:
           throw new IllegalArgumentException("Unexpected value: " + k);
@@ -695,7 +966,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writeLayout(Writer out, List<VariableGenerator> fields,
-      String kind, boolean vtable) throws IOException {
+      Map<String, IndexedField> indexedFields, String kind, boolean vtable)
+      throws IOException {
     out.write("""
           public static final MemoryLayout FM$LAYOUT =
               MemoryLayout.<kind>Layout(
@@ -709,8 +981,12 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     var layoutFields = fields.stream()
-        .map(f -> new MemoryLayoutGenerator.LayoutField(f.name(),
-            f.layout(), f.unsupported(), f.typeName(), f.element))
+        .map(f -> {
+          var indexed = indexedFields.get(f.name());
+          return new MemoryLayoutGenerator.LayoutField(f.name(),
+              indexed == null ? f.layout() : indexed.layout(),
+              f.unsupported(), f.typeName(), f.element);
+        })
         .toList();
 
     var layoutGen = new MemoryLayoutGenerator(processingEnv, layoutFields);
@@ -719,30 +995,105 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     out.write("      }));\n");
   }
 
-  private void writeAllocate(Writer out, String className) throws IOException {
+  private void writeAllocators(Writer out) throws IOException {
     out.write("""
 
           public static MemorySegment allocate(SegmentAllocator allocator) {
             return allocator.allocate(
               FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
           }
+
+          public static MemorySegment allocate(
+              SegmentAllocator allocator, long count) {
+            if (count < 0) {
+              throw new IllegalArgumentException("count must be non-negative");
+            }
+            return allocator.allocate(FM$LAYOUT, count);
+          }
         """);
   }
 
-  private void writeRecordConverters(
-      Writer out, String srcClassName, TypeElement type) throws IOException {
-    var rcGens = type.getRecordComponents().stream()
-        .map(rc -> new VariableGenerator(processingEnv, rc))
-        .toList();
+  private void writeReinterprets(
+      Writer out, TypeElement sourceType, String className)
+      throws IOException {
+    var isRecord = sourceType.getKind() == ElementKind.RECORD;
+    var returnType = isRecord
+        ? sourceType.getSimpleName().toString() : className;
+    var expression = isRecord
+        ? "fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()))"
+        : "new " + className
+            + "(ms.reinterpret(FM$LAYOUT.byteSize()))";
+
+    out.write("""
+
+          public static <type> reinterpret(MemorySegment ms) {
+            return <expression>;
+          }
+
+          public static MemorySegment reinterpret(
+              MemorySegment ms, long count) {
+            if (count < 0) {
+              throw new IllegalArgumentException("count must be non-negative");
+            }
+            return ms.reinterpret(Math.multiplyExact(
+                FM$LAYOUT.byteSize(), count));
+          }
+        """
+        .replace("<type>", returnType)
+        .replace("<expression>", expression));
+  }
+
+  private void writeArrayElementHelpers(
+      Writer out, TypeElement sourceType, String className)
+      throws IOException {
+    out.write("""
+
+          private static MemorySegment FM$at(MemorySegment array, long index) {
+            if (index < 0) {
+              throw new IndexOutOfBoundsException(index);
+            }
+            return array.asSlice(Math.multiplyExact(
+                index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+          }
+        """);
+
+    if (sourceType.getKind() == ElementKind.RECORD) {
+      var sourceName = sourceType.getSimpleName().toString();
+      out.write("""
+
+          public static <source> at(MemorySegment array, long index) {
+            return fromMemorySegment(FM$at(array, index));
+          }
+        """
+        .replace("<source>", sourceName));
+      return;
+    }
+
+    out.write("""
+
+          public static <class> at(MemorySegment array, long index) {
+            return new <class>(FM$at(array, index));
+          }
+        """
+        .replace("<class>", className));
+  }
+
+  private void writeRecordConverters(Writer out, String srcClassName,
+      TypeElement type, List<VariableGenerator> rcGens,
+      Map<String, IndexedField> indexedFields) throws IOException {
 
     boolean needsAllocator = rcGens.stream()
         .anyMatch(this::needsAllocatorWrite);
 
     String fromMemorySegmentFields = rcGens.stream()
         .map(gen -> gen.name() + "(ms)")
-        .collect(joining(",\n        ", "\n        ", ""));
+        .collect(joining(",\n        "));
 
-    var toMemorySegmentMethod = needsAllocator
+    var toMemorySegmentFields = recordFieldWrites(
+        rcGens, indexedFields, needsAllocator)
+        .indent(2);
+
+    var toMemorySegmentMethod = (needsAllocator
         ? """
             public static void toMemorySegment(
                 <src> from, MemorySegment ms, SegmentAllocator ff$allocator) {
@@ -753,13 +1104,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             public static void toMemorySegment(<src> from, MemorySegment ms) {
               <toMemorySegmentFields>
             }
-            """;
+            """)
+        .replace("<src>", srcClassName)
+        .replace("  <toMemorySegmentFields>\n", toMemorySegmentFields)
+        .indent(2)
+        .stripTrailing();
 
     out.write("""
-
-          public static <src> reinterpret(MemorySegment ms) {
-            return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
-          }
 
         <toMemorySegmentMethod>
 
@@ -771,14 +1122,11 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           }
 
           public static <src> fromMemorySegment(MemorySegment ms) {
-            return new <src>(<fromMemorySegmentFields>);
+            return new <src>(
+                <fromMemorySegmentFields>);
           }
         """
-        .replace("<toMemorySegmentMethod>",
-            "  " + toMemorySegmentMethod.stripTrailing()
-                .replace("\n", "\n  "))
-        .replace("<toMemorySegmentFields>",
-            recordFieldWrites(rcGens, needsAllocator))
+        .replace("<toMemorySegmentMethod>", toMemorySegmentMethod)
         .replace("<src>", srcClassName)
         .replace("<toMemorySegment>", needsAllocator
             ? "toMemorySegment(from, ms, allocator);"
@@ -787,18 +1135,28 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private String recordFieldWrites(
-      List<VariableGenerator> variables, boolean withAllocator) {
+      List<VariableGenerator> variables,
+      Map<String, IndexedField> indexedFields, boolean withAllocator) {
     return variables.stream()
-        .map(v -> recordFieldWrite(v, withAllocator))
-        .collect(joining("\n    ", "", ""));
+        .map(v -> recordFieldWrite(
+            v, indexedFields.get(v.name()), withAllocator))
+        .collect(joining("\n"));
   }
 
   private String recordFieldWrite(
-      VariableGenerator variable, boolean withAllocator) {
+      VariableGenerator variable, IndexedField indexed,
+      boolean withAllocator) {
     var name = variable.name();
-    return withAllocator && needsAllocatorWrite(variable)
-        ? name + "(ms, ff$allocator, from." + name + "());"
-        : name + "(ms, from." + name + "());";
+    var needsAllocator = withAllocator && (indexed == null
+        ? needsAllocatorWrite(variable)
+        : indexedArrayNeedsAllocator(indexed));
+
+    return """
+        <name>(ms, <allocator>from.<name>());
+        """
+        .replace("<name>", name)
+        .replace("<allocator>", needsAllocator ? "ff$allocator, " : "")
+        .strip();
   }
 
   private void writeConstructors(Writer out,
@@ -806,13 +1164,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       throws IOException {
     out.write("""
 
-          public static <class> reinterpret(MemorySegment ms) {
-            return new <class>(ms.reinterpret(FM$LAYOUT.byteSize()));
-          }
-
           public final MemorySegment ms;
-        """
-        .replace("<class>", className));
+        """);
 
     if (hasVirtualMethods) {
       out.write("""
@@ -854,7 +1207,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   }
 
   private void writePathElements(Writer out, String className,
-      List<VariableGenerator> fields, boolean vtable) throws IOException {
+      List<VariableGenerator> fields,
+      Map<String, IndexedField> indexedFields, boolean vtable)
+      throws IOException {
     if (vtable) {
       out.write("""
 
@@ -870,11 +1225,54 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
                 MemoryLayout.PathElement.groupElement("<name>");
           """
           .replace("<name>", field.name()));
+
+      var indexed = indexedFields.get(field.name());
+      if (indexed == null) continue;
+
+      for (var i = 0; i < indexed.dimensions().size(); i++) {
+        out.write("""
+
+            public static final MemoryLayout.PathElement FM$PE$<name>$<index> =
+                MemoryLayout.PathElement.sequenceElement();
+          """
+          .replace("<name>", field.name())
+          .replace("<index>", Integer.toString(i)));
+      }
+
+      out.write("""
+
+          public static final MemoryLayout FM$LAYOUT$<name> =
+              FM$LAYOUT.select(FM$PE$<name>);
+
+          public static final MemoryLayout FM$ELEMENT_LAYOUT$<name> =
+              <elementLayout>;
+
+          public static final long FM$OFFSET$<name> =
+              FM$LAYOUT.byteOffset(FM$PE$<name>);
+
+          public static final long FM$SIZE$<name> =
+              FM$LAYOUT$<name>.byteSize();
+        """
+        .replace("<name>", field.name())
+        .replace("<elementLayout>", indexed.elementLayout()));
+
+      for (var i = 0; i < indexed.dimensions().size(); i++) {
+        out.write("""
+
+            public static final long FM$DIMENSION$<name>$<index> = <size>L;
+          """
+          .replace("<name>", field.name())
+          .replace("<index>", Integer.toString(i))
+          .replace("<size>", Long.toString(
+              indexed.dimensions().get(i).size())));
+      }
     }
   }
 
   private void writeVarHandles(Writer out, String className,
-      List<VariableGenerator> fields, boolean vtable) throws IOException {
+      List<VariableGenerator> fields,
+      Map<String, IndexedField> indexedFields, boolean vtable)
+      throws IOException {
     if (vtable) {
       out.write("""
 
@@ -885,6 +1283,27 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
 
     for (var field : fields) {
+      var indexed = indexedFields.get(field.name());
+      if (indexed != null) {
+        if (indexed.structuredValueElement()) continue;
+
+        var paths = new ArrayList<String>();
+        paths.add("FM$PE$" + field.name());
+        for (var i = 0; i < indexed.dimensions().size(); i++) {
+          paths.add("FM$PE$" + field.name() + "$" + i);
+        }
+
+        out.write("""
+
+            public static final java.lang.invoke.VarHandle FM$VH$<name> =
+                java.lang.invoke.MethodHandles.insertCoordinates(
+                    FM$LAYOUT.varHandle(<paths>), 1, 0L);
+          """
+          .replace("<name>", field.name())
+          .replace("<paths>", String.join(", ", paths)));
+        continue;
+      }
+
       if (field.isNioBuffer()
           || (field.isForeignMemory() && field.isValue())) {
         continue; // TODO complex/structured/indexed accessors
@@ -952,23 +1371,541 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private void writeStaticAccessors(Writer out, List<VariableGenerator> fields)
-      throws IOException {
+  private void writeStaticAccessors(Writer out,
+      List<VariableGenerator> fields,
+      Map<String, IndexedField> indexedFields) throws IOException {
     for (var field : fields) {
-      writeAccessorsSimple(out, AccessorTarget.STATIC, field);
+      var indexed = indexedFields.get(field.name());
+      if (indexed == null) {
+        writeAccessorsSimple(out, AccessorTarget.STATIC, field);
+      } else {
+        writeIndexedStaticAccessors(out, indexed);
+      }
     }
   }
 
   private void writeFieldAccessors(Writer out, String className,
-      List<VariableGenerator> fields) throws IOException {
+      List<VariableGenerator> fields,
+      Map<String, IndexedField> indexedFields) throws IOException {
     var target = AccessorTarget.fluent(className);
     for (var field : fields) {
-      if (field.isNioBuffer()) {
-        writeAccessorsBuffer(out, field);
+      var indexed = indexedFields.get(field.name());
+      if (indexed != null) {
+        writeIndexedFieldAccessors(out, className, indexed);
+      } else if (field.isNioBuffer()) {
+        writeThrowingFieldAccessors(out, className, field, false);
       } else {
         writeAccessorsSimple(out, target, field);
       }
     }
+  }
+
+  private void writeIndexedFieldAccessors(
+      Writer out, String className, IndexedField indexed)
+      throws IOException {
+    writeIndexedSegmentHelpers(out, indexed, false);
+    if (indexed.addressElement()) {
+      writeIndexedAddressHelpers(out, className, indexed);
+    }
+
+    var field = indexed.element();
+    var name = indexed.name();
+    var params = indexed.parameterDeclarations();
+    var args = indexed.parameterNames();
+    var needsAllocator = indexedElementNeedsAllocator(indexed);
+    var valueName = unusedIndexedParameterName(indexed, "value");
+    var allocatorName = unusedIndexedParameterName(indexed, "allocator");
+    var allocator = needsAllocator
+        ? "SegmentAllocator " + allocatorName + ", " : "";
+
+    if (indexed.addressElement() && !field.isMemorySegment()) {
+      var foreignClass = foreignMemoryClassName(field.typeElement);
+      out.write("""
+
+          public <type> <name>(<params>) {
+            var address = <name>$Address(<args>);
+            return address.address() == 0L
+                ? null
+                : <foreignClass>.reinterpret(address);
+          }
+        """
+        .replace("<type>", field.typeName())
+        .replace("<name>", name)
+        .replace("<params>", params)
+        .replace("<args>", args)
+        .replace("<foreignClass>", foreignClass));
+    } else {
+      out.write("""
+
+          public <type> <name>(<params>) {
+            return <expression>;
+          }
+        """
+        .replace("<type>", field.typeName())
+        .replace("<name>", name)
+        .replace("<params>", params)
+        .replace("<expression>", indexedGetterExpression(
+            indexed, "ms", args, false)));
+    }
+
+    out.write("""
+
+          public <class> <name>(
+              <allocator><params>,
+              <type> <valueName>) {
+            <body>
+            return this;
+          }
+        """
+        .replace("<class>", className)
+        .replace("<name>", name)
+        .replace("<allocator>", allocator)
+        .replace("<params>", params)
+        .replace("<type>", field.typeName())
+        .replace("<valueName>", valueName)
+        .replace("<body>", indexedSetterBody(
+            indexed, "ms", args, false, needsAllocator)));
+
+    if (indexed.oneDimensional() && indexed.primitive()) {
+      writeIndexedPrimitiveConveniences(out, className, indexed, false);
+    }
+  }
+
+  private void writeIndexedStaticAccessors(
+      Writer out, IndexedField indexed) throws IOException {
+    writeIndexedSegmentHelpers(out, indexed, true);
+
+    var field = indexed.element();
+    var name = indexed.name();
+    var params = indexed.parameterDeclarations();
+    var args = indexed.parameterNames();
+    var needsAllocator = indexedElementNeedsAllocator(indexed);
+    var valueName = unusedIndexedParameterName(indexed, "value");
+    var allocatorName = unusedIndexedParameterName(indexed, "allocator");
+    var allocator = needsAllocator
+        ? "SegmentAllocator " + allocatorName + ", " : "";
+
+    out.write("""
+
+          public static <type> <name>(
+              MemorySegment ms, <params>) {
+            return <expression>;
+          }
+
+          public static void <name>(MemorySegment ms, <allocator><params>,
+              <type> <valueName>) {
+            <body>
+          }
+        """
+        .replace("<type>", field.typeName())
+        .replace("<name>", name)
+        .replace("<params>", params)
+        .replace("<allocator>", allocator)
+        .replace("<valueName>", valueName)
+        .replace("<expression>", indexedGetterExpression(
+            indexed, "ms", args, true))
+        .replace("<body>", indexedSetterBody(
+            indexed, "ms", args, true, needsAllocator)));
+
+    if (indexed.oneDimensional() && indexed.primitive()) {
+      writeIndexedPrimitiveConveniences(out, null, indexed, true);
+    } else if (indexed.recordSnapshot()) {
+      writeIndexedRecordArrayConveniences(out, indexed, needsAllocator);
+    }
+  }
+
+  private void writeIndexedSegmentHelpers(
+      Writer out, IndexedField indexed, boolean isStatic)
+      throws IOException {
+    var name = indexed.name();
+    var params = indexed.parameterDeclarations();
+    var receiver = isStatic ? "MemorySegment ms" : "";
+    var receiverAndParams = isStatic
+        ? receiver + indexed.commaPrefixedParameterDeclarations()
+        : params;
+    var offsetArgument = (indexedLeafOffset(indexed) + ",")
+        .replace("\n", "\n      ");
+
+    out.write((isStatic ? """
+
+        public static MemorySegment <name>$MemorySegment(MemorySegment ms) {
+          return ms.asSlice(FM$OFFSET$<name>, FM$SIZE$<name>);
+        }
+        """ : """
+
+        public MemorySegment <name>$MemorySegment() {
+          return ms.asSlice(FM$OFFSET$<name>, FM$SIZE$<name>);
+        }
+        """).replace("<name>", name)
+        .indent(2).replace("  \n", "\n"));
+
+    out.write((isStatic ? """
+
+        public static MemorySegment <name>$MemorySegment(
+            <receiverAndParams>) {
+          return ms.asSlice(
+              <offsetArgument>
+              FM$ELEMENT_LAYOUT$<name>.byteSize());
+        }
+        """ : """
+
+        public MemorySegment <name>$MemorySegment(<receiverAndParams>) {
+          return ms.asSlice(
+              <offsetArgument>
+              FM$ELEMENT_LAYOUT$<name>.byteSize());
+        }
+        """)
+        .replace("<name>", name)
+        .replace("<receiverAndParams>", receiverAndParams)
+        .replace("<offsetArgument>", offsetArgument)
+        .indent(2).replace("  \n", "\n"));
+  }
+
+  private void writeIndexedAddressHelpers(Writer out, String className,
+      IndexedField indexed) throws IOException {
+    var name = indexed.name();
+    var params = indexed.parameterDeclarations();
+    var args = indexed.parameterNames();
+    var vhArgs = "ms, " + args;
+    var valueName = unusedIndexedParameterName(indexed, "value");
+
+    out.write("""
+
+          public MemorySegment <name>$Address(<params>) {
+            return (MemorySegment) FM$VH$<name>.get(<vhArgs>);
+          }
+
+          public <class> <name>$Address(
+              <params>, MemorySegment <valueName>) {
+            FM$VH$<name>.set(<vhArgs>,
+                <valueName> == null ? MemorySegment.NULL : <valueName>);
+            return this;
+          }
+        """
+        .replace("<class>", className)
+        .replace("<name>", name)
+        .replace("<params>", params)
+        .replace("<valueName>", valueName)
+        .replace("<vhArgs>", vhArgs));
+  }
+
+  private String indexedGetterExpression(IndexedField indexed,
+      String segment, String args, boolean isStatic) {
+    var field = indexed.element();
+    var name = indexed.name();
+    var vhArgs = segment + ", " + args;
+    if (indexed.primitive()) {
+      return """
+          (<type>) FM$VH$<name>.get(<arguments>)
+          """
+          .replace("<type>", field.typeName())
+          .replace("<name>", name)
+          .replace("<arguments>", vhArgs)
+          .strip();
+    }
+
+    if (field.isMemorySegment()) {
+      if (isStatic) {
+        throw new IllegalStateException(
+            "Record snapshots cannot contain MemorySegment arrays");
+      }
+      return """
+          <name>$Address(<arguments>)
+          """
+          .replace("<name>", name)
+          .replace("<arguments>", args)
+          .strip();
+    }
+
+    if (indexed.structuredValueElement()) {
+      var foreignClass = foreignMemoryClassName(field.typeElement);
+      var leaf = indexedElementSegmentCall(
+          indexed, segment, args, isStatic);
+      var template = field.isRecord() ? """
+          <foreignClass>.fromMemorySegment(
+                  <leaf>)
+          """ : """
+          new <foreignClass>(
+                  <leaf>)
+          """;
+      return template
+          .replace("<foreignClass>", foreignClass)
+          .replace("<leaf>", leaf)
+          .strip();
+    }
+
+    throw new IllegalStateException(
+        "Unsupported indexed getter: " + indexed.name());
+  }
+
+  private String indexedSetterBody(IndexedField indexed, String segment,
+      String args, boolean isStatic, boolean withAllocator) {
+    var field = indexed.element();
+    var name = indexed.name();
+    var vhArgs = segment + ", " + args;
+    var valueName = unusedIndexedParameterName(indexed, "value");
+    var allocatorName = unusedIndexedParameterName(indexed, "allocator");
+    if (indexed.primitive()) {
+      return """
+          FM$VH$<name>.set(<arguments>, <value>);
+          """
+          .replace("<name>", name)
+          .replace("<arguments>", vhArgs)
+          .replace("<value>", valueName)
+          .strip();
+    }
+
+    if (field.isMemorySegment()) {
+      return """
+          FM$VH$<name>.set(<arguments>,
+                  <value> == null ? MemorySegment.NULL : <value>);
+          """
+          .replace("<name>", name)
+          .replace("<arguments>", vhArgs)
+          .replace("<value>", valueName)
+          .strip();
+    }
+
+    var foreignClass = foreignMemoryClassName(field.typeElement);
+    if (indexed.addressElement()) {
+      var template = field.isRecord() ? """
+          FM$VH$<name>.set(<arguments>,
+                  <value> == null
+                      ? MemorySegment.NULL
+                      : <foreignClass>.toMemorySegment(
+                          <allocator>, <value>));
+          """ : """
+          FM$VH$<name>.set(<arguments>,
+                  <value> == null
+                      ? MemorySegment.NULL
+                      : ((<foreignClass>) <value>).ms);
+          """;
+      return template
+          .replace("<name>", name)
+          .replace("<arguments>", vhArgs)
+          .replace("<value>", valueName)
+          .replace("<foreignClass>", foreignClass)
+          .replace("<allocator>", allocatorName)
+          .strip();
+    }
+
+    var leaf = indexedElementSegmentCall(indexed, segment, args, isStatic);
+    if (field.isRecord()) {
+      return """
+          <foreignClass>.toMemorySegment(
+                  <value>, <leaf><allocatorArgument>);
+          """
+          .replace("<foreignClass>", foreignClass)
+          .replace("<value>", valueName)
+          .replace("<leaf>", leaf)
+          .replace("<allocatorArgument>",
+              withAllocator ? ", " + allocatorName : "")
+          .strip();
+    }
+
+    return """
+        MemorySegment.copy(
+                ((<foreignClass>) <value>).ms, 0L,
+                <leaf>, 0L,
+                FM$ELEMENT_LAYOUT$<name>.byteSize());
+        """
+        .replace("<foreignClass>", foreignClass)
+        .replace("<value>", valueName)
+        .replace("<leaf>", leaf)
+        .replace("<name>", name)
+        .strip();
+  }
+
+  private String indexedElementSegmentCall(IndexedField indexed,
+      String segment, String args, boolean isStatic) {
+    var arguments = isStatic ? segment + ", " + args : args;
+    return """
+        <name>$MemorySegment(<arguments>)
+        """
+        .replace("<name>", indexed.name())
+        .replace("<arguments>", arguments)
+        .strip();
+  }
+
+  private String unusedIndexedParameterName(
+      IndexedField indexed, String preferred) {
+    var usedNames = indexed.dimensions().stream()
+        .map(IndexedField.Dimension::name)
+        .collect(java.util.stream.Collectors.toSet());
+    var name = preferred;
+    while (usedNames.contains(name))
+      name += "$";
+    return name;
+  }
+
+  private String indexedLeafOffset(IndexedField indexed) {
+    var paths = new ArrayList<String>();
+    paths.add("""
+        FM$PE$<name>
+        """
+        .replace("<name>", indexed.name())
+        .strip());
+    for (var dimension : indexed.dimensions()) {
+      paths.add("""
+          MemoryLayout.PathElement.sequenceElement(<index>)
+          """
+          .replace("<index>", dimension.name())
+          .strip());
+    }
+    return """
+        FM$LAYOUT.byteOffset(
+            <paths>)
+        """
+        .replace("<paths>", String.join(",\n    ", paths))
+        .strip();
+  }
+
+  private void writeIndexedPrimitiveConveniences(Writer out,
+      String className, IndexedField indexed, boolean isStatic)
+      throws IOException {
+    var name = indexed.name();
+    var type = indexed.elementTypeName();
+    var dimension = indexed.dimensions().getFirst();
+    var indexType = dimension.typeName();
+    var segmentCall = name + "$MemorySegment("
+        + (isStatic ? "ms" : "") + ")";
+    var bufferType = primitiveBufferType(type);
+    var bufferConversion = switch (type) {
+      case "boolean", "byte" -> "";
+      default -> ".as" + capitalize(type) + "Buffer()";
+    };
+
+    out.write((isStatic ? """
+
+        public static java.nio.<bufferType> <name>$Buffer(MemorySegment ms) {
+          return <segmentCall>.asByteBuffer()
+              .order(java.nio.ByteOrder.nativeOrder())<bufferConversion>;
+        }
+
+        public static <type>[] <name>$Array(MemorySegment ms) {
+          var value = new <type>[(int) FM$DIMENSION$<name>$0];
+          for (<indexType> index = 0; index < value.length; index++) {
+            value[(int) index] = <name>(ms, index);
+          }
+          return value;
+        }
+
+        public static <type>[] <name>(MemorySegment ms) {
+          return <name>$Array(ms);
+        }
+
+        public static void <name>(MemorySegment ms, <type>[] value) {
+          java.util.Objects.requireNonNull(value, "value");
+          if (value.length != FM$DIMENSION$<name>$0) {
+            throw new IllegalArgumentException(
+                "<name> length must be " + FM$DIMENSION$<name>$0);
+          }
+          for (<indexType> index = 0; index < value.length; index++) {
+            <name>(ms, index, value[(int) index]);
+          }
+        }
+        """ : """
+
+        public java.nio.<bufferType> <name>$Buffer() {
+          return <segmentCall>.asByteBuffer()
+              .order(java.nio.ByteOrder.nativeOrder())<bufferConversion>;
+        }
+
+        public <type>[] <name>$Array() {
+          var value = new <type>[(int) FM$DIMENSION$<name>$0];
+          for (<indexType> index = 0; index < value.length; index++) {
+            value[(int) index] = <name>(index);
+          }
+          return value;
+        }
+
+        public <class> <name>(<type>[] value) {
+          java.util.Objects.requireNonNull(value, "value");
+          if (value.length != FM$DIMENSION$<name>$0) {
+            throw new IllegalArgumentException(
+                "<name> length must be " + FM$DIMENSION$<name>$0);
+          }
+          for (<indexType> index = 0; index < value.length; index++) {
+            <name>(index, value[(int) index]);
+          }
+          return this;
+        }
+        """)
+        .replace("<bufferType>", bufferType)
+        .replace("<bufferConversion>", bufferConversion)
+        .replace("<segmentCall>", segmentCall)
+        .replace("<indexType>", indexType)
+        .replace("<class>", className == null ? "" : className)
+        .replace("<name>", name)
+        .replace("<type>", type)
+        .indent(2).replace("  \n", "\n"));
+  }
+
+  private void writeIndexedRecordArrayConveniences(Writer out,
+      IndexedField indexed, boolean needsAllocator) throws IOException {
+    var name = indexed.name();
+    var elementType = indexed.elementTypeName();
+    var arrayType = indexed.declaredTypeName();
+    var allocatorParameter = needsAllocator
+        ? "SegmentAllocator allocator, " : "";
+    var allocatorArgument = needsAllocator ? "allocator, " : "";
+
+    out.write("""
+
+        public static <arrayType> <name>$Array(MemorySegment ms) {
+          var value = new <elementType>[(int) FM$DIMENSION$<name>$0];
+          for (long index = 0; index < value.length; index++) {
+            value[(int) index] = <name>(ms, index);
+          }
+          return value;
+        }
+
+        public static <arrayType> <name>(MemorySegment ms) {
+          return <name>$Array(ms);
+        }
+
+        public static void <name>(MemorySegment ms,
+            <allocatorParameter><arrayType> value) {
+          java.util.Objects.requireNonNull(value, "value");
+          if (value.length != FM$DIMENSION$<name>$0) {
+            throw new IllegalArgumentException(
+                "<name> length must be " + FM$DIMENSION$<name>$0);
+          }
+          for (long index = 0; index < value.length; index++) {
+            <name>(ms, <allocatorArgument>index, value[(int) index]);
+          }
+        }
+      """
+      .replace("<allocatorParameter>", allocatorParameter)
+      .replace("<allocatorArgument>", allocatorArgument)
+      .replace("<arrayType>", arrayType)
+      .replace("<elementType>", elementType)
+      .replace("<name>", name));
+  }
+
+  private String primitiveBufferType(String primitive) {
+    return switch (primitive) {
+      case "boolean", "byte" -> "ByteBuffer";
+      case "char" -> "CharBuffer";
+      case "short" -> "ShortBuffer";
+      case "int" -> "IntBuffer";
+      case "long" -> "LongBuffer";
+      case "float" -> "FloatBuffer";
+      case "double" -> "DoubleBuffer";
+      default -> throw new IllegalArgumentException(
+          "Unexpected primitive: " + primitive);
+    };
+  }
+
+  private boolean indexedElementNeedsAllocator(IndexedField indexed) {
+    var element = indexed.element();
+    return (indexed.addressElement() && element.isRecord())
+        || (indexed.structuredValueElement() && element.isRecord()
+            && recordConverterNeedsAllocator(element.typeElement));
+  }
+
+  private boolean indexedArrayNeedsAllocator(IndexedField indexed) {
+    return indexedElementNeedsAllocator(indexed);
   }
 
   private void writeUnsupportedMethods(Writer out,
@@ -1172,74 +2109,22 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     }
   }
 
-  private void writeAccessorsBuffer(Writer out, VariableGenerator field)
-      throws IOException {
-    String type = field.elementTypeName();
-    String capType = capitalize(type);
-    long size = field.sequence;
-
-    out.write("""
-
-          public static final long FM$OFFSET$<name> =
-              FM$LAYOUT.byteOffset(FM$PE$<name>);
-
-          public static final long FM$SIZE$<name> =
-              FM$LAYOUT.select(FM$PE$<name>).byteSize();
-
-          private MemorySegment FM$MS$<name>;
-
-          public MemorySegment <name>$MemorySegment() {
-            if (FM$MS$<name> == null) {
-              FM$MS$<name> = ms.asSlice(FM$OFFSET$<name>, FM$SIZE$<name>);
-            }
-            return FM$MS$<name>;
-          }
-
-          private java.nio.<Type>Buffer FM$BB$<name>;
-
-          public java.nio.<Type>Buffer <name>() {
-            if (FM$BB$<name> == null) {
-              FM$BB$<name> = <name>$MemorySegment().asByteBuffer()
-                  .order(java.nio.ByteOrder.nativeOrder())<buffer>;
-            }
-            return FM$BB$<name>;
-          }
-
-          /// Get element at index.
-          public <type> <name>(int index) {
-            return <name>$MemorySegment()
-              .getAtIndex(ValueLayout.JAVA_<TYPE>, index);
-          }
-
-          /// Set element at index.
-          public void <name>(int index, <type> value) {
-            <name>$MemorySegment()
-              .setAtIndex(ValueLayout.JAVA_<TYPE>, index, value);
-          }
-
-          /// Replace values from array.
-          public void <name>(<type>[] value) {
-            if (value.length != <size>) {
-              throw new IllegalArgumentException();
-            }
-            MemorySegment.copy(value, 0,
-                <name>$MemorySegment(), ValueLayout.JAVA_<TYPE>, 0, <size>);
-          }
-        """
-        .replace("<name>", field.name())
-        .replace("<Type>", capType)
-        .replace("<type>", type)
-        .replace("<TYPE>", type.toUpperCase(Locale.ROOT))
-        .replace("<buffer>", type.equals("byte")
-            ? "" : ".as" + capType + "Buffer()")
-        .replace("<size>", Long.toString(size)));
-  }
-
-  private void validateFields(List<VariableGenerator> fields) {
+  private void validateFields(List<VariableGenerator> fields,
+      Map<String, IndexedField> indexedFields) {
     for (var field : fields) {
+      if (indexedFields.containsKey(field.name())) {
+        if (field.isString()) {
+          processingEnv.getMessager().printError(
+              "String elements are not supported in indexed fields",
+              field.element);
+        }
+        continue;
+      }
+
       if (field.hasSequenceOnUnsupportedType()) {
         processingEnv.getMessager().printError(
-            "@Sequence is only supported on array and Buffer types",
+            "@Sequence on interface fields belongs on int or long indexed "
+                + "accessor parameters",
             field.element);
         continue;
       }
@@ -1310,7 +2195,14 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       return false;
 
     for (var component : type.getRecordComponents()) {
-      var componentGen = new VariableGenerator(processingEnv, component);
+      var componentType = component.asType();
+      var valueType = componentType.getKind() == TypeKind.ARRAY
+          ? ((ArrayType) componentType).getComponentType()
+          : componentType;
+      var componentGen = componentType.getKind() == TypeKind.ARRAY
+          ? new VariableGenerator(processingEnv,
+              component.getSimpleName().toString(), valueType, 1L, component)
+          : new VariableGenerator(processingEnv, component);
 
       if (componentGen.isPrimitiveAddress())
         return true;

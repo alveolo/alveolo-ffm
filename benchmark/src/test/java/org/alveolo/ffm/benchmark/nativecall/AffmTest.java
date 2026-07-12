@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import org.alveolo.ffm.Address;
+import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Library;
@@ -51,7 +52,16 @@ public interface AffmTest {
   @Symbol("pair_box_value_sum")
   int pair_box_interface_value_sum(PairBoxIV value);
 
-  void scale_ints(int[] values, int count, int factor);
+  void scale_ints(
+      @CountedBy("count") int[] values, int count, int factor);
+
+  void offset_pairs(
+      @CountedBy("count") PairR[] values, int count, int delta);
+
+  void fill_pairs(
+      @Out @CountedBy("count") PairR[] values, int count, int start);
+
+  void mutate_native_arrays(NativeArrays value);
 
   @Symbol("sum_three_and_clobber")
   int sum_three_and_clobber(@In @Sequence(3) int[] values);
@@ -59,8 +69,16 @@ public interface AffmTest {
   @Symbol("fill_two_ints")
   void fill_two_ints(@Out @Sequence(2) int[] values, int start);
 
-  void increment_bytes(ByteBuffer values, int count);
+  void increment_bytes(
+      @CountedBy("count") ByteBuffer values, int count);
 
   @Symbol("fill_two_ints")
   void fill_two_int_buffer(@Out @Sequence(2) IntBuffer values, int start);
+
+  @Symbol("scale_ints")
+  void scale_int_buffer(
+      @CountedBy("count") IntBuffer values, int count, int factor);
+
+  @Symbol("sum_three_and_clobber")
+  int sum_three_int_buffer(@In @Sequence(3) IntBuffer values);
 }

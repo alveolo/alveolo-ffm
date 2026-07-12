@@ -206,11 +206,11 @@ In priority order:
 3. Upcalls and callbacks, including callback lifetime management.
 4. `Linker.Option` support: variadic calls, captured call state or `errno`, and
    critical-call options.
-5. Fixed arrays of nested structs, enums, bitfields, and multidimensional
-   sequences.
-6. Lazy or optional symbol resolution so one unavailable symbol does not
+5. ✅ Fixed arrays of nested structs and multidimensional sequences.
+6. Fixed arrays of Enum and bitfield support remain open.
+7. Lazy or optional symbol resolution so one unavailable symbol does not
    prevent using an otherwise valid binding.
-7. Injectable `Linker` and `SymbolLookup` factories for testing and nonstandard
+8. Injectable `Linker` and `SymbolLookup` factories for testing and nonstandard
    loading environments.
 
 ## Verification

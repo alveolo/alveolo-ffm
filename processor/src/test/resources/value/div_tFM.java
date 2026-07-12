@@ -31,8 +31,37 @@ public final class div_tFM {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static MemorySegment allocate(
+      SegmentAllocator allocator, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return allocator.allocate(FM$LAYOUT, count);
+  }
+
   public static div_t reinterpret(MemorySegment ms) {
     return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
+  public static MemorySegment reinterpret(
+      MemorySegment ms, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return ms.reinterpret(Math.multiplyExact(
+        FM$LAYOUT.byteSize(), count));
+  }
+
+  private static MemorySegment FM$at(MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
+    }
+    return array.asSlice(Math.multiplyExact(
+        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+  }
+
+  public static div_t at(MemorySegment array, long index) {
+    return fromMemorySegment(FM$at(array, index));
   }
 
   public static void toMemorySegment(div_t from, MemorySegment ms) {
@@ -48,7 +77,9 @@ public final class div_tFM {
   }
 
   public static div_t fromMemorySegment(MemorySegment ms) {
-    return new div_t(quot(ms), rem(ms));
+    return new div_t(
+        quot(ms),
+        rem(ms));
   }
 
   public static int quot(MemorySegment ms) {

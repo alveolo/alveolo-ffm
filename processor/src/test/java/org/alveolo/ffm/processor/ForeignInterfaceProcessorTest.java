@@ -48,6 +48,150 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsWhenCountedByNamesNoParameter() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.CountedBy("missing") int[] values,
+              int count);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@CountedBy(\"missing\") does not name a parameter");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsWhenCountedByNameIsBlank() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.CountedBy("") int[] values,
+              int count);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@CountedBy(\"\") does not name a parameter");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsWhenCountedByNamesUnsupportedCountType() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.CountedBy("count") int[] values,
+              float count);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "must be a plain scalar of type byte, short, int, or long");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsWhenCountedByNamesAddressCount() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.CountedBy("count") int[] values,
+              @org.alveolo.ffm.Address int count);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "must be a plain scalar of type byte, short, int, or long");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsWhenCountedByAndSequenceAreCombined() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(
+              @org.alveolo.ffm.CountedBy("count")
+              @org.alveolo.ffm.Sequence(4) int[] values,
+              int count);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@CountedBy and @Sequence cannot be used together");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsWhenCountedByIsUsedOnScalar() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.CountedBy("count") int value,
+              int count);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@CountedBy is only supported on primitive arrays");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsNonPositiveCallSequence() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void f(@org.alveolo.ffm.Sequence(0) int[] values);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining("@Sequence value must be positive");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsArrayAndBufferReturnsWithFocusedDiagnostic() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          int[] array();
+          java.nio.IntBuffer buffer();
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "Array and Buffer return types are not supported");
+    assertThat(c).hadErrorCount(2);
+  }
+
+  @Test
   void generatesMacFrameworkFFM() {
     var c = compile("interface/CoreFramework.java");
     assertThat(c).succeeded();

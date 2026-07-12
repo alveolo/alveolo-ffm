@@ -31,8 +31,37 @@ public final class RenamedChoice implements SimpleChoice {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static MemorySegment allocate(
+      SegmentAllocator allocator, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return allocator.allocate(FM$LAYOUT, count);
+  }
+
   public static RenamedChoice reinterpret(MemorySegment ms) {
     return new RenamedChoice(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
+  public static MemorySegment reinterpret(
+      MemorySegment ms, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return ms.reinterpret(Math.multiplyExact(
+        FM$LAYOUT.byteSize(), count));
+  }
+
+  private static MemorySegment FM$at(MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
+    }
+    return array.asSlice(Math.multiplyExact(
+        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+  }
+
+  public static RenamedChoice at(MemorySegment array, long index) {
+    return new RenamedChoice(FM$at(array, index));
   }
 
   public final MemorySegment ms;

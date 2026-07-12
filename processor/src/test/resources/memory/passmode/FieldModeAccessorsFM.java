@@ -43,8 +43,37 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static MemorySegment allocate(
+      SegmentAllocator allocator, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return allocator.allocate(FM$LAYOUT, count);
+  }
+
   public static FieldModeAccessorsFM reinterpret(MemorySegment ms) {
     return new FieldModeAccessorsFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
+  public static MemorySegment reinterpret(
+      MemorySegment ms, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return ms.reinterpret(Math.multiplyExact(
+        FM$LAYOUT.byteSize(), count));
+  }
+
+  private static MemorySegment FM$at(MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
+    }
+    return array.asSlice(Math.multiplyExact(
+        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+  }
+
+  public static FieldModeAccessorsFM at(MemorySegment array, long index) {
+    return new FieldModeAccessorsFM(FM$at(array, index));
   }
 
   public final MemorySegment ms;
@@ -76,7 +105,7 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public FieldModeAccessorsFM interfaceDefault(pkg.InnerInterface value) {
-    FM$VH$interfaceDefault.set(ms, ((pkg.InnerInterfaceFM)value).ms);
+    FM$VH$interfaceDefault.set(ms, ((pkg.InnerInterfaceFM) value).ms);
     return this;
   }
 
@@ -114,7 +143,7 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public FieldModeAccessorsFM fieldOverridesTypeValue(pkg.TypeValueInterface value) {
-    FM$VH$fieldOverridesTypeValue.set(ms, ((pkg.TypeValueInterfaceFM)value).ms);
+    FM$VH$fieldOverridesTypeValue.set(ms, ((pkg.TypeValueInterfaceFM) value).ms);
     return this;
   }
 }

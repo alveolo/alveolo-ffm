@@ -65,11 +65,248 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void generatesBufferStructField() {
-    var c = compile("memory/buffer/BufferStruct.java");
+  void generatesIndexedArrayFieldsAndRecordSnapshots() {
+    var use = forSourceString("pkg.ArrayFieldsUse", """
+        package pkg;
+
+        import java.lang.foreign.*;
+        import java.nio.ByteBuffer;
+
+        final class ArrayFieldsUse {
+          static void exercise(Arena arena) {
+            var fields = new ArrayFieldsFM(arena);
+            var union = new ArrayUnionFM(arena);
+            var interfaceElement = new ArrayCellFM(arena).value(9);
+            union.words(3, (short) 9);
+            fields.flags(0, true)
+                .matrix(1, 2, 7)
+                .points(0, new ArrayPoint(1, 2))
+                .pointers(arena, 0, new ArrayPoint(3, 4))
+                .cells(0, interfaceElement)
+                .references(0, interfaceElement)
+                .raw(0, MemorySegment.NULL);
+            boolean flag = fields.flags(0);
+            int cell = fields.matrix(1, 2);
+            ArrayPoint point = fields.points(0);
+            ArrayPoint nullable = fields.pointers(0);
+            ArrayCell inlineCell = fields.cells(0);
+            ArrayCell referencedCell = fields.references(0);
+            MemorySegment raw = fields.raw$Address(0);
+            MemorySegment whole = fields.matrix$MemorySegment();
+            MemorySegment leaf = fields.matrix$MemorySegment(1, 2);
+            ByteBuffer buffer = fields.flags$Buffer();
+            boolean[] copy = fields.flags$Array();
+            fields.flags(new boolean[] {true, false, true});
+
+            var snapshot = new ArraySnapshot(
+                new byte[] {1, 2, 3, 4},
+                new ArrayPoint[] {
+                    new ArrayPoint(5, 6), new ArrayPoint(7, 8)});
+            var snapshotMemory = ArraySnapshotFM.toMemorySegment(
+                arena, snapshot);
+            ArraySnapshot detached = ArraySnapshotFM.fromMemorySegment(
+                snapshotMemory);
+
+            var pointArray = ArrayPointFM.allocate(arena, 2);
+            ArrayPoint first = ArrayPointFM.at(pointArray, 0);
+            MemorySegment bounded = ArrayPointFM.reinterpret(
+                pointArray, 2);
+          }
+        }
+        """);
+    var c = compile(forTestResource("memory/array/ArrayFields.java"), use);
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.BufferStructFM",
-        "memory/buffer/BufferStructFM.java");
+    assertGenerated(c, "pkg.ArrayFieldsFM", "memory/array/ArrayFieldsFM.java");
+    assertGenerated(c, "pkg.ArraySnapshotFM",
+        "memory/array/ArraySnapshotFM.java");
+    assertGenerated(c, "pkg.ArrayUnionFM", "memory/array/ArrayUnionFM.java");
+    assertGenerated(c, "pkg.AllocatingArraySnapshotFM",
+        "memory/array/AllocatingArraySnapshotFM.java");
+  }
+
+  @Test
+  void avoidsIndexedSetterParameterNameCollisions() {
+    var fields = forSourceString("test.NamedIndices", """
+        package test;
+
+        @org.alveolo.ffm.Struct
+        record Point(int x, int y) {}
+
+        @org.alveolo.ffm.Struct
+        interface NamedIndices {
+          int values(@org.alveolo.ffm.Sequence(2) long value);
+
+          @org.alveolo.ffm.Address
+          Point pointers(
+              @org.alveolo.ffm.Sequence(2) long allocator);
+        }
+        """);
+    var use = forSourceString("test.NamedIndicesUse", """
+        package test;
+
+        final class NamedIndicesUse {
+          static void exercise(java.lang.foreign.Arena arena) {
+            new NamedIndicesFM(arena)
+                .values(0, 1)
+                .pointers(arena, 0, new Point(2, 3));
+          }
+        }
+        """);
+
+    var c = compile(fields, use);
+
+    assertThat(c).succeeded();
+  }
+
+  @Test
+  void rejectsBufferStructField() {
+    var source = forSourceString("pkg.BufferStruct", """
+        package pkg;
+
+        @org.alveolo.ffm.Struct
+        public interface BufferStruct {
+          @org.alveolo.ffm.Sequence(3)
+          java.nio.IntBuffer data();
+        }
+        """);
+    var generatedUse = forSourceString("pkg.BufferStructUse", """
+        package pkg;
+
+        class BufferStructUse {
+          Class<?> generatedClass = BufferStructFM.class;
+        }
+        """);
+    var c = compile(source, generatedUse);
+
+    assertThat(c).hadErrorContaining(
+        "NIO Buffer types are not supported as @Struct or @Union fields; "
+            + "declare an indexed element accessor");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsNonPositiveIndexedDimension() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        interface Bad {
+          int value(@org.alveolo.ffm.Sequence(0) long index);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Indexed field @Sequence value must be positive");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsNonIntegralIndexedDimension() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        interface Bad {
+          int value(@org.alveolo.ffm.Sequence(2) String index);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Indexed field parameters must be int or long");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsUnsupportedIndexedElement() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        interface Bad {
+          String value(@org.alveolo.ffm.Sequence(2) long index);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Indexed fields support primitives, MemorySegment, and @Struct or "
+            + "@Union elements");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsMultidimensionalRecordArray() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        record Bad(@org.alveolo.ffm.Sequence(2) int[][] value) {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Multidimensional Java array record fields are not supported");
+  }
+
+  @Test
+  void failsIndexedHelperNameCollision() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct
+        interface Bad {
+          int values(@org.alveolo.ffm.Sequence(2) long index);
+          java.lang.foreign.MemorySegment values$MemorySegment();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Generated indexed field helper 'values$MemorySegment' collides "
+            + "with a declared field");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsIndexedFieldAnnotatedVirtual() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct(vtable = true)
+        interface Bad {
+          @org.alveolo.ffm.Virtual(0)
+          int values(@org.alveolo.ffm.Sequence(2) long index);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Indexed field declarations cannot be annotated @Virtual or @Symbol");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsIndexedFieldAnnotatedSymbol() {
+    var source = forSourceString("test.Bad", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        interface NativeApi {}
+
+        @org.alveolo.ffm.Struct(symbols = NativeApi.class)
+        interface Bad {
+          @org.alveolo.ffm.Symbol("values")
+          int values(@org.alveolo.ffm.Sequence(2) long index);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Indexed field declarations cannot be annotated @Virtual or @Symbol");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test
@@ -521,7 +758,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void failsStructFieldWithoutGetter() {
+  void failsIndexedFieldWithoutSequence() {
     var source = forSourceString("test.Bad", """
         package test;
         @org.alveolo.ffm.Struct
@@ -539,7 +776,8 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
 
     var c = compile(source, generatedUse);
 
-    assertThat(c).hadErrorContaining("Field 'x' has no accessor");
+    assertThat(c).hadErrorContaining(
+        "Each indexed field parameter must carry @Sequence");
     assertThat(c).hadErrorCount(1);
   }
 
@@ -643,7 +881,8 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
-        "Unsupported accessor signature for field 'data'");
+        "NIO Buffer types are not supported as @Struct or @Union fields; "
+            + "declare an indexed element accessor");
     assertThat(c).hadErrorCount(1);
   }
 
@@ -668,7 +907,8 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
-        "@Sequence is only supported on array and Buffer types");
+        "@Sequence on interface fields belongs on int or long indexed "
+            + "accessor parameters");
     assertThat(c).hadErrorCount(1);
   }
 
@@ -692,7 +932,8 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
-        "Array fields are not supported, use java.nio.IntBuffer instead");
+        "Array-returning interface fields are not supported; declare an "
+            + "indexed element accessor");
     assertThat(c).hadErrorCount(1);
   }
 
@@ -714,7 +955,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
-        "Array fields are not supported, use java.nio.DoubleBuffer instead");
+        "Record array fields must carry one positive @Sequence");
     assertThat(c).hadErrorCount(1);
   }
 
@@ -736,7 +977,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile(source, generatedUse);
 
     assertThat(c).hadErrorContaining(
-        "Buffer fields are not supported on records");
+        "NIO Buffer types are not supported as record components");
     assertThat(c).hadErrorCount(1);
   }
 }

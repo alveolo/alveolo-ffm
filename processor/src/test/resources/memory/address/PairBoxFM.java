@@ -23,8 +23,37 @@ public final class PairBoxFM {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static MemorySegment allocate(
+      SegmentAllocator allocator, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return allocator.allocate(FM$LAYOUT, count);
+  }
+
   public static PairBox reinterpret(MemorySegment ms) {
     return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
+  public static MemorySegment reinterpret(
+      MemorySegment ms, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return ms.reinterpret(Math.multiplyExact(
+        FM$LAYOUT.byteSize(), count));
+  }
+
+  private static MemorySegment FM$at(MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
+    }
+    return array.asSlice(Math.multiplyExact(
+        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+  }
+
+  public static PairBox at(MemorySegment array, long index) {
+    return fromMemorySegment(FM$at(array, index));
   }
 
   public static void toMemorySegment(
@@ -40,7 +69,8 @@ public final class PairBoxFM {
   }
 
   public static PairBox fromMemorySegment(MemorySegment ms) {
-    return new PairBox(pair(ms));
+    return new PairBox(
+        pair(ms));
   }
 
   public static pkg.Pair pair(MemorySegment ms) {

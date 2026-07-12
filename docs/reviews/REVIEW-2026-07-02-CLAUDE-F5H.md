@@ -187,7 +187,7 @@ reading the vtable lazily.
    then use `critical(true)` to pass heap memory without copying.
 5. **Global variable bindings** — exported data symbols (`environ`, `stdout`)
    as generated static accessors.
-6. **Nested struct/union arrays** — TODO'd in `TypeGenerator`; needed for
+6. ✅ **Nested struct/union arrays** — TODO'd in `TypeGenerator`; needed for
    real-world C structs (`char name[32]` inside a struct is bug 4's use case).
 7. **Null-safety story for strings/segments** — currently `strlen(null)` NPEs
    inside generated code; C APIs routinely accept NULL. An `@Nullable` mapping

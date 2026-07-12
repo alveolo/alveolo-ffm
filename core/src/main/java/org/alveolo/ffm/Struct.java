@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 /// accessor methods.
 ///
 /// @see [Union] for C unions
-/// @see [Sequence] for fixed-size array/buffer fields.
+/// @see [Sequence] for fixed-size inline array fields.
 @Target(TYPE)
 @Retention(SOURCE)
 public @interface Struct {

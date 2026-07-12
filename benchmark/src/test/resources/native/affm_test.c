@@ -19,6 +19,12 @@ typedef struct pair_box_ptr {
   pair* pair;
 } pair_box_ptr;
 
+typedef struct native_arrays {
+  int32_t matrix[2][3];
+  pair points[2];
+  pair* pointers[2];
+} native_arrays;
+
 EXPORT int add_ints(int left, int right) {
   return left + right;
 }
@@ -55,6 +61,33 @@ EXPORT int pair_box_ptr_sum(pair_box_ptr value) {
 EXPORT void scale_ints(int32_t* values, int32_t count, int32_t factor) {
   for (int32_t i = 0; i < count; i++) {
     values[i] *= factor;
+  }
+}
+
+EXPORT void offset_pairs(pair* values, int32_t count, int32_t delta) {
+  for (int32_t i = 0; i < count; i++) {
+    values[i].left += delta;
+    values[i].right += delta;
+  }
+}
+
+EXPORT void fill_pairs(pair* values, int32_t count, int32_t start) {
+  for (int32_t i = 0; i < count; i++) {
+    values[i].left = start + i * 2;
+    values[i].right = start + i * 2 + 1;
+  }
+}
+
+EXPORT void mutate_native_arrays(native_arrays* values) {
+  values->matrix[1][2] += 100;
+  values->points[1].left += 10;
+  values->points[1].right += 20;
+  if (values->pointers[0] != 0) {
+    values->pointers[0]->left += 30;
+    values->pointers[0]->right += 40;
+  }
+  if (values->pointers[1] == 0) {
+    values->matrix[0][1] = 77;
   }
 }
 

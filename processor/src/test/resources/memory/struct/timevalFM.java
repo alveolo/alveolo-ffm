@@ -8,9 +8,9 @@ public final class timevalFM implements timeval {
   public static final MemoryLayout FM$LAYOUT =
       MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
-            ValueLayout.JAVA_INT.withName("tv_sec"),
-            ValueLayout.JAVA_INT.withName("tv_usec"),
-          }));
+        ValueLayout.JAVA_INT.withName("tv_sec"),
+        ValueLayout.JAVA_INT.withName("tv_usec"),
+      }));
 
   public static final MemoryLayout.PathElement FM$PE$tv_sec =
       MemoryLayout.PathElement.groupElement("tv_sec");
@@ -28,11 +28,40 @@ public final class timevalFM implements timeval {
 
   public static MemorySegment allocate(SegmentAllocator allocator) {
     return allocator.allocate(
-        FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+      FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+  }
+
+  public static MemorySegment allocate(
+      SegmentAllocator allocator, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return allocator.allocate(FM$LAYOUT, count);
   }
 
   public static timevalFM reinterpret(MemorySegment ms) {
     return new timevalFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
+  public static MemorySegment reinterpret(
+      MemorySegment ms, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return ms.reinterpret(Math.multiplyExact(
+        FM$LAYOUT.byteSize(), count));
+  }
+
+  private static MemorySegment FM$at(MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
+    }
+    return array.asSlice(Math.multiplyExact(
+        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+  }
+
+  public static timevalFM at(MemorySegment array, long index) {
+    return new timevalFM(FM$at(array, index));
   }
 
   public final MemorySegment ms;

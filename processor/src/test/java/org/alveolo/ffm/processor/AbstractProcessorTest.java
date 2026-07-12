@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import javax.tools.JavaFileObject;
 
 import org.alveolo.ffm.Address;
+import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.In;
@@ -34,6 +35,7 @@ import com.google.testing.compile.Compilation;
 abstract class AbstractProcessorTest {
   private static final Class<?>[] CORE_CLASSES = {
     Address.class,
+    CountedBy.class,
     CFString.class,
     CFStringSupport.class,
     DispatchTable.class,

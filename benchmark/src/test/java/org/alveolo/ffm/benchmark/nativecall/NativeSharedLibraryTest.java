@@ -4,12 +4,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -139,12 +142,78 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void copiesArrayParameterInAndOutByDefault() {
+  void copiesCountedPrimitivePrefixInAndOut() {
+    var values = new int[] {1, 2, 3, 4};
+
+    AffmTestFFM.INSTANCE.scale_ints(values, 2, 10);
+
+    assertArrayEquals(new int[] {10, 20, 3, 4}, values);
+  }
+
+  @Test
+  void acceptsEmptyCountedPrimitivePrefix() {
     var values = new int[] {1, 2, 3};
 
-    AffmTestFFM.INSTANCE.scale_ints(values, values.length, 10);
+    AffmTestFFM.INSTANCE.scale_ints(values, 0, 10);
 
-    assertArrayEquals(new int[] {10, 20, 30}, values);
+    assertArrayEquals(new int[] {1, 2, 3}, values);
+  }
+
+  @Test
+  void rejectsCountOutsidePrimitiveArray() {
+    var values = new int[] {1, 2, 3};
+
+    assertThrows(IllegalArgumentException.class,
+        () -> AffmTestFFM.INSTANCE.scale_ints(values, -1, 10));
+    assertThrows(IllegalArgumentException.class,
+        () -> AffmTestFFM.INSTANCE.scale_ints(values, 4, 10));
+  }
+
+  @Test
+  void copiesCountedRecordPrefixInAndOut() {
+    var untouched = new PairR(5, 6);
+    var values = new PairR[] {
+        new PairR(1, 2), new PairR(3, 4), untouched
+    };
+
+    AffmTestFFM.INSTANCE.offset_pairs(values, 2, 10);
+
+    assertArrayEquals(new PairR[] {
+        new PairR(11, 12), new PairR(13, 14), untouched
+    }, values);
+    assertSame(untouched, values[2]);
+  }
+
+  @Test
+  void copiesOutCountedRecordPrefixFromNullEntries() {
+    var untouched = new PairR(9, 10);
+    var values = new PairR[] {null, null, untouched};
+
+    AffmTestFFM.INSTANCE.fill_pairs(values, 2, 20);
+
+    assertArrayEquals(new PairR[] {
+        new PairR(20, 21), new PairR(22, 23), untouched
+    }, values);
+    assertSame(untouched, values[2]);
+  }
+
+  @Test
+  void mutatesNativeMatrixInlineRecordsAndNullablePointers() {
+    try (var arena = Arena.ofConfined()) {
+      var values = new NativeArraysFM(arena)
+          .matrix(1, 2, 5)
+          .points(1, new PairR(1, 2))
+          .pointers(arena, 0, new PairR(3, 4))
+          .pointers$Address(1, java.lang.foreign.MemorySegment.NULL);
+
+      AffmTestFFM.INSTANCE.mutate_native_arrays(values);
+
+      assertEquals(105, values.matrix(1, 2));
+      assertEquals(77, values.matrix(0, 1));
+      assertEquals(new PairR(11, 22), values.points(1));
+      assertEquals(new PairR(33, 44), values.pointers(0));
+      assertNull(values.pointers(1));
+    }
   }
 
   @Test
@@ -194,12 +263,23 @@ class NativeSharedLibraryTest {
     values.put(2, (byte) 3);
     values.position(1);
 
-    AffmTestFFM.INSTANCE.increment_bytes(values, values.remaining());
+    AffmTestFFM.INSTANCE.increment_bytes(values, 1);
 
     assertEquals(1, values.get(0));
     assertEquals(3, values.get(1));
-    assertEquals(4, values.get(2));
+    assertEquals(3, values.get(2));
     assertEquals(1, values.position());
+  }
+
+  @Test
+  void rejectsCountOutsideBufferRemainingRegion() {
+    var values = ByteBuffer.allocate(3);
+    values.position(1);
+
+    assertThrows(IllegalArgumentException.class,
+        () -> AffmTestFFM.INSTANCE.increment_bytes(values, -1));
+    assertThrows(IllegalArgumentException.class,
+        () -> AffmTestFFM.INSTANCE.increment_bytes(values, 3));
   }
 
   @Test
@@ -210,6 +290,52 @@ class NativeSharedLibraryTest {
 
     assertEquals(19, values.get(0));
     assertEquals(20, values.get(1));
+  }
+
+  @Test
+  void passesOnlyCountedPrefixOfDirectTypedBuffer() {
+    var values = ByteBuffer.allocateDirect(4 * Integer.BYTES)
+        .order(ByteOrder.nativeOrder())
+        .asIntBuffer();
+    values.put(new int[] {1, 2, 3, 4});
+    values.position(1);
+
+    AffmTestFFM.INSTANCE.scale_int_buffer(values, 2, 10);
+
+    assertEquals(1, values.get(0));
+    assertEquals(20, values.get(1));
+    assertEquals(30, values.get(2));
+    assertEquals(4, values.get(3));
+    assertEquals(1, values.position());
+  }
+
+  @Test
+  void validatesDirectTypedBufferOrderAndReadOnlyState() {
+    var nonNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN
+        ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN;
+    var wrongOrder = ByteBuffer.allocateDirect(2 * Integer.BYTES)
+        .order(nonNative)
+        .asIntBuffer();
+    var readOnly = IntBuffer.allocate(2).asReadOnlyBuffer();
+
+    assertThrows(IllegalArgumentException.class,
+        () -> AffmTestFFM.INSTANCE.fill_two_int_buffer(wrongOrder, 1));
+    assertThrows(IllegalArgumentException.class,
+        () -> AffmTestFFM.INSTANCE.fill_two_int_buffer(readOnly, 1));
+  }
+
+  @Test
+  void inputAnnotationAllowsReadOnlyAndDoesNotCopyDirectStorage() {
+    var writable = ByteBuffer.allocateDirect(3 * Integer.BYTES)
+        .order(ByteOrder.nativeOrder())
+        .asIntBuffer();
+    writable.put(new int[] {1, 2, 3});
+    writable.position(0);
+    var readOnly = writable.asReadOnlyBuffer();
+
+    assertEquals(6,
+        AffmTestFFM.INSTANCE.sum_three_int_buffer(readOnly));
+    assertEquals(777, writable.get(0));
   }
 
   private static List<List<String>> compilers() {

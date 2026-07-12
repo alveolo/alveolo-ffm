@@ -106,7 +106,8 @@ class ExecutableGenerator {
   private String methodImpl(String methodHandleExpression) {
     return """
 
-          <signature> {<declarations>
+          <signature> {
+            <declarations>
             try <confinedArena>{
               <body>
             } catch (RuntimeException|Error ff$e) {
@@ -117,7 +118,7 @@ class ExecutableGenerator {
           }
         """
         .replace("<signature>", signature())
-        .replace("<declarations>", declarations())
+        .replace("    <declarations>\n", declarations())
         .replace("<confinedArena>", confinedArena())
         .replace("<body>", methodBody(methodHandleExpression))
         .replace("<finallyBlock>", finallyBlock());
@@ -361,7 +362,7 @@ class ExecutableGenerator {
     if (declarations.isEmpty()) return "";
 
     return declarations.stream()
-        .collect(joining("\n    ", "\n    ", ""));
+        .collect(joining("\n    ", "    ", "\n"));
   }
 
   private Stream<String> paramInitializers() {
@@ -378,13 +379,13 @@ class ExecutableGenerator {
           + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
           + p.name() + ");");
 
-    return p.isArrayOrBuffer() ? p.arrayOrBufferInitializer().lines()
+    return p.isCallArrayOrBuffer() ? p.arrayOrBufferInitializer().lines()
         : Stream.empty();
   }
 
   private Stream<String> copyOut() {
     return parameterGenerators.stream()
-        .filter(VariableGenerator::isArrayOrBuffer)
+        .filter(VariableGenerator::isCallArrayOrBuffer)
         .map(VariableGenerator::arrayOrBufferCopyOut)
         .flatMap(String::lines);
   }
@@ -459,6 +460,60 @@ class ExecutableGenerator {
         continue;
       }
 
+      if (paramGen.hasConflictingSizeAnnotations()) {
+        hasUnsupported = true;
+
+        messager.printError(
+            "@CountedBy and @Sequence cannot be used together",
+            paramGen.element);
+        continue;
+      }
+
+      if (paramGen.hasInvalidSequence()) {
+        hasUnsupported = true;
+
+        messager.printError(
+            "@Sequence value must be positive", paramGen.element);
+        continue;
+      }
+
+      if (paramGen.hasCountedBy()) {
+        if (!paramGen.isCallArrayOrBuffer()) {
+          hasUnsupported = true;
+
+          messager.printError(
+              "@CountedBy is only supported on primitive arrays, NIO Buffer "
+                  + "types, and value-style @Struct record arrays",
+              paramGen.element);
+          continue;
+        }
+
+        var countParam = parameterGenerators.stream()
+            .filter(p -> p.name().equals(paramGen.countedByName()))
+            .findFirst();
+
+        if (countParam.isEmpty()) {
+          hasUnsupported = true;
+
+          messager.printError(
+              "@CountedBy(\"" + paramGen.countedByName()
+                  + "\") does not name a parameter of this method",
+              paramGen.element);
+          continue;
+        }
+
+        if (!countParam.orElseThrow().isCountType()) {
+          hasUnsupported = true;
+
+          messager.printError(
+              "@CountedBy parameter '" + paramGen.countedByName()
+                  + "' must be a plain scalar of type byte, short, int, "
+                  + "or long",
+              paramGen.element);
+          continue;
+        }
+      }
+
       if (paramGen.hasSequenceOnUnsupportedType()) {
         hasUnsupported = true;
 
@@ -469,7 +524,7 @@ class ExecutableGenerator {
       }
 
       if ((paramGen.hasInAnnotation() || paramGen.hasOutAnnotation())
-          && !paramGen.isArrayOrBuffer()) {
+          && !paramGen.isCallArrayOrBuffer()) {
         hasUnsupported = true;
 
         messager.printError(
@@ -486,7 +541,17 @@ class ExecutableGenerator {
       }
     }
 
-    if (element.getReturnType().getKind() != TypeKind.VOID
+    boolean hasArrayOrBufferReturn = returnGenerator.isArray()
+        || returnGenerator.isNioBuffer();
+
+    if (hasArrayOrBufferReturn) {
+      hasUnsupported = true;
+
+      messager.printError(
+          "Array and Buffer return types are not supported; "
+              + "use MemorySegment for native pointer returns",
+          element);
+    } else if (element.getReturnType().getKind() != TypeKind.VOID
         && returnGenerator.unsupported()) {
       hasUnsupported = true;
 

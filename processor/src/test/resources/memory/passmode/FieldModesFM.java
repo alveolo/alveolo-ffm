@@ -51,8 +51,37 @@ public final class FieldModesFM {
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
+  public static MemorySegment allocate(
+      SegmentAllocator allocator, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return allocator.allocate(FM$LAYOUT, count);
+  }
+
   public static FieldModes reinterpret(MemorySegment ms) {
     return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
+  }
+
+  public static MemorySegment reinterpret(
+      MemorySegment ms, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return ms.reinterpret(Math.multiplyExact(
+        FM$LAYOUT.byteSize(), count));
+  }
+
+  private static MemorySegment FM$at(MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
+    }
+    return array.asSlice(Math.multiplyExact(
+        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+  }
+
+  public static FieldModes at(MemorySegment array, long index) {
+    return fromMemorySegment(FM$at(array, index));
   }
 
   public static void toMemorySegment(
@@ -100,7 +129,7 @@ public final class FieldModesFM {
   }
 
   public static void interfaceDefault(MemorySegment ms, pkg.InnerInterface value) {
-    FM$VH$interfaceDefault.set(ms, ((pkg.InnerInterfaceFM)value).ms);
+    FM$VH$interfaceDefault.set(ms, ((pkg.InnerInterfaceFM) value).ms);
   }
 
   public static pkg.InnerRecord recordTypeUseAddress(MemorySegment ms) {
@@ -145,6 +174,6 @@ public final class FieldModesFM {
   }
 
   public static void fieldOverridesTypeValue(MemorySegment ms, pkg.TypeValueInterface value) {
-    FM$VH$fieldOverridesTypeValue.set(ms, ((pkg.TypeValueInterfaceFM)value).ms);
+    FM$VH$fieldOverridesTypeValue.set(ms, ((pkg.TypeValueInterfaceFM) value).ms);
   }
 }

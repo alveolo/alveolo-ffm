@@ -155,6 +155,7 @@ sealed class TypeGenerator permits VariableGenerator {
   String elementLayout() {
     var kind = elementKind();
     return kind == null ? null : switch (kind) {
+      case BOOLEAN -> "ValueLayout.JAVA_BOOLEAN";
       case BYTE -> "ValueLayout.JAVA_BYTE";
       case CHAR -> "ValueLayout.JAVA_CHAR";
       case SHORT -> "ValueLayout.JAVA_SHORT";
@@ -164,6 +165,27 @@ sealed class TypeGenerator permits VariableGenerator {
       case DOUBLE -> "ValueLayout.JAVA_DOUBLE";
       default -> null;
     };
+  }
+
+  TypeMirror arrayComponentType() {
+    return typeMirror.getKind() == TypeKind.ARRAY
+        ? ((ArrayType) typeMirror).getComponentType()
+        : null;
+  }
+
+  TypeGenerator arrayComponentGenerator() {
+    var component = arrayComponentType();
+    return component == null ? null
+        : new TypeGenerator(processingEnv, component);
+  }
+
+  boolean isValueStructRecordArray() {
+    var component = arrayComponentGenerator();
+    return component != null
+        && component.isRecord()
+        && component.typeElement.getAnnotation(Struct.class) != null
+        && component.isValue()
+        && !component.hasConflictingPassModeAnnotations();
   }
 
   private TypeKind elementKind() {

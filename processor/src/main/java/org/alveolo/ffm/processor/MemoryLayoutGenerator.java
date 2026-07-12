@@ -31,10 +31,15 @@ class MemoryLayoutGenerator {
             "Type is not supported: " + field.typeName(), field.errorElement());
       }
 
-      buf.append("        ").append(field.layout())
-          .append(".withName(\"").append(field.name()).append("\"),\n");
+      buf.append(namedLayout(field));
     }
 
     return buf.toString();
+  }
+
+  private String namedLayout(LayoutField field) {
+    return (field.layout()
+        + ".withName(\"" + field.name() + "\"),")
+        .indent(8);
   }
 }

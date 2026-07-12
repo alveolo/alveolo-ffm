@@ -16,7 +16,8 @@ public interface NativeMath {
   int add_ints(int left, int right);
 
   @Symbol("scale_ints")
-  void scale(int[] values, int count, int factor);
+  void scale(
+      @CountedBy("count") int[] values, int count, int factor);
 }
 ```
 
@@ -38,9 +39,10 @@ NativeMathFFM.INSTANCE.scale(values, values.length, 10);
 - C name mapping with `@Symbol`.
 - Native library lookup with `@Library`.
 - Pass-by-value and pass-by-address control with `@Value` and `@Address`.
-- Java array and `java.nio.*Buffer` pointer parameters.
-- Fixed-size `java.nio.*Buffer` fields on memory-backed struct interfaces.
-- Input/output transfer control with `@In`, `@Out`, and `@Sequence`.
+- Primitive-array, record-array, and `java.nio.*Buffer` pointer parameters.
+- Fixed, indexed inline arrays on memory-backed struct interfaces.
+- Input/output transfer control with `@In` and `@Out`.
+- Fixed and counted extents with `@Sequence` and `@CountedBy`.
 - UTF-8 native string parameters.
 - macOS CoreFoundation `CFStringRef` helpers.
 
@@ -250,11 +252,12 @@ public interface timeval {
 }
 ```
 
-Declare each native field with a zero-argument getter only. Do not declare
-setter or generated-helper overloads on the source interface; the processor
-rejects those signatures. The generated `*FM` implementation adds fluent
-setters for supported fields, which is why the following code can call
-`tv_sec(int)` and `tv_usec(int)` even though they are not interface methods.
+Declare each scalar native field with a zero-argument getter only. Inline array
+fields use the indexed getter form described below. Do not declare setter or
+generated-helper overloads on the source interface; the processor rejects
+those signatures. The generated `*FM` implementation adds fluent setters for
+supported fields, which is why the following code can call `tv_sec(int)` and
+`tv_usec(int)` even though they are not interface methods.
 
 Generated usage:
 
@@ -276,21 +279,89 @@ public interface NumberBits {
 }
 ```
 
-Memory-backed struct interfaces can also expose fixed-size NIO buffer fields:
+Memory-backed struct interfaces describe fixed inline C arrays with indexed
+getters. Put `@Sequence` on each `int` or `long` index to declare that native
+dimension:
 
 ```java
 @Struct
 public interface Samples {
-  @Sequence(3)
-  IntBuffer values();
+  int values(@Sequence(3) long index);
 }
 ```
 
-Here `@Sequence(3)` is part of the native field layout. The generated layout
-uses a sequence of three elements and exposes `values()`, `values$MemorySegment()`,
-indexed get/set methods, and an array replacement helper. Buffer fields are
-supported on memory-backed interfaces only; records should use primitive or
-nested annotated fields instead.
+This maps to an inline C field such as `int values[3]`, not an `int*` pointer.
+The generated wrapper implements `values(long)`, adds a fluent
+`values(long, int)` setter, and exposes the complete field as
+`values$MemorySegment()`. A one-dimensional primitive field also provides
+`values$Buffer()`, a `values$Array()` snapshot, and an exact-length
+`values(array)` replacement helper. Boolean and byte fields use `ByteBuffer`;
+the boolean view exposes the underlying one-byte representation.
+`values$MemorySegment(index)` selects one element when byte-level access is
+useful. The indexed path performs FFM bounds checks against the declared extent.
+
+Use one index per C dimension. Parameter order is outermost to innermost, so
+the final index is the fastest-varying one:
+
+```java
+@Struct
+public interface Matrix {
+  float cell(
+      @Sequence(3) long row,
+      @Sequence(4) long column);
+}
+```
+
+Inline arrays may contain primitive values (including `boolean`), raw address
+slots represented by `MemorySegment`, and annotated struct or union elements.
+Value/address annotations apply to every element: `@Value Point`
+produces contiguous inline `Point` storage, while `@Address Point` produces an
+inline array of pointer slots. A value-style record element returned by an
+indexed getter is a snapshot; a memory-backed interface element is a view that
+aliases the parent segment.
+
+Indexed array fields are supported on memory-backed interfaces. A source
+interface declares only the indexed getter; generated setters and low-level
+views must not be redeclared. Every dimension must be positive. Flexible array
+members and pointer-to-array fields need an explicit `MemorySegment` binding;
+they are not represented by `@Sequence(0)` or by Java multidimensional arrays.
+
+Value-style record structs can instead use a one-dimensional array component:
+
+```java
+@Struct
+public record Samples(@Sequence(3) int[] values) {}
+```
+
+Record array components are converted as snapshots rather than aliased views.
+Their elements are limited to primitives or value-style `@Struct` records;
+address elements and multidimensional Java arrays require a memory-backed
+interface. The components remain ordinary mutable Java arrays, so the record's
+generated `equals` and `hashCode` retain Java array reference semantics.
+
+### Contiguous arrays of structs
+
+Every generated struct or union companion also has helpers for explicit native
+arrays:
+
+```java
+@Struct
+record Point(int x, int y) {}
+
+try (var arena = Arena.ofConfined()) {
+  var points = PointFM.allocate(arena, 3);
+  var first = PointFM.at(points, 0);
+}
+```
+
+`allocate(allocator, count)` creates contiguous storage for `count`
+layouts. `reinterpret(segment, count)` gives pointer-like native memory an
+explicit array extent; the caller remains responsible for proving that many
+elements are accessible and for keeping the underlying memory alive.
+
+For a memory-backed interface, `at(segment, index)` returns an element view
+that aliases the array. For a record, `at(...)` returns a detached snapshot.
+No generic whole-element copy helper is generated.
 
 ## Value vs Address
 
@@ -327,13 +398,16 @@ temporary storage when it has to materialize pointed-to data; the Java method
 signature does not need an allocator for that. Explicit allocator-taking APIs
 are generated on `*FM` conversion helpers and setters when a record struct
 contains `@Address` components and the generated code must allocate pointed-to
-native storage. Memory-backed interface structs reject primitive address fields
-and record address fields because an accessor-only wrapper has no hidden
-allocator for the pointed-to memory.
+native storage. Memory-backed interface structs reject scalar primitive-address
+and record-address fields because an accessor-only wrapper has no hidden
+allocator for the pointed-to memory. Indexed `@Address` fields are explicit
+pointer-slot arrays and provide raw-address accessors; record pointee setters
+take an allocator when materialization is required.
 
 ## Arrays and Buffers
 
-Primitive arrays and typed NIO buffers can be used as pointer parameters:
+Foreign-call pointer parameters may use one-dimensional primitive arrays,
+value-style `@Struct` record arrays, and typed NIO buffers:
 
 ```java
 @ForeignInterface
@@ -348,13 +422,23 @@ public interface Samples {
 
   @Symbol("fill_two_ints")
   void fill(@Out @Sequence(2) IntBuffer values);
+
+  void scalePrefix(
+      @CountedBy("count") int[] values,
+      int count,
+      int factor);
+
+  void offsetPairs(
+      @CountedBy("count") Pair[] values,
+      int count,
+      int delta);
 }
 ```
 
 Supported array element types:
 
 ```text
-byte, char, short, int, long, float, double
+boolean, byte, char, short, int, long, float, double
 ```
 
 `char` means Java's 16-bit `char`. For C `char*` data, use `byte`/`ByteBuffer`
@@ -367,27 +451,79 @@ ByteBuffer, CharBuffer, ShortBuffer, IntBuffer,
 LongBuffer, FloatBuffer, DoubleBuffer
 ```
 
-Transfer rules:
+Record-array elements are laid out contiguously using the record's generated
+struct layout. Only value-style `@Struct` records are supported as call-array
+elements; Java multidimensional arrays and arrays of memory-backed wrappers are
+not native contiguous-array carriers.
+
+Array and buffer return types are rejected because a native pointer return has
+no implied extent or lifetime. Bind it as `MemorySegment`, then use the target
+struct's `reinterpret(segment, count)` and `at(...)` helpers when the
+native contract supplies a trustworthy element count.
+
+### Extent
+
+An unannotated array uses its full `array.length`. An unannotated buffer uses
+the region from `position()` through `limit()`, without changing its position.
+
+`@Sequence(n)` declares a fixed logical extent and requires the available
+element count to equal `n`. On call parameters the ABI type is still a pointer;
+the annotation is an exact Java binding contract, not C array-by-value
+semantics.
+
+Use `@CountedBy("count")` when a sibling integral parameter carries the active
+element count:
+
+- the named count parameter must be a `byte`, `short`, `int`, or `long`
+- the count is an element count, not a byte count
+- the generated wrapper requires `0 <= count <= available elements`
+- only the prefix `[0, count)` is transferred, or exposed directly for a
+  direct buffer
+- the count remains an ordinary explicit argument in the native ABI
+
+`@Sequence` and `@CountedBy` cannot be combined on one parameter. Use
+`@Sequence` for an exact fixed extent, `@CountedBy` for a runtime prefix, and
+neither for the complete Java carrier.
+
+### Copies and lifetime
+
+Transfer direction controls copying:
 
 - unannotated arrays and heap buffers are copied in before the native call and
   copied out after the call
 - `@In` copies in only
 - `@Out` copies out only
-- direct buffers are passed directly with `MemorySegment.ofBuffer(...)`
-- `@In` and `@Out` do not change direct-buffer behavior, because no copy is
-  performed
+- direct buffers are passed directly with `MemorySegment.ofBuffer(...)`; a
+  counted direct buffer passes a slice covering the selected prefix
 
-`@Sequence(n)` validates the Java argument size:
+Buffers must be writable whenever copy-out is enabled. Direct typed buffers
+other than `ByteBuffer` must also use native byte order, because their storage
+is passed without element conversion. Heap typed buffers are copied as logical
+elements and do not have that direct-storage restriction.
 
-- arrays use `array.length`
-- buffers use `buffer.remaining()`
+Copy-out for record arrays replaces the transferred entries with fresh record
+snapshots; entries outside a `@CountedBy` prefix remain untouched. With `@Out`,
+record-array entries in the transferred prefix may initially be `null` because
+the wrapper does not read them before the call.
 
-Without `@Sequence`, the generated temporary native segment uses the passed
-array length or buffer remaining size.
+`@In` and `@Out` describe wrapper copies, not native `const` or memory
+protection. They do not change direct-buffer behavior: native code receives the
+buffer's storage and may read or write it regardless of the annotation. A
+counted direct buffer likewise remains zero-copy. Its Java segment view is
+bounded to the selected prefix, but native pointer arithmetic is outside Java's
+bounds checks, so native code must still honor the explicit count.
 
-On struct interface buffer fields, `@Sequence(n)` defines the fixed native field
-size instead of validating an argument. Java array fields are not generated as
-struct fields; use a typed NIO buffer field for fixed-size inline storage.
+Temporary native copies live only for the duration of the call. Native code
+must not retain their addresses. Direct buffers are kept reachable for the
+call, but the generated wrapper does not manage a pointer retained afterward;
+use an explicit, suitably scoped `MemorySegment` API for persistent native
+pointers.
+
+Inline array views such as `values$MemorySegment()` alias their containing
+struct and inherit its arena lifetime. Pointer elements stored with `@Address`
+do not transfer ownership: the containing struct does not extend the pointee
+lifetime. Record pointee setters may materialize storage in a caller-supplied
+allocator, whose lifetime the caller must manage.
 
 ## CoreFoundation Strings
 
