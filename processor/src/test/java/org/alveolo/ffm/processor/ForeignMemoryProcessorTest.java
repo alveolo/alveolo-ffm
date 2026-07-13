@@ -28,6 +28,39 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatedSourcesDoNotDependOnImportedTypeNames() {
+    var source = forSourceString("test.ShadowedNames", """
+        package test;
+
+        final class MemorySegment {}
+        final class MemoryLayout {}
+        final class ValueLayout {}
+        final class SegmentAllocator {}
+        final class Arena {}
+        final class Linker {}
+        final class SymbolLookup {}
+        final class FunctionDescriptor {}
+        final class MethodHandle {}
+
+        @org.alveolo.ffm.Struct
+        interface ShadowedStruct {
+          int value();
+        }
+
+        @org.alveolo.ffm.ForeignInterface
+        interface ShadowedFunctions {}
+
+        @org.alveolo.ffm.DispatchTable
+        interface ShadowedDispatch {
+          @org.alveolo.ffm.Slot(0)
+          int call(int value);
+        }
+        """);
+
+    assertThat(compile(source)).succeeded();
+  }
+
+  @Test
   void generatesMultipleStructs() {
     var c = compile(
         "memory/struct/multiple/StructA.java",

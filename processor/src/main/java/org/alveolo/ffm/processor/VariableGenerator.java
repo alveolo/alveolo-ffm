@@ -56,7 +56,7 @@ final class VariableGenerator extends TypeGenerator {
 
   String argumentLayout() {
     return isCallArrayOrBuffer()
-        ? "ValueLayout.ADDRESS"
+        ? "java.lang.foreign.ValueLayout.ADDRESS"
         : layout();
   }
 
@@ -214,7 +214,7 @@ final class VariableGenerator extends TypeGenerator {
         <directOrderCheck>
         var <direct> = <directExpression>;
         var <segment> = <direct>
-            ? MemorySegment.ofBuffer(<name>).asSlice(
+            ? java.lang.foreign.MemorySegment.ofBuffer(<name>).asSlice(
                 0L, Math.multiplyExact(<layout>.byteSize(), (long) <size>))
             : ff$arena.allocate(<layout>, <size>);
         <copyIn>
@@ -325,7 +325,8 @@ final class VariableGenerator extends TypeGenerator {
       return booleanArrayCopyIn();
 
     return """
-        MemorySegment.copy(<name>, 0, <segment>, <layout>, 0, <size>);
+        java.lang.foreign.MemorySegment.copy(
+            <name>, 0, <segment>, <layout>, 0, <size>);
         """
         .replace("<name>", name)
         .replace("<segment>", segmentName())
@@ -337,7 +338,8 @@ final class VariableGenerator extends TypeGenerator {
   private String booleanArrayCopyIn() {
     return """
         for (var <index> = 0; <index> < <size>; <index>++) {
-          <segment>.setAtIndex(ValueLayout.JAVA_BOOLEAN, <index>,
+          <segment>.setAtIndex(
+              java.lang.foreign.ValueLayout.JAVA_BOOLEAN, <index>,
               <name>[<index>]);
         }
         """
@@ -390,7 +392,8 @@ final class VariableGenerator extends TypeGenerator {
       return booleanArrayCopyOut();
 
     return """
-        MemorySegment.copy(<segment>, <layout>, 0, <name>, 0, <size>);
+        java.lang.foreign.MemorySegment.copy(
+            <segment>, <layout>, 0, <name>, 0, <size>);
         """
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())
@@ -403,7 +406,7 @@ final class VariableGenerator extends TypeGenerator {
     return """
         for (var <index> = 0; <index> < <size>; <index>++) {
           <name>[<index>] = <segment>.getAtIndex(
-              ValueLayout.JAVA_BOOLEAN, <index>);
+              java.lang.foreign.ValueLayout.JAVA_BOOLEAN, <index>);
         }
         """
         .replace("<index>", indexName())

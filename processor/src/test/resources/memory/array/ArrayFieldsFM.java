@@ -1,49 +1,48 @@
 package pkg;
 
-import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class ArrayFieldsFM implements ArrayFields {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
-        MemoryLayout.sequenceLayout(3L,
-            ValueLayout.JAVA_BOOLEAN).withName("flags"),
-        MemoryLayout.sequenceLayout(2L,
-            MemoryLayout.sequenceLayout(3L,
-                ValueLayout.JAVA_INT)).withName("matrix"),
-        MemoryLayout.sequenceLayout(2L,
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.structLayout(
+          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.MemoryLayout.sequenceLayout(3L,
+            java.lang.foreign.ValueLayout.JAVA_BOOLEAN).withName("flags"),
+        java.lang.foreign.MemoryLayout.sequenceLayout(2L,
+            java.lang.foreign.MemoryLayout.sequenceLayout(3L,
+                java.lang.foreign.ValueLayout.JAVA_INT)).withName("matrix"),
+        java.lang.foreign.MemoryLayout.sequenceLayout(2L,
             pkg.ArrayPointFM.FM$LAYOUT).withName("points"),
-        MemoryLayout.sequenceLayout(2L,
-            ValueLayout.ADDRESS).withName("pointers"),
-        MemoryLayout.sequenceLayout(2L,
+        java.lang.foreign.MemoryLayout.sequenceLayout(2L,
+            java.lang.foreign.ValueLayout.ADDRESS).withName("pointers"),
+        java.lang.foreign.MemoryLayout.sequenceLayout(2L,
             pkg.ArrayCellFM.FM$LAYOUT).withName("cells"),
-        MemoryLayout.sequenceLayout(2L,
-            ValueLayout.ADDRESS).withName("references"),
-        MemoryLayout.sequenceLayout(2L,
-            ValueLayout.ADDRESS).withName("raw"),
+        java.lang.foreign.MemoryLayout.sequenceLayout(2L,
+            java.lang.foreign.ValueLayout.ADDRESS).withName("references"),
+        java.lang.foreign.MemoryLayout.sequenceLayout(2L,
+            java.lang.foreign.ValueLayout.ADDRESS).withName("raw"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static ArrayFieldsFM reinterpret(MemorySegment ms) {
+  public static ArrayFieldsFM reinterpret(java.lang.foreign.MemorySegment ms) {
     return new ArrayFieldsFM(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -51,7 +50,7 @@ public final class ArrayFieldsFM implements ArrayFields {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -59,31 +58,31 @@ public final class ArrayFieldsFM implements ArrayFields {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static ArrayFieldsFM at(MemorySegment array, long index) {
+  public static ArrayFieldsFM at(java.lang.foreign.MemorySegment array, long index) {
     return new ArrayFieldsFM(FM$at(array, index));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public ArrayFieldsFM(SegmentAllocator allocator) {
+  public ArrayFieldsFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate(allocator));
   }
 
-  public ArrayFieldsFM(MemorySegment ms) {
+  public ArrayFieldsFM(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$flags =
-      MemoryLayout.PathElement.groupElement("flags");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$flags =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("flags");
 
-  public static final MemoryLayout.PathElement FM$PE$flags$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$flags$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$flags =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$flags =
       FM$LAYOUT.select(FM$PE$flags);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$flags =
-      ValueLayout.JAVA_BOOLEAN;
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$flags =
+      java.lang.foreign.ValueLayout.JAVA_BOOLEAN;
 
   public static final long FM$OFFSET$flags =
       FM$LAYOUT.byteOffset(FM$PE$flags);
@@ -97,15 +96,15 @@ public final class ArrayFieldsFM implements ArrayFields {
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$flags, FM$PE$flags$0), 1, 0L);
 
-  public MemorySegment flags$MemorySegment() {
+  public java.lang.foreign.MemorySegment flags$MemorySegment() {
     return ms.asSlice(FM$OFFSET$flags, FM$SIZE$flags);
   }
 
-  public MemorySegment flags$MemorySegment(int index) {
+  public java.lang.foreign.MemorySegment flags$MemorySegment(int index) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$flags,
-            MemoryLayout.PathElement.sequenceElement(index)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
         FM$ELEMENT_LAYOUT$flags.byteSize());
   }
 
@@ -145,20 +144,20 @@ public final class ArrayFieldsFM implements ArrayFields {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$matrix =
-      MemoryLayout.PathElement.groupElement("matrix");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$matrix =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("matrix");
 
-  public static final MemoryLayout.PathElement FM$PE$matrix$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$matrix$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout.PathElement FM$PE$matrix$1 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$matrix$1 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$matrix =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$matrix =
       FM$LAYOUT.select(FM$PE$matrix);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$matrix =
-      ValueLayout.JAVA_INT;
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$matrix =
+      java.lang.foreign.ValueLayout.JAVA_INT;
 
   public static final long FM$OFFSET$matrix =
       FM$LAYOUT.byteOffset(FM$PE$matrix);
@@ -174,16 +173,16 @@ public final class ArrayFieldsFM implements ArrayFields {
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$matrix, FM$PE$matrix$0, FM$PE$matrix$1), 1, 0L);
 
-  public MemorySegment matrix$MemorySegment() {
+  public java.lang.foreign.MemorySegment matrix$MemorySegment() {
     return ms.asSlice(FM$OFFSET$matrix, FM$SIZE$matrix);
   }
 
-  public MemorySegment matrix$MemorySegment(long row, long column) {
+  public java.lang.foreign.MemorySegment matrix$MemorySegment(long row, long column) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$matrix,
-            MemoryLayout.PathElement.sequenceElement(row),
-            MemoryLayout.PathElement.sequenceElement(column)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(row),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(column)),
         FM$ELEMENT_LAYOUT$matrix.byteSize());
   }
 
@@ -198,16 +197,16 @@ public final class ArrayFieldsFM implements ArrayFields {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$points =
-      MemoryLayout.PathElement.groupElement("points");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$points =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("points");
 
-  public static final MemoryLayout.PathElement FM$PE$points$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$points$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$points =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$points =
       FM$LAYOUT.select(FM$PE$points);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$points =
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$points =
       pkg.ArrayPointFM.FM$LAYOUT;
 
   public static final long FM$OFFSET$points =
@@ -218,15 +217,15 @@ public final class ArrayFieldsFM implements ArrayFields {
 
   public static final long FM$DIMENSION$points$0 = 2L;
 
-  public MemorySegment points$MemorySegment() {
+  public java.lang.foreign.MemorySegment points$MemorySegment() {
     return ms.asSlice(FM$OFFSET$points, FM$SIZE$points);
   }
 
-  public MemorySegment points$MemorySegment(long index) {
+  public java.lang.foreign.MemorySegment points$MemorySegment(long index) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$points,
-            MemoryLayout.PathElement.sequenceElement(index)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
         FM$ELEMENT_LAYOUT$points.byteSize());
   }
 
@@ -243,17 +242,17 @@ public final class ArrayFieldsFM implements ArrayFields {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$pointers =
-      MemoryLayout.PathElement.groupElement("pointers");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$pointers =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("pointers");
 
-  public static final MemoryLayout.PathElement FM$PE$pointers$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$pointers$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$pointers =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$pointers =
       FM$LAYOUT.select(FM$PE$pointers);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$pointers =
-      ValueLayout.ADDRESS;
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$pointers =
+      java.lang.foreign.ValueLayout.ADDRESS;
 
   public static final long FM$OFFSET$pointers =
       FM$LAYOUT.byteOffset(FM$PE$pointers);
@@ -267,26 +266,26 @@ public final class ArrayFieldsFM implements ArrayFields {
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$pointers, FM$PE$pointers$0), 1, 0L);
 
-  public MemorySegment pointers$MemorySegment() {
+  public java.lang.foreign.MemorySegment pointers$MemorySegment() {
     return ms.asSlice(FM$OFFSET$pointers, FM$SIZE$pointers);
   }
 
-  public MemorySegment pointers$MemorySegment(long index) {
+  public java.lang.foreign.MemorySegment pointers$MemorySegment(long index) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$pointers,
-            MemoryLayout.PathElement.sequenceElement(index)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
         FM$ELEMENT_LAYOUT$pointers.byteSize());
   }
 
-  public MemorySegment pointers$Address(long index) {
-    return (MemorySegment) FM$VH$pointers.get(ms, index);
+  public java.lang.foreign.MemorySegment pointers$Address(long index) {
+    return (java.lang.foreign.MemorySegment) FM$VH$pointers.get(ms, index);
   }
 
   public ArrayFieldsFM pointers$Address(
-      long index, MemorySegment value) {
+      long index, java.lang.foreign.MemorySegment value) {
     FM$VH$pointers.set(ms, index,
-        value == null ? MemorySegment.NULL : value);
+        value == null ? java.lang.foreign.MemorySegment.NULL : value);
     return this;
   }
 
@@ -298,26 +297,26 @@ public final class ArrayFieldsFM implements ArrayFields {
   }
 
   public ArrayFieldsFM pointers(
-      SegmentAllocator allocator, long index,
+      java.lang.foreign.SegmentAllocator allocator, long index,
       pkg.ArrayPoint value) {
     FM$VH$pointers.set(ms, index,
         value == null
-            ? MemorySegment.NULL
+            ? java.lang.foreign.MemorySegment.NULL
             : pkg.ArrayPointFM.toMemorySegment(
                 allocator, value));
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$cells =
-      MemoryLayout.PathElement.groupElement("cells");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$cells =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("cells");
 
-  public static final MemoryLayout.PathElement FM$PE$cells$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$cells$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$cells =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$cells =
       FM$LAYOUT.select(FM$PE$cells);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$cells =
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$cells =
       pkg.ArrayCellFM.FM$LAYOUT;
 
   public static final long FM$OFFSET$cells =
@@ -328,15 +327,15 @@ public final class ArrayFieldsFM implements ArrayFields {
 
   public static final long FM$DIMENSION$cells$0 = 2L;
 
-  public MemorySegment cells$MemorySegment() {
+  public java.lang.foreign.MemorySegment cells$MemorySegment() {
     return ms.asSlice(FM$OFFSET$cells, FM$SIZE$cells);
   }
 
-  public MemorySegment cells$MemorySegment(long index) {
+  public java.lang.foreign.MemorySegment cells$MemorySegment(long index) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$cells,
-            MemoryLayout.PathElement.sequenceElement(index)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
         FM$ELEMENT_LAYOUT$cells.byteSize());
   }
 
@@ -348,24 +347,24 @@ public final class ArrayFieldsFM implements ArrayFields {
   public ArrayFieldsFM cells(
       long index,
       pkg.ArrayCell value) {
-    MemorySegment.copy(
+    java.lang.foreign.MemorySegment.copy(
         ((pkg.ArrayCellFM) value).ms, 0L,
         cells$MemorySegment(index), 0L,
         FM$ELEMENT_LAYOUT$cells.byteSize());
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$references =
-      MemoryLayout.PathElement.groupElement("references");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$references =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("references");
 
-  public static final MemoryLayout.PathElement FM$PE$references$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$references$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$references =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$references =
       FM$LAYOUT.select(FM$PE$references);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$references =
-      ValueLayout.ADDRESS;
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$references =
+      java.lang.foreign.ValueLayout.ADDRESS;
 
   public static final long FM$OFFSET$references =
       FM$LAYOUT.byteOffset(FM$PE$references);
@@ -379,26 +378,26 @@ public final class ArrayFieldsFM implements ArrayFields {
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$references, FM$PE$references$0), 1, 0L);
 
-  public MemorySegment references$MemorySegment() {
+  public java.lang.foreign.MemorySegment references$MemorySegment() {
     return ms.asSlice(FM$OFFSET$references, FM$SIZE$references);
   }
 
-  public MemorySegment references$MemorySegment(long index) {
+  public java.lang.foreign.MemorySegment references$MemorySegment(long index) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$references,
-            MemoryLayout.PathElement.sequenceElement(index)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
         FM$ELEMENT_LAYOUT$references.byteSize());
   }
 
-  public MemorySegment references$Address(long index) {
-    return (MemorySegment) FM$VH$references.get(ms, index);
+  public java.lang.foreign.MemorySegment references$Address(long index) {
+    return (java.lang.foreign.MemorySegment) FM$VH$references.get(ms, index);
   }
 
   public ArrayFieldsFM references$Address(
-      long index, MemorySegment value) {
+      long index, java.lang.foreign.MemorySegment value) {
     FM$VH$references.set(ms, index,
-        value == null ? MemorySegment.NULL : value);
+        value == null ? java.lang.foreign.MemorySegment.NULL : value);
     return this;
   }
 
@@ -414,22 +413,22 @@ public final class ArrayFieldsFM implements ArrayFields {
       pkg.ArrayCell value) {
     FM$VH$references.set(ms, index,
         value == null
-            ? MemorySegment.NULL
+            ? java.lang.foreign.MemorySegment.NULL
             : ((pkg.ArrayCellFM) value).ms);
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$raw =
-      MemoryLayout.PathElement.groupElement("raw");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$raw =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("raw");
 
-  public static final MemoryLayout.PathElement FM$PE$raw$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$raw$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$raw =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$raw =
       FM$LAYOUT.select(FM$PE$raw);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$raw =
-      ValueLayout.ADDRESS;
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$raw =
+      java.lang.foreign.ValueLayout.ADDRESS;
 
   public static final long FM$OFFSET$raw =
       FM$LAYOUT.byteOffset(FM$PE$raw);
@@ -443,26 +442,26 @@ public final class ArrayFieldsFM implements ArrayFields {
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$raw, FM$PE$raw$0), 1, 0L);
 
-  public MemorySegment raw$MemorySegment() {
+  public java.lang.foreign.MemorySegment raw$MemorySegment() {
     return ms.asSlice(FM$OFFSET$raw, FM$SIZE$raw);
   }
 
-  public MemorySegment raw$MemorySegment(long index) {
+  public java.lang.foreign.MemorySegment raw$MemorySegment(long index) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$raw,
-            MemoryLayout.PathElement.sequenceElement(index)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
         FM$ELEMENT_LAYOUT$raw.byteSize());
   }
 
-  public MemorySegment raw$Address(long index) {
-    return (MemorySegment) FM$VH$raw.get(ms, index);
+  public java.lang.foreign.MemorySegment raw$Address(long index) {
+    return (java.lang.foreign.MemorySegment) FM$VH$raw.get(ms, index);
   }
 
   public ArrayFieldsFM raw$Address(
-      long index, MemorySegment value) {
+      long index, java.lang.foreign.MemorySegment value) {
     FM$VH$raw.set(ms, index,
-        value == null ? MemorySegment.NULL : value);
+        value == null ? java.lang.foreign.MemorySegment.NULL : value);
     return this;
   }
 
@@ -474,7 +473,7 @@ public final class ArrayFieldsFM implements ArrayFields {
       long index,
       java.lang.foreign.MemorySegment value) {
     FM$VH$raw.set(ms, index,
-        value == null ? MemorySegment.NULL : value);
+        value == null ? java.lang.foreign.MemorySegment.NULL : value);
     return this;
   }
 }

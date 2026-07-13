@@ -1,36 +1,35 @@
 package pkg;
 
-import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class ArrayUnionFM implements ArrayUnion {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.unionLayout(
-          org.alveolo.ffm.ForeignUtils.unionPad(new MemoryLayout [] {
-        MemoryLayout.sequenceLayout(4L,
-            ValueLayout.JAVA_SHORT).withName("words"),
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.unionLayout(
+          org.alveolo.ffm.ForeignUtils.unionPad(new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.MemoryLayout.sequenceLayout(4L,
+            java.lang.foreign.ValueLayout.JAVA_SHORT).withName("words"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static ArrayUnionFM reinterpret(MemorySegment ms) {
+  public static ArrayUnionFM reinterpret(java.lang.foreign.MemorySegment ms) {
     return new ArrayUnionFM(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -38,7 +37,7 @@ public final class ArrayUnionFM implements ArrayUnion {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -46,31 +45,31 @@ public final class ArrayUnionFM implements ArrayUnion {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static ArrayUnionFM at(MemorySegment array, long index) {
+  public static ArrayUnionFM at(java.lang.foreign.MemorySegment array, long index) {
     return new ArrayUnionFM(FM$at(array, index));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public ArrayUnionFM(SegmentAllocator allocator) {
+  public ArrayUnionFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate(allocator));
   }
 
-  public ArrayUnionFM(MemorySegment ms) {
+  public ArrayUnionFM(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$words =
-      MemoryLayout.PathElement.groupElement("words");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$words =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("words");
 
-  public static final MemoryLayout.PathElement FM$PE$words$0 =
-      MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$words$0 =
+      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
 
-  public static final MemoryLayout FM$LAYOUT$words =
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$words =
       FM$LAYOUT.select(FM$PE$words);
 
-  public static final MemoryLayout FM$ELEMENT_LAYOUT$words =
-      ValueLayout.JAVA_SHORT;
+  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$words =
+      java.lang.foreign.ValueLayout.JAVA_SHORT;
 
   public static final long FM$OFFSET$words =
       FM$LAYOUT.byteOffset(FM$PE$words);
@@ -84,15 +83,15 @@ public final class ArrayUnionFM implements ArrayUnion {
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$words, FM$PE$words$0), 1, 0L);
 
-  public MemorySegment words$MemorySegment() {
+  public java.lang.foreign.MemorySegment words$MemorySegment() {
     return ms.asSlice(FM$OFFSET$words, FM$SIZE$words);
   }
 
-  public MemorySegment words$MemorySegment(long index) {
+  public java.lang.foreign.MemorySegment words$MemorySegment(long index) {
     return ms.asSlice(
         FM$LAYOUT.byteOffset(
             FM$PE$words,
-            MemoryLayout.PathElement.sequenceElement(index)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
         FM$ELEMENT_LAYOUT$words.byteSize());
   }
 

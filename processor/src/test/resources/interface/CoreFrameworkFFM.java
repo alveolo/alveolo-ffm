@@ -1,7 +1,5 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
@@ -10,11 +8,11 @@ public final class CoreFrameworkFFM implements CoreFramework {
 
   private CoreFrameworkFFM() {}
 
-  public static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
+  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LOOKUP();
 
-  private static SymbolLookup FF$LOOKUP() {
+  private static java.lang.foreign.SymbolLookup FF$LOOKUP() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
         CoreFramework.class,
         FF$LINKER.defaultLookup(),
@@ -24,10 +22,10 @@ public final class CoreFrameworkFFM implements CoreFramework {
             org.alveolo.ffm.Library.Kind.FRAMEWORK));
   }
 
-  private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("CFAbsoluteTimeGetCurrent"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_DOUBLE));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_DOUBLE));
 
   public double CFAbsoluteTimeGetCurrent(
       ) {

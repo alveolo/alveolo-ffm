@@ -1,7 +1,5 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
@@ -10,11 +8,11 @@ public final class MultiLibraryFFM implements MultiLibrary {
 
   private MultiLibraryFFM() {}
 
-  public static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
+  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LOOKUP();
 
-  private static SymbolLookup FF$LOOKUP() {
+  private static java.lang.foreign.SymbolLookup FF$LOOKUP() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
         MultiLibrary.class,
         FF$LINKER.defaultLookup(),

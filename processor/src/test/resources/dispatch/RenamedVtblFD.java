@@ -1,34 +1,32 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.DispatchTableProcessor")
 public final class RenamedVtblFD implements RenamedVtbl {
-  private static final Linker FF$LINKER = Linker.nativeLinker();
+  private static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final MemoryLayout FD$LAYOUT =
-      MemoryLayout.sequenceLayout(1L, ValueLayout.ADDRESS);
+  public static final java.lang.foreign.MemoryLayout FD$LAYOUT =
+      java.lang.foreign.MemoryLayout.sequenceLayout(1L, java.lang.foreign.ValueLayout.ADDRESS);
 
-  public static RenamedVtblFD reinterpret(MemorySegment ms) {
+  public static RenamedVtblFD reinterpret(java.lang.foreign.MemorySegment ms) {
     return new RenamedVtblFD(ms.reinterpret(FD$LAYOUT.byteSize()));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public RenamedVtblFD(MemorySegment ms) {
+  public RenamedVtblFD(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
     this.FF$MH$0 = FF$MD$0.bindTo(
-        ms.getAtIndex(ValueLayout.ADDRESS, 0L));
+        ms.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, 0L));
   }
 
-  private static final MethodHandle FF$MD$0 = FF$LINKER.downcallHandle(
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT,
-          ValueLayout.JAVA_INT));
+  private static final java.lang.invoke.MethodHandle FF$MD$0 = FF$LINKER.downcallHandle(
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
-  private final MethodHandle FF$MH$0;
+  private final java.lang.invoke.MethodHandle FF$MH$0;
 
   public int call(
       int value) {

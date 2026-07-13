@@ -78,17 +78,13 @@ final class ForeignMemoryGenerator {
       };
 
       out.write("""
-          import java.lang.foreign.*;
-          <methodHandleImport>
           @javax.annotation.processing.Generated(
               "<generator>")
           public final class <declaration> {
           """
           .replace("<generator>",
               ForeignMemoryProcessor.class.getCanonicalName())
-          .replace("<declaration>", declaration)
-          .replace("<methodHandleImport>", objectMethods.hasSymbolMethods()
-              ? "import java.lang.invoke.MethodHandle;\n" : ""));
+          .replace("<declaration>", declaration));
 
       writeLayout(out, fields, kind, vtable);
       if (vtable) {
@@ -123,14 +119,15 @@ final class ForeignMemoryGenerator {
   private void writeLayout(Writer out, ForeignMemoryAnalyzer.Fields fields,
       String kind, boolean vtable) throws IOException {
     out.write("""
-          public static final MemoryLayout FM$LAYOUT =
-              MemoryLayout.<kind>Layout(
-                  org.alveolo.ffm.ForeignUtils.<kind>Pad(new MemoryLayout [] {
+          public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+              java.lang.foreign.MemoryLayout.<kind>Layout(
+                  org.alveolo.ffm.ForeignUtils.<kind>Pad(
+                      new java.lang.foreign.MemoryLayout [] {
         """
         .replace("<kind>", kind));
 
     if (vtable) {
-      out.write("        ValueLayout.ADDRESS.withName(\""
+      out.write("        java.lang.foreign.ValueLayout.ADDRESS.withName(\""
           + ObjectMethodsGenerator.VTABLE_FIELD + "\"),\n");
     }
 
@@ -150,13 +147,14 @@ final class ForeignMemoryGenerator {
   private void writeAllocators(Writer out) throws IOException {
     out.write("""
 
-          public static MemorySegment allocate(SegmentAllocator allocator) {
+          public static java.lang.foreign.MemorySegment allocate(
+              java.lang.foreign.SegmentAllocator allocator) {
             return allocator.allocate(
               FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
           }
 
-          public static MemorySegment allocate(
-              SegmentAllocator allocator, long count) {
+          public static java.lang.foreign.MemorySegment allocate(
+              java.lang.foreign.SegmentAllocator allocator, long count) {
             if (count < 0) {
               throw new IllegalArgumentException("count must be non-negative");
             }
@@ -177,12 +175,13 @@ final class ForeignMemoryGenerator {
 
     out.write("""
 
-          public static <type> reinterpret(MemorySegment ms) {
+          public static <type> reinterpret(
+              java.lang.foreign.MemorySegment ms) {
             return <expression>;
           }
 
-          public static MemorySegment reinterpret(
-              MemorySegment ms, long count) {
+          public static java.lang.foreign.MemorySegment reinterpret(
+              java.lang.foreign.MemorySegment ms, long count) {
             if (count < 0) {
               throw new IllegalArgumentException("count must be non-negative");
             }
@@ -199,7 +198,8 @@ final class ForeignMemoryGenerator {
       throws IOException {
     out.write("""
 
-          private static MemorySegment FM$at(MemorySegment array, long index) {
+          private static java.lang.foreign.MemorySegment FM$at(
+              java.lang.foreign.MemorySegment array, long index) {
             if (index < 0) {
               throw new IndexOutOfBoundsException(index);
             }
@@ -211,7 +211,8 @@ final class ForeignMemoryGenerator {
     if (source.getKind() == ElementKind.RECORD) {
       out.write("""
 
-            public static <source> at(MemorySegment array, long index) {
+            public static <source> at(
+                java.lang.foreign.MemorySegment array, long index) {
               return fromMemorySegment(FM$at(array, index));
             }
           """
@@ -221,7 +222,8 @@ final class ForeignMemoryGenerator {
 
     out.write("""
 
-          public static <class> at(MemorySegment array, long index) {
+          public static <class> at(
+              java.lang.foreign.MemorySegment array, long index) {
             return new <class>(FM$at(array, index));
           }
         """
@@ -233,7 +235,7 @@ final class ForeignMemoryGenerator {
       throws IOException {
     out.write("""
 
-          public final MemorySegment ms;
+          public final java.lang.foreign.MemorySegment ms;
         """);
 
     if (hasVirtualMethods) {
@@ -246,15 +248,16 @@ final class ForeignMemoryGenerator {
 
     var vtableInitializer = hasVirtualMethods
         ? "    this.ff$vtbl = " + vtableTypeName
-            + "FD.reinterpret((MemorySegment) FM$VH$ff$vtbl.get(ms));\n"
+            + "FD.reinterpret((java.lang.foreign.MemorySegment) "
+            + "FM$VH$ff$vtbl.get(ms));\n"
         : "";
     out.write("""
 
-          public <class>(SegmentAllocator allocator) {
+          public <class>(java.lang.foreign.SegmentAllocator allocator) {
             this(allocate(allocator));
           }
 
-          public <class>(MemorySegment ms) {
+          public <class>(java.lang.foreign.MemorySegment ms) {
             this.ms = ms;
             <vtableInitializer>
           }

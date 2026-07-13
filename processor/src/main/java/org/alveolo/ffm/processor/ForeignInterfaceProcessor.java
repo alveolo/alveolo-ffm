@@ -90,9 +90,6 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       }
 
       out.write("""
-          import java.lang.foreign.*;
-          import java.lang.invoke.MethodHandle;
-
           @javax.annotation.processing.Generated(
               "<generator>")
           public final class <name> implements <interface> {
@@ -106,18 +103,20 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           .replace("<interface>", ifaceSimpleName));
 
       out.write("""
-            public static final Linker FF$LINKER = Linker.nativeLinker();
+            public static final java.lang.foreign.Linker FF$LINKER =
+                java.lang.foreign.Linker.nativeLinker();
 
           """);
 
       if (libraries.isEmpty()) {
         out.write("""
-              public static final SymbolLookup FF$LOOKUP =
+              public static final java.lang.foreign.SymbolLookup FF$LOOKUP =
                   FF$LINKER.defaultLookup();
             """);
       } else {
         out.write("""
-              public static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
+              public static final java.lang.foreign.SymbolLookup FF$LOOKUP =
+                  FF$LOOKUP();
             """
         );
         writeLookupInitializer(out, ifaceSimpleName, libraries);
@@ -188,7 +187,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       throws IOException {
     out.write("""
 
-          private static SymbolLookup FF$LOOKUP() {
+          private static java.lang.foreign.SymbolLookup FF$LOOKUP() {
             return org.alveolo.ffm.ForeignUtils.libraryLookup(
                 <sourceClass>.class,
                 FF$LINKER.defaultLookup(),

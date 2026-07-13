@@ -34,7 +34,7 @@ record IndexedField(
     var layout = element.layout();
     for (var i = dimensions.size() - 1; i >= 0; i--) {
       layout = """
-          MemoryLayout.sequenceLayout(<size>L,
+          java.lang.foreign.MemoryLayout.sequenceLayout(<size>L,
               <layout>)
           """
           .replace("<size>", Long.toString(dimensions.get(i).size()))

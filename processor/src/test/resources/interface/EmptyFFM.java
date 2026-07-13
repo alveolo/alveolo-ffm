@@ -1,7 +1,5 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
@@ -10,7 +8,7 @@ public final class EmptyFFM implements Empty {
 
   private EmptyFFM() {}
 
-  public static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
+  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
 }

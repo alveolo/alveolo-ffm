@@ -1,41 +1,40 @@
 package pkg;
 
-import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class StructBFM implements StructB {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
-        ValueLayout.JAVA_BOOLEAN.withName("b"),
-        ValueLayout.JAVA_CHAR.withName("c"),
-        ValueLayout.JAVA_SHORT.withName("s"),
-        ValueLayout.JAVA_INT.withName("i"),
-        ValueLayout.JAVA_LONG.withName("l"),
-        ValueLayout.JAVA_FLOAT.withName("f"),
-        ValueLayout.JAVA_DOUBLE.withName("d"),
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.structLayout(
+          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.ValueLayout.JAVA_BOOLEAN.withName("b"),
+        java.lang.foreign.ValueLayout.JAVA_CHAR.withName("c"),
+        java.lang.foreign.ValueLayout.JAVA_SHORT.withName("s"),
+        java.lang.foreign.ValueLayout.JAVA_INT.withName("i"),
+        java.lang.foreign.ValueLayout.JAVA_LONG.withName("l"),
+        java.lang.foreign.ValueLayout.JAVA_FLOAT.withName("f"),
+        java.lang.foreign.ValueLayout.JAVA_DOUBLE.withName("d"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static StructBFM reinterpret(MemorySegment ms) {
+  public static StructBFM reinterpret(java.lang.foreign.MemorySegment ms) {
     return new StructBFM(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -43,7 +42,7 @@ public final class StructBFM implements StructB {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -51,22 +50,22 @@ public final class StructBFM implements StructB {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static StructBFM at(MemorySegment array, long index) {
+  public static StructBFM at(java.lang.foreign.MemorySegment array, long index) {
     return new StructBFM(FM$at(array, index));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public StructBFM(SegmentAllocator allocator) {
+  public StructBFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate(allocator));
   }
 
-  public StructBFM(MemorySegment ms) {
+  public StructBFM(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$b =
-      MemoryLayout.PathElement.groupElement("b");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$b =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("b");
 
   public static final java.lang.invoke.VarHandle FM$VH$b =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -81,8 +80,8 @@ public final class StructBFM implements StructB {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$c =
-      MemoryLayout.PathElement.groupElement("c");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$c =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("c");
 
   public static final java.lang.invoke.VarHandle FM$VH$c =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -97,8 +96,8 @@ public final class StructBFM implements StructB {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$s =
-      MemoryLayout.PathElement.groupElement("s");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$s =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("s");
 
   public static final java.lang.invoke.VarHandle FM$VH$s =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -113,8 +112,8 @@ public final class StructBFM implements StructB {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$i =
-      MemoryLayout.PathElement.groupElement("i");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$i =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("i");
 
   public static final java.lang.invoke.VarHandle FM$VH$i =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -129,8 +128,8 @@ public final class StructBFM implements StructB {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$l =
-      MemoryLayout.PathElement.groupElement("l");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$l =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("l");
 
   public static final java.lang.invoke.VarHandle FM$VH$l =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -145,8 +144,8 @@ public final class StructBFM implements StructB {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$f =
-      MemoryLayout.PathElement.groupElement("f");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$f =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("f");
 
   public static final java.lang.invoke.VarHandle FM$VH$f =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -161,8 +160,8 @@ public final class StructBFM implements StructB {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$d =
-      MemoryLayout.PathElement.groupElement("d");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$d =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("d");
 
   public static final java.lang.invoke.VarHandle FM$VH$d =
       java.lang.invoke.MethodHandles.insertCoordinates(

@@ -120,13 +120,14 @@ class ExecutableGenerator {
     if (instanceMethodHandle)
       return """
 
-            private final MethodHandle <mh>;
+            private final java.lang.invoke.MethodHandle <mh>;
           """
           .replace("<mh>", methodHandleName);
 
     return """
 
-          private static final MethodHandle <mh> = <linker>.downcallHandle(
+          private static final java.lang.invoke.MethodHandle <mh> =
+              <linker>.downcallHandle(
               <lookup>.findOrThrow("<name>"),
               <descriptor>);
         """
@@ -164,8 +165,8 @@ class ExecutableGenerator {
         .flatMap(identity());
 
     String prefix = isVoid
-        ? "FunctionDescriptor.ofVoid("
-        : "FunctionDescriptor.of(";
+        ? "java.lang.foreign.FunctionDescriptor.ofVoid("
+        : "java.lang.foreign.FunctionDescriptor.of(";
 
     String newLine = "\n          ";
 
@@ -195,7 +196,8 @@ class ExecutableGenerator {
   }
 
   private String confinedArena() {
-    return needsConfinedArena() ? "(var ff$arena = Arena.ofConfined()) " : "";
+    return needsConfinedArena()
+        ? "(var ff$arena = java.lang.foreign.Arena.ofConfined()) " : "";
   }
 
   private Stream<String> invoke(String methodHandleExpression) {
@@ -210,7 +212,8 @@ class ExecutableGenerator {
       return returnWithCopyOut("(" + returnType + ") " + call, copyOut);
 
     if (returnGenerator.isMemorySegment())
-      return returnWithCopyOut("(MemorySegment) " + call, copyOut);
+      return returnWithCopyOut(
+          "(java.lang.foreign.MemorySegment) " + call, copyOut);
 
     if (returnGenerator.isRecord())
       return returnWithCopyOut(recordExpression(returnType, call), copyOut);
@@ -240,7 +243,7 @@ class ExecutableGenerator {
     // allocator parameter is rejected unless it is passed here.
     var paramsList = Stream.of(
         Stream.ofNullable(needsLocalAllocator
-            ? "(SegmentAllocator) ff$arena" : null),
+            ? "(java.lang.foreign.SegmentAllocator) ff$arena" : null),
         leadingNativeArguments.stream().map(NativeArgument::expression),
         parameterGenerators.stream().map(VariableGenerator::invoke))
         .flatMap(identity());
@@ -274,13 +277,16 @@ class ExecutableGenerator {
     String className = foreignMemoryClassName(type, elements);
 
     return returnGenerator.isValue()
-        ? className + ".fromMemorySegment((MemorySegment) " + call + ")"
-        : className + ".reinterpret((MemorySegment) " + call + ")";
+        ? className + ".fromMemorySegment((java.lang.foreign.MemorySegment) "
+            + call + ")"
+        : className + ".reinterpret((java.lang.foreign.MemorySegment) "
+            + call + ")";
   }
 
   private Stream<String> stringInvoke(String call, List<String> copyOut) {
     var all = Stream.of(
-        ("var ff$string$r = (MemorySegment) " + call + ";").lines(),
+        ("var ff$string$r = (java.lang.foreign.MemorySegment) "
+            + call + ";").lines(),
         copyOut.stream(),
         """
             return ff$string$r.address() == 0L ? null
@@ -293,7 +299,7 @@ class ExecutableGenerator {
   }
 
   private Stream<String> cfStringInvoke(String call, List<String> copyOut) {
-    var result = "(MemorySegment) " + call;
+    var result = "(java.lang.foreign.MemorySegment) " + call;
 
     if (!returnGenerator.isOwnedCFString())
       return returnWithCopyOut(
@@ -326,7 +332,8 @@ class ExecutableGenerator {
       String call, List<String> copyOut) {
     var layout = returnGenerator.valueLayout();
     var all = Stream.of(
-        ("var ff$address$r = (MemorySegment) " + call + ";").lines(),
+        ("var ff$address$r = (java.lang.foreign.MemorySegment) "
+            + call + ";").lines(),
         copyOut.stream(),
         """
             return ff$address$r.reinterpret(<layout>.byteSize())
@@ -344,8 +351,10 @@ class ExecutableGenerator {
     String className = foreignMemoryClassName(type, elements);
 
     return returnGenerator.isValue()
-        ? "new " + className + "((MemorySegment) " + call + ")"
-        : className + ".reinterpret((MemorySegment) " + call + ")";
+        ? "new " + className + "((java.lang.foreign.MemorySegment) "
+            + call + ")"
+        : className + ".reinterpret((java.lang.foreign.MemorySegment) "
+            + call + ")";
   }
 
   boolean needsConfinedArena() {
@@ -357,8 +366,8 @@ class ExecutableGenerator {
   private String declarations() {
     var declarations = parameterGenerators.stream()
         .filter(VariableGenerator::isCFString)
-        .map(p -> "MemorySegment " + p.cfStringName()
-            + " = MemorySegment.NULL;")
+        .map(p -> "java.lang.foreign.MemorySegment " + p.cfStringName()
+            + " = java.lang.foreign.MemorySegment.NULL;")
         .toList();
 
     if (declarations.isEmpty()) return "";

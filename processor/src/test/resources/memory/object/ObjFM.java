@@ -1,36 +1,34 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class ObjFM implements Obj {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
-        ValueLayout.JAVA_INT.withName("field"),
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.structLayout(
+          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.ValueLayout.JAVA_INT.withName("field"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static ObjFM reinterpret(MemorySegment ms) {
+  public static ObjFM reinterpret(java.lang.foreign.MemorySegment ms) {
     return new ObjFM(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -38,7 +36,7 @@ public final class ObjFM implements Obj {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -46,22 +44,22 @@ public final class ObjFM implements Obj {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static ObjFM at(MemorySegment array, long index) {
+  public static ObjFM at(java.lang.foreign.MemorySegment array, long index) {
     return new ObjFM(FM$at(array, index));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public ObjFM(SegmentAllocator allocator) {
+  public ObjFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate(allocator));
   }
 
-  public ObjFM(MemorySegment ms) {
+  public ObjFM(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$field =
-      MemoryLayout.PathElement.groupElement("field");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$field =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("field");
 
   public static final java.lang.invoke.VarHandle FM$VH$field =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -78,19 +76,19 @@ public final class ObjFM implements Obj {
 
   private static final class FF$SYMBOLS {
 
-    private static final MethodHandle FF$MH$0 = pkg.NativeApiFFM.FF$LINKER.downcallHandle(
+    private static final java.lang.invoke.MethodHandle FF$MH$0 = pkg.NativeApiFFM.FF$LINKER.downcallHandle(
         pkg.NativeApiFFM.FF$LOOKUP.findOrThrow("native_symbol"),
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.JAVA_INT));
+        java.lang.foreign.FunctionDescriptor.of(
+            java.lang.foreign.ValueLayout.JAVA_INT,
+            java.lang.foreign.ValueLayout.ADDRESS,
+            java.lang.foreign.ValueLayout.JAVA_INT));
 
-    private static final MethodHandle FF$MH$1 = pkg.NativeApiFFM.FF$LINKER.downcallHandle(
+    private static final java.lang.invoke.MethodHandle FF$MH$1 = pkg.NativeApiFFM.FF$LINKER.downcallHandle(
         pkg.NativeApiFFM.FF$LOOKUP.findOrThrow("native_strlen"),
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+        java.lang.foreign.FunctionDescriptor.of(
+            java.lang.foreign.ValueLayout.JAVA_LONG,
+            java.lang.foreign.ValueLayout.ADDRESS,
+            java.lang.foreign.ValueLayout.ADDRESS));
   }
 
   public int call(
@@ -108,7 +106,7 @@ public final class ObjFM implements Obj {
 
   public long strlen(
       java.lang.String value) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       return (long) FF$SYMBOLS.FF$MH$1.invokeExact(
           this.ms,
           ff$arena.allocateFrom(value));

@@ -1,7 +1,5 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
@@ -10,15 +8,15 @@ public final class LibCFFM implements LibC {
 
   private LibCFFM() {}
 
-  public static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
+  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
 
-  private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("abs"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT,
-          ValueLayout.JAVA_INT));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
   public int abs(
       int number) {
@@ -32,11 +30,11 @@ public final class LibCFFM implements LibC {
     }
   }
 
-  private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("abs"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT,
-          ValueLayout.JAVA_INT));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
   public int renamed(
       int number) {
@@ -50,19 +48,19 @@ public final class LibCFFM implements LibC {
     }
   }
 
-  private static final MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("div"),
-      FunctionDescriptor.of(
+      java.lang.foreign.FunctionDescriptor.of(
           pkg.div_tFM.FM$LAYOUT,
-          ValueLayout.JAVA_INT,
-          ValueLayout.JAVA_INT));
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
   public pkg.div_t div(
       int numerator,
       int denominator) {
-    try (var ff$arena = Arena.ofConfined()) {
-      return pkg.div_tFM.fromMemorySegment((MemorySegment) FF$MH$2.invokeExact(
-          (SegmentAllocator) ff$arena,
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
+      return pkg.div_tFM.fromMemorySegment((java.lang.foreign.MemorySegment) FF$MH$2.invokeExact(
+          (java.lang.foreign.SegmentAllocator) ff$arena,
           numerator,
           denominator));
     } catch (RuntimeException|Error ff$e) {
@@ -72,19 +70,19 @@ public final class LibCFFM implements LibC {
     }
   }
 
-  private static final MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("ldiv"),
-      FunctionDescriptor.of(
+      java.lang.foreign.FunctionDescriptor.of(
           pkg.ldiv_tFM.FM$LAYOUT,
-          ValueLayout.JAVA_LONG,
-          ValueLayout.JAVA_LONG));
+          java.lang.foreign.ValueLayout.JAVA_LONG,
+          java.lang.foreign.ValueLayout.JAVA_LONG));
 
   public pkg.@org.alveolo.ffm.Value ldiv_t ldiv(
       java.lang.foreign.SegmentAllocator allocator,
       long numerator,
       long denominator) {
     try {
-      return new pkg.ldiv_tFM((MemorySegment) FF$MH$3.invokeExact(
+      return new pkg.ldiv_tFM((java.lang.foreign.MemorySegment) FF$MH$3.invokeExact(
           allocator,
           numerator,
           denominator));
@@ -97,15 +95,15 @@ public final class LibCFFM implements LibC {
 
   // TODO support and use FF$LINKER.canonicalLayouts().get("size_t")
   // and how invokeExact would work with different size data?
-  private static final MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("strlen"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_LONG,
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_LONG,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public long strlen(
       java.lang.String utf8z) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       return (long) FF$MH$4.invokeExact(
           ff$arena.allocateFrom(utf8z));
     } catch (RuntimeException|Error ff$e) {
@@ -115,16 +113,16 @@ public final class LibCFFM implements LibC {
     }
   }
 
-  private static final MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("l64a"),
-      FunctionDescriptor.of(
-          ValueLayout.ADDRESS,
-          ValueLayout.JAVA_LONG));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.JAVA_LONG));
 
   public java.lang.String l64a(
       long n) {
     try {
-      var ff$string$r = (MemorySegment) FF$MH$5.invokeExact(
+      var ff$string$r = (java.lang.foreign.MemorySegment) FF$MH$5.invokeExact(
           n);
       return ff$string$r.address() == 0L ? null
           : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);

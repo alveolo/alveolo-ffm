@@ -1,7 +1,5 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
@@ -10,25 +8,25 @@ public final class ArrayParametersFFM implements ArrayParameters {
 
   private ArrayParametersFFM() {}
 
-  public static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final SymbolLookup FF$LOOKUP =
+  public static final java.lang.foreign.SymbolLookup FF$LOOKUP =
       FF$LINKER.defaultLookup();
 
-  private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("scale"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public void scale(
       int[] values) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$size$values = values.length;
-      var ff$ms$values = ff$arena.allocate(ValueLayout.JAVA_INT, ff$size$values);
-      MemorySegment.copy(values, 0, ff$ms$values, ValueLayout.JAVA_INT, 0, ff$size$values);
+      var ff$ms$values = ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT, ff$size$values);
+      java.lang.foreign.MemorySegment.copy(values, 0, ff$ms$values, java.lang.foreign.ValueLayout.JAVA_INT, 0, ff$size$values);
       FF$MH$0.invokeExact(
           ff$ms$values);
-      MemorySegment.copy(ff$ms$values, ValueLayout.JAVA_INT, 0, values, 0, ff$size$values);
+      java.lang.foreign.MemorySegment.copy(ff$ms$values, java.lang.foreign.ValueLayout.JAVA_INT, 0, values, 0, ff$size$values);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -36,21 +34,21 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("sum"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT,
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public int sum(
       @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$size$values = values.length;
       if (ff$size$values != 3) {
         throw new IllegalArgumentException("values length must be 3");
       }
-      var ff$ms$values = ff$arena.allocate(ValueLayout.JAVA_INT, ff$size$values);
-      MemorySegment.copy(values, 0, ff$ms$values, ValueLayout.JAVA_INT, 0, ff$size$values);
+      var ff$ms$values = ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT, ff$size$values);
+      java.lang.foreign.MemorySegment.copy(values, 0, ff$ms$values, java.lang.foreign.ValueLayout.JAVA_INT, 0, ff$size$values);
       return (int) FF$MH$1.invokeExact(
           ff$ms$values);
     } catch (RuntimeException|Error ff$e) {
@@ -60,22 +58,22 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("fill"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public void fill(
       @org.alveolo.ffm.Out @org.alveolo.ffm.Sequence(2L) int[] values) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$size$values = values.length;
       if (ff$size$values != 2) {
         throw new IllegalArgumentException("values length must be 2");
       }
-      var ff$ms$values = ff$arena.allocate(ValueLayout.JAVA_INT, ff$size$values);
+      var ff$ms$values = ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT, ff$size$values);
       FF$MH$2.invokeExact(
           ff$ms$values);
-      MemorySegment.copy(ff$ms$values, ValueLayout.JAVA_INT, 0, values, 0, ff$size$values);
+      java.lang.foreign.MemorySegment.copy(ff$ms$values, java.lang.foreign.ValueLayout.JAVA_INT, 0, values, 0, ff$size$values);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -83,14 +81,14 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("bytes"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public void bytes(
       java.nio.ByteBuffer values) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$position$values = values.position();
       var ff$size$values = values.remaining();
       if (values.isReadOnly()) {
@@ -99,12 +97,12 @@ public final class ArrayParametersFFM implements ArrayParameters {
       }
       var ff$direct$values = values.isDirect();
       var ff$ms$values = ff$direct$values
-          ? MemorySegment.ofBuffer(values).asSlice(
-              0L, Math.multiplyExact(ValueLayout.JAVA_BYTE.byteSize(), (long) ff$size$values))
-          : ff$arena.allocate(ValueLayout.JAVA_BYTE, ff$size$values);
+          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
+              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_BYTE.byteSize(), (long) ff$size$values))
+          : ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_BYTE, ff$size$values);
       if (!ff$direct$values) {
         for (var ff$i$values = 0; ff$i$values < ff$size$values; ff$i$values++) {
-          ff$ms$values.setAtIndex(ValueLayout.JAVA_BYTE, ff$i$values,
+          ff$ms$values.setAtIndex(java.lang.foreign.ValueLayout.JAVA_BYTE, ff$i$values,
               values.get(ff$position$values + ff$i$values));
         }
       }
@@ -113,7 +111,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
       if (!ff$direct$values) {
         for (var ff$i$values = 0; ff$i$values < ff$size$values; ff$i$values++) {
           values.put(ff$position$values + ff$i$values,
-              ff$ms$values.getAtIndex(ValueLayout.JAVA_BYTE, ff$i$values));
+              ff$ms$values.getAtIndex(java.lang.foreign.ValueLayout.JAVA_BYTE, ff$i$values));
         }
       }
     } catch (RuntimeException|Error ff$e) {
@@ -123,14 +121,14 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("ints"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public void ints(
       java.nio.IntBuffer values) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$position$values = values.position();
       var ff$size$values = values.remaining();
       if (ff$size$values != 2) {
@@ -147,15 +145,15 @@ public final class ArrayParametersFFM implements ArrayParameters {
       }
       var ff$direct$values = values.isDirect();
       var ff$ms$values = ff$direct$values
-          ? MemorySegment.ofBuffer(values).asSlice(
-              0L, Math.multiplyExact(ValueLayout.JAVA_INT.byteSize(), (long) ff$size$values))
-          : ff$arena.allocate(ValueLayout.JAVA_INT, ff$size$values);
+          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
+              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) ff$size$values))
+          : ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT, ff$size$values);
       FF$MH$4.invokeExact(
           ff$ms$values);
       if (!ff$direct$values) {
         for (var ff$i$values = 0; ff$i$values < ff$size$values; ff$i$values++) {
           values.put(ff$position$values + ff$i$values,
-              ff$ms$values.getAtIndex(ValueLayout.JAVA_INT, ff$i$values));
+              ff$ms$values.getAtIndex(java.lang.foreign.ValueLayout.JAVA_INT, ff$i$values));
         }
       }
     } catch (RuntimeException|Error ff$e) {
@@ -165,25 +163,25 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("flags"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public void flags(
       boolean[] values) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$size$values = values.length;
-      var ff$ms$values = ff$arena.allocate(ValueLayout.JAVA_BOOLEAN, ff$size$values);
+      var ff$ms$values = ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_BOOLEAN, ff$size$values);
       for (var ff$i$values = 0; ff$i$values < ff$size$values; ff$i$values++) {
-        ff$ms$values.setAtIndex(ValueLayout.JAVA_BOOLEAN, ff$i$values,
+        ff$ms$values.setAtIndex(java.lang.foreign.ValueLayout.JAVA_BOOLEAN, ff$i$values,
             values[ff$i$values]);
       }
       FF$MH$5.invokeExact(
           ff$ms$values);
       for (var ff$i$values = 0; ff$i$values < ff$size$values; ff$i$values++) {
         values[ff$i$values] = ff$ms$values.getAtIndex(
-            ValueLayout.JAVA_BOOLEAN, ff$i$values);
+            java.lang.foreign.ValueLayout.JAVA_BOOLEAN, ff$i$values);
       }
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
@@ -192,16 +190,16 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$6 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$6 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("prefix"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS,
-          ValueLayout.JAVA_INT));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
   public void prefix(
       int[] values,
       int count) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$available$values = values.length;
       var ff$count$values = (long) count;
       if (ff$count$values < 0L || ff$count$values > ff$available$values) {
@@ -210,12 +208,12 @@ public final class ArrayParametersFFM implements ArrayParameters {
                 + ff$available$values + " (length): " + ff$count$values);
       }
       var ff$size$values = (int) ff$count$values;
-      var ff$ms$values = ff$arena.allocate(ValueLayout.JAVA_INT, ff$size$values);
-      MemorySegment.copy(values, 0, ff$ms$values, ValueLayout.JAVA_INT, 0, ff$size$values);
+      var ff$ms$values = ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT, ff$size$values);
+      java.lang.foreign.MemorySegment.copy(values, 0, ff$ms$values, java.lang.foreign.ValueLayout.JAVA_INT, 0, ff$size$values);
       FF$MH$6.invokeExact(
           ff$ms$values,
           count);
-      MemorySegment.copy(ff$ms$values, ValueLayout.JAVA_INT, 0, values, 0, ff$size$values);
+      java.lang.foreign.MemorySegment.copy(ff$ms$values, java.lang.foreign.ValueLayout.JAVA_INT, 0, values, 0, ff$size$values);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {
@@ -223,17 +221,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$7 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$7 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("transform"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT,
-          ValueLayout.ADDRESS,
-          ValueLayout.JAVA_LONG));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.JAVA_LONG));
 
   public int transform(
       pkg.CallPoint[] points,
       long count) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$available$points = points.length;
       var ff$count$points = (long) count;
       if (ff$count$points < 0L || ff$count$points > ff$available$points) {
@@ -268,14 +266,14 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$8 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$8 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("produce"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public void produce(
       pkg.@org.alveolo.ffm.Out CallPoint[] points) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$size$points = points.length;
       var ff$ms$points = ff$arena.allocate(
           pkg.CallPointFM.FM$LAYOUT, ff$size$points);
@@ -294,14 +292,14 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$9 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$9 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("consume"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public void consume(
       pkg.@org.alveolo.ffm.In @org.alveolo.ffm.Sequence(2L) CallPoint[] points) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$size$points = points.length;
       if (ff$size$points != 2) {
         throw new IllegalArgumentException("points length must be 2");
@@ -324,16 +322,16 @@ public final class ArrayParametersFFM implements ArrayParameters {
     }
   }
 
-  private static final MethodHandle FF$MH$10 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$10 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("readPrefix"),
-      FunctionDescriptor.ofVoid(
-          ValueLayout.ADDRESS,
-          ValueLayout.JAVA_INT));
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
   public void readPrefix(
       java.nio.IntBuffer values,
       int count) {
-    try (var ff$arena = Arena.ofConfined()) {
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
       var ff$position$values = values.position();
       var ff$available$values = values.remaining();
       var ff$count$values = (long) count;
@@ -350,12 +348,12 @@ public final class ArrayParametersFFM implements ArrayParameters {
       }
       var ff$direct$values = values.isDirect();
       var ff$ms$values = ff$direct$values
-          ? MemorySegment.ofBuffer(values).asSlice(
-              0L, Math.multiplyExact(ValueLayout.JAVA_INT.byteSize(), (long) ff$size$values))
-          : ff$arena.allocate(ValueLayout.JAVA_INT, ff$size$values);
+          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
+              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) ff$size$values))
+          : ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT, ff$size$values);
       if (!ff$direct$values) {
         for (var ff$i$values = 0; ff$i$values < ff$size$values; ff$i$values++) {
-          ff$ms$values.setAtIndex(ValueLayout.JAVA_INT, ff$i$values,
+          ff$ms$values.setAtIndex(java.lang.foreign.ValueLayout.JAVA_INT, ff$i$values,
               values.get(ff$position$values + ff$i$values));
         }
       }

@@ -1,7 +1,5 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
@@ -10,11 +8,11 @@ public final class NativeLookupTestFFM implements NativeLookupTest {
 
   private NativeLookupTestFFM() {}
 
-  public static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final SymbolLookup FF$LOOKUP = FF$LOOKUP();
+  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LOOKUP();
 
-  private static SymbolLookup FF$LOOKUP() {
+  private static java.lang.foreign.SymbolLookup FF$LOOKUP() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
         NativeLookupTest.class,
         FF$LINKER.defaultLookup(),
@@ -25,12 +23,12 @@ public final class NativeLookupTestFFM implements NativeLookupTest {
     );
   }
 
-  private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("add_ints"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT,
-          ValueLayout.JAVA_INT,
-          ValueLayout.JAVA_INT));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
   public int add_ints(int left, int right) {
     try {

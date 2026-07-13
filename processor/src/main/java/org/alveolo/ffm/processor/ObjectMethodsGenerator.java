@@ -240,8 +240,10 @@ final class ObjectMethodsGenerator {
   void writeVtableMetadata(Writer out) throws IOException {
     out.write("""
 
-          public static final MemoryLayout.PathElement FM$PE$ff$vtbl =
-              MemoryLayout.PathElement.groupElement("ff$vtbl");
+          public static final java.lang.foreign.MemoryLayout.PathElement
+              FM$PE$ff$vtbl =
+                  java.lang.foreign.MemoryLayout.PathElement
+                      .groupElement("ff$vtbl");
 
           public static final java.lang.invoke.VarHandle FM$VH$ff$vtbl =
               java.lang.invoke.MethodHandles.insertCoordinates(
@@ -353,7 +355,7 @@ final class ObjectMethodsGenerator {
     return new ExecutableGenerator(
         processingEnv, method, "FF$MH$" + index, false,
         List.of(new ExecutableGenerator.NativeArgument(
-            "ValueLayout.ADDRESS", "this.ms")),
+            "java.lang.foreign.ValueLayout.ADDRESS", "this.ms")),
         symbolOwnerClassName + ".FF$LINKER",
         symbolOwnerClassName + ".FF$LOOKUP");
   }

@@ -29,7 +29,7 @@ sealed class TypeGenerator permits VariableGenerator {
   /// Intentionally spoiling runtime to throw on use but keeping the generated
   /// code compilable.
   protected static final String VALUE_LAYOUT_NOT_SUPPORTED =
-      "((ValueLayout) null)";
+      "((java.lang.foreign.ValueLayout) null)";
 
   public static final String MEMORY_SEGMENT =
       MemorySegment.class.getCanonicalName();
@@ -94,12 +94,12 @@ sealed class TypeGenerator permits VariableGenerator {
       return VALUE_LAYOUT_NOT_SUPPORTED;
 
     if (isPrimitiveAddress())
-      return "ValueLayout.ADDRESS";
+      return "java.lang.foreign.ValueLayout.ADDRESS";
 
     if (isForeignMemory())
       return isValue()
           ? foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT"
-          : "ValueLayout.ADDRESS";
+          : "java.lang.foreign.ValueLayout.ADDRESS";
 
     return directLayout();
   }
@@ -110,11 +110,11 @@ sealed class TypeGenerator permits VariableGenerator {
 
     var elementLayout = elementLayout();
     if (elementLayout != null)
-      return "MemoryLayout.sequenceLayout("
+      return "java.lang.foreign.MemoryLayout.sequenceLayout("
           + sequence + "L, " + elementLayout + ")";
 
     if (isString() || isMemorySegment())
-      return "ValueLayout.ADDRESS";
+      return "java.lang.foreign.ValueLayout.ADDRESS";
 
     // TODO more custom structures
     return VALUE_LAYOUT_NOT_SUPPORTED;
@@ -155,14 +155,14 @@ sealed class TypeGenerator permits VariableGenerator {
   String elementLayout() {
     var kind = elementKind();
     return kind == null ? null : switch (kind) {
-      case BOOLEAN -> "ValueLayout.JAVA_BOOLEAN";
-      case BYTE -> "ValueLayout.JAVA_BYTE";
-      case CHAR -> "ValueLayout.JAVA_CHAR";
-      case SHORT -> "ValueLayout.JAVA_SHORT";
-      case INT -> "ValueLayout.JAVA_INT";
-      case LONG -> "ValueLayout.JAVA_LONG";
-      case FLOAT -> "ValueLayout.JAVA_FLOAT";
-      case DOUBLE -> "ValueLayout.JAVA_DOUBLE";
+      case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
+      case BYTE -> "java.lang.foreign.ValueLayout.JAVA_BYTE";
+      case CHAR -> "java.lang.foreign.ValueLayout.JAVA_CHAR";
+      case SHORT -> "java.lang.foreign.ValueLayout.JAVA_SHORT";
+      case INT -> "java.lang.foreign.ValueLayout.JAVA_INT";
+      case LONG -> "java.lang.foreign.ValueLayout.JAVA_LONG";
+      case FLOAT -> "java.lang.foreign.ValueLayout.JAVA_FLOAT";
+      case DOUBLE -> "java.lang.foreign.ValueLayout.JAVA_DOUBLE";
       default -> null;
     };
   }
@@ -213,14 +213,14 @@ sealed class TypeGenerator permits VariableGenerator {
 
   String valueLayout() {
     return switch (typeMirror.getKind()) {
-      case BOOLEAN -> "ValueLayout.JAVA_BOOLEAN";
-      case BYTE -> "ValueLayout.JAVA_BYTE";
-      case CHAR -> "ValueLayout.JAVA_CHAR";
-      case SHORT -> "ValueLayout.JAVA_SHORT";
-      case INT -> "ValueLayout.JAVA_INT";
-      case LONG -> "ValueLayout.JAVA_LONG";
-      case FLOAT -> "ValueLayout.JAVA_FLOAT";
-      case DOUBLE -> "ValueLayout.JAVA_DOUBLE";
+      case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
+      case BYTE -> "java.lang.foreign.ValueLayout.JAVA_BYTE";
+      case CHAR -> "java.lang.foreign.ValueLayout.JAVA_CHAR";
+      case SHORT -> "java.lang.foreign.ValueLayout.JAVA_SHORT";
+      case INT -> "java.lang.foreign.ValueLayout.JAVA_INT";
+      case LONG -> "java.lang.foreign.ValueLayout.JAVA_LONG";
+      case FLOAT -> "java.lang.foreign.ValueLayout.JAVA_FLOAT";
+      case DOUBLE -> "java.lang.foreign.ValueLayout.JAVA_DOUBLE";
       default -> throw new IllegalArgumentException(
           "Unexpected primitive type: " + typeMirror);
     };

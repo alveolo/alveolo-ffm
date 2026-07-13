@@ -1,7 +1,5 @@
 package pkg;
 
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
@@ -10,20 +8,20 @@ public final class PassModeFFM implements PassMode {
 
   private PassModeFFM() {}
 
-  public static final Linker FF$LINKER = Linker.nativeLinker();
+  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
 
-  public static final SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
+  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
 
-  private static final MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("recordDefault"),
-      FunctionDescriptor.of(
+      java.lang.foreign.FunctionDescriptor.of(
           pkg.RecordDefaultFM.FM$LAYOUT,
           pkg.RecordDefaultFM.FM$LAYOUT));
 
   public pkg.RecordDefault recordDefault(pkg.RecordDefault value) {
-    try (var ff$arena = Arena.ofConfined()) {
-      return pkg.RecordDefaultFM.fromMemorySegment((MemorySegment) FF$MH$0.invokeExact(
-          (SegmentAllocator) ff$arena,
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
+      return pkg.RecordDefaultFM.fromMemorySegment((java.lang.foreign.MemorySegment) FF$MH$0.invokeExact(
+          (java.lang.foreign.SegmentAllocator) ff$arena,
           pkg.RecordDefaultFM.toMemorySegment(ff$arena, value)));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
@@ -32,16 +30,16 @@ public final class PassModeFFM implements PassMode {
     }
   }
 
-  private static final MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("recordAddress"),
-      FunctionDescriptor.of(
-          ValueLayout.ADDRESS,
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public pkg.@org.alveolo.ffm.Address RecordDefault recordAddress(
       pkg.RecordDefault ref) {
-    try (var ff$arena = Arena.ofConfined()) {
-      return pkg.RecordDefaultFM.reinterpret((MemorySegment) FF$MH$1.invokeExact(
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
+      return pkg.RecordDefaultFM.reinterpret((java.lang.foreign.MemorySegment) FF$MH$1.invokeExact(
           pkg.RecordDefaultFM.toMemorySegment(ff$arena, ref)));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
@@ -50,16 +48,16 @@ public final class PassModeFFM implements PassMode {
     }
   }
 
-  private static final MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("interfaceDefault"),
-      FunctionDescriptor.of(
-          ValueLayout.ADDRESS,
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public pkg.InterfaceDefault interfaceDefault(
       pkg.InterfaceDefault ref) {
     try {
-      return pkg.InterfaceDefaultFM.reinterpret((MemorySegment) FF$MH$2.invokeExact(
+      return pkg.InterfaceDefaultFM.reinterpret((java.lang.foreign.MemorySegment) FF$MH$2.invokeExact(
           ((pkg.InterfaceDefaultFM)ref).ms));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
@@ -68,9 +66,9 @@ public final class PassModeFFM implements PassMode {
     }
   }
 
-  private static final MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("interfaceValue"),
-      FunctionDescriptor.of(
+      java.lang.foreign.FunctionDescriptor.of(
           pkg.InterfaceDefaultFM.FM$LAYOUT,
           pkg.InterfaceDefaultFM.FM$LAYOUT));
 
@@ -78,7 +76,7 @@ public final class PassModeFFM implements PassMode {
       java.lang.foreign.SegmentAllocator allocator,
       pkg.InterfaceDefault value) {
     try {
-      return new pkg.InterfaceDefaultFM((MemorySegment) FF$MH$3.invokeExact(
+      return new pkg.InterfaceDefaultFM((java.lang.foreign.MemorySegment) FF$MH$3.invokeExact(
           allocator,
           ((pkg.InterfaceDefaultFM)value).ms));
     } catch (RuntimeException|Error ff$e) {
@@ -88,17 +86,17 @@ public final class PassModeFFM implements PassMode {
     }
   }
 
-  private static final MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("valueTypeUseOverridesAddressType"),
-      FunctionDescriptor.of(
+      java.lang.foreign.FunctionDescriptor.of(
           pkg.RecordAddressFM.FM$LAYOUT,
           pkg.RecordAddressFM.FM$LAYOUT));
 
   public pkg.@org.alveolo.ffm.Value RecordAddress valueTypeUseOverridesAddressType(
       pkg.RecordAddress value) {
-    try (var ff$arena = Arena.ofConfined()) {
-      return pkg.RecordAddressFM.fromMemorySegment((MemorySegment) FF$MH$4.invokeExact(
-          (SegmentAllocator) ff$arena,
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
+      return pkg.RecordAddressFM.fromMemorySegment((java.lang.foreign.MemorySegment) FF$MH$4.invokeExact(
+          (java.lang.foreign.SegmentAllocator) ff$arena,
           pkg.RecordAddressFM.toMemorySegment(ff$arena, value)));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
@@ -107,16 +105,16 @@ public final class PassModeFFM implements PassMode {
     }
   }
 
-  private static final MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("addressTypeUseOverridesValueType"),
-      FunctionDescriptor.of(
-          ValueLayout.ADDRESS,
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public pkg.@org.alveolo.ffm.Address InterfaceValue addressTypeUseOverridesValueType(
       pkg.InterfaceValue ref) {
     try {
-      return pkg.InterfaceValueFM.reinterpret((MemorySegment) FF$MH$5.invokeExact(
+      return pkg.InterfaceValueFM.reinterpret((java.lang.foreign.MemorySegment) FF$MH$5.invokeExact(
           ((pkg.InterfaceValueFM)ref).ms));
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
@@ -125,17 +123,17 @@ public final class PassModeFFM implements PassMode {
     }
   }
 
-  private static final MethodHandle FF$MH$6 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$6 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("primitiveAddress"),
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT,
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public int primitiveAddress(
       int value) {
-    try (var ff$arena = Arena.ofConfined()) {
-      var ff$ms$value = ff$arena.allocate(ValueLayout.JAVA_INT);
-      ff$ms$value.set(ValueLayout.JAVA_INT, 0L, value);
+    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
+      var ff$ms$value = ff$arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+      ff$ms$value.set(java.lang.foreign.ValueLayout.JAVA_INT, 0L, value);
       return (int) FF$MH$6.invokeExact(
           ff$ms$value);
     } catch (RuntimeException|Error ff$e) {
@@ -145,16 +143,16 @@ public final class PassModeFFM implements PassMode {
     }
   }
 
-  private static final MethodHandle FF$MH$7 = FF$LINKER.downcallHandle(
+  private static final java.lang.invoke.MethodHandle FF$MH$7 = FF$LINKER.downcallHandle(
       FF$LOOKUP.findOrThrow("primitiveAddressReturn"),
-      FunctionDescriptor.of(
-          ValueLayout.ADDRESS));
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   public int primitiveAddressReturn() {
     try {
-      var ff$address$r = (MemorySegment) FF$MH$7.invokeExact();
-      return ff$address$r.reinterpret(ValueLayout.JAVA_INT.byteSize())
-          .get(ValueLayout.JAVA_INT, 0L);
+      var ff$address$r = (java.lang.foreign.MemorySegment) FF$MH$7.invokeExact();
+      return ff$address$r.reinterpret(java.lang.foreign.ValueLayout.JAVA_INT.byteSize())
+          .get(java.lang.foreign.ValueLayout.JAVA_INT, 0L);
     } catch (RuntimeException|Error ff$e) {
       throw ff$e;
     } catch (Throwable ff$t) {

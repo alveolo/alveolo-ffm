@@ -27,16 +27,19 @@ final class IndexedFieldGenerator {
 
     out.write("""
 
-          public static final MemoryLayout.PathElement FM$PE$<name> =
-              MemoryLayout.PathElement.groupElement("<name>");
+          public static final java.lang.foreign.MemoryLayout.PathElement
+              FM$PE$<name> = java.lang.foreign.MemoryLayout.PathElement
+                  .groupElement("<name>");
         """
         .replace("<name>", name));
 
     for (var i = 0; i < indexed.dimensions().size(); i++) {
       out.write("""
 
-            public static final MemoryLayout.PathElement FM$PE$<name>$<index> =
-                MemoryLayout.PathElement.sequenceElement();
+            public static final java.lang.foreign.MemoryLayout.PathElement
+                FM$PE$<name>$<index> =
+                    java.lang.foreign.MemoryLayout.PathElement
+                        .sequenceElement();
           """
           .replace("<name>", name)
           .replace("<index>", Integer.toString(i)));
@@ -44,10 +47,11 @@ final class IndexedFieldGenerator {
 
     out.write("""
 
-          public static final MemoryLayout FM$LAYOUT$<name> =
+          public static final java.lang.foreign.MemoryLayout FM$LAYOUT$<name> =
               FM$LAYOUT.select(FM$PE$<name>);
 
-          public static final MemoryLayout FM$ELEMENT_LAYOUT$<name> =
+          public static final java.lang.foreign.MemoryLayout
+              FM$ELEMENT_LAYOUT$<name> =
               <elementLayout>;
 
           public static final long FM$OFFSET$<name> =
@@ -105,7 +109,7 @@ final class IndexedFieldGenerator {
     var valueName = unusedParameterName(indexed, "value");
     var allocatorName = unusedParameterName(indexed, "allocator");
     var allocator = needsAllocator
-        ? "SegmentAllocator " + allocatorName + ", " : "";
+        ? "java.lang.foreign.SegmentAllocator " + allocatorName + ", " : "";
 
     if (indexed.addressElement() && !field.isMemorySegment()) {
       var foreignClass = foreignMemoryClassName(field);
@@ -172,16 +176,17 @@ final class IndexedFieldGenerator {
     var valueName = unusedParameterName(indexed, "value");
     var allocatorName = unusedParameterName(indexed, "allocator");
     var allocator = needsAllocator
-        ? "SegmentAllocator " + allocatorName + ", " : "";
+        ? "java.lang.foreign.SegmentAllocator " + allocatorName + ", " : "";
 
     out.write("""
 
           public static <type> <name>(
-              MemorySegment ms, <params>) {
+              java.lang.foreign.MemorySegment ms, <params>) {
             return <expression>;
           }
 
-          public static void <name>(MemorySegment ms, <allocator><params>,
+          public static void <name>(
+              java.lang.foreign.MemorySegment ms, <allocator><params>,
               <type> <valueName>) {
             <body>
           }
@@ -209,7 +214,8 @@ final class IndexedFieldGenerator {
     var name = indexed.element().name();
     var params = indexed.parameterDeclarations();
     var receiverAndParams = isStatic
-        ? "MemorySegment ms" + indexed.commaPrefixedParameterDeclarations()
+        ? "java.lang.foreign.MemorySegment ms"
+            + indexed.commaPrefixedParameterDeclarations()
         : params;
     var offsetArgument = (leafOffset(indexed) + ",")
         .replace("\n", "\n        ");
@@ -217,13 +223,14 @@ final class IndexedFieldGenerator {
     var wholeFieldTemplate = isStatic
         ? """
 
-              public static MemorySegment <name>$MemorySegment(MemorySegment ms) {
+              public static java.lang.foreign.MemorySegment
+                  <name>$MemorySegment(java.lang.foreign.MemorySegment ms) {
                 return ms.asSlice(FM$OFFSET$<name>, FM$SIZE$<name>);
               }
             """
         : """
 
-              public MemorySegment <name>$MemorySegment() {
+              public java.lang.foreign.MemorySegment <name>$MemorySegment() {
                 return ms.asSlice(FM$OFFSET$<name>, FM$SIZE$<name>);
               }
             """;
@@ -232,7 +239,8 @@ final class IndexedFieldGenerator {
     var elementTemplate = isStatic
         ? """
 
-              public static MemorySegment <name>$MemorySegment(
+              public static java.lang.foreign.MemorySegment
+                  <name>$MemorySegment(
                   <receiverAndParams>) {
                 return ms.asSlice(
                     <offsetArgument>
@@ -241,7 +249,8 @@ final class IndexedFieldGenerator {
             """
         : """
 
-              public MemorySegment <name>$MemorySegment(<receiverAndParams>) {
+              public java.lang.foreign.MemorySegment
+                  <name>$MemorySegment(<receiverAndParams>) {
                 return ms.asSlice(
                     <offsetArgument>
                     FM$ELEMENT_LAYOUT$<name>.byteSize());
@@ -263,14 +272,16 @@ final class IndexedFieldGenerator {
 
     out.write("""
 
-          public MemorySegment <name>$Address(<params>) {
-            return (MemorySegment) FM$VH$<name>.get(<vhArgs>);
+          public java.lang.foreign.MemorySegment <name>$Address(<params>) {
+            return (java.lang.foreign.MemorySegment)
+                FM$VH$<name>.get(<vhArgs>);
           }
 
           public <class> <name>$Address(
-              <params>, MemorySegment <valueName>) {
+              <params>, java.lang.foreign.MemorySegment <valueName>) {
             FM$VH$<name>.set(<vhArgs>,
-                <valueName> == null ? MemorySegment.NULL : <valueName>);
+                <valueName> == null
+                    ? java.lang.foreign.MemorySegment.NULL : <valueName>);
             return this;
           }
         """
@@ -339,7 +350,8 @@ final class IndexedFieldGenerator {
     if (field.isMemorySegment())
       return """
           FM$VH$<name>.set(<arguments>,
-                  <value> == null ? MemorySegment.NULL : <value>);
+                  <value> == null
+                      ? java.lang.foreign.MemorySegment.NULL : <value>);
           """
           .replace("<name>", name)
           .replace("<arguments>", vhArgs)
@@ -353,14 +365,14 @@ final class IndexedFieldGenerator {
           ? """
               FM$VH$<name>.set(<arguments>,
                       <value> == null
-                          ? MemorySegment.NULL
+                          ? java.lang.foreign.MemorySegment.NULL
                           : <foreignClass>.toMemorySegment(
                               <allocator>, <value>));
               """
           : """
               FM$VH$<name>.set(<arguments>,
                       <value> == null
-                          ? MemorySegment.NULL
+                          ? java.lang.foreign.MemorySegment.NULL
                           : ((<foreignClass>) <value>).ms);
               """;
 
@@ -388,7 +400,7 @@ final class IndexedFieldGenerator {
           .strip();
 
     return """
-        MemorySegment.copy(
+        java.lang.foreign.MemorySegment.copy(
                 ((<foreignClass>) <value>).ms, 0L,
                 <leaf>, 0L,
                 FM$ELEMENT_LAYOUT$<name>.byteSize());
@@ -422,7 +434,8 @@ final class IndexedFieldGenerator {
 
   private String leafOffset(IndexedField indexed) {
     var paths = indexed.dimensions().stream()
-        .map(d -> "MemoryLayout.PathElement.sequenceElement(" + d.name() + ")")
+        .map(d -> "java.lang.foreign.MemoryLayout.PathElement.sequenceElement("
+            + d.name() + ")")
         .toList();
 
     return """
@@ -452,12 +465,14 @@ final class IndexedFieldGenerator {
     var template = isStatic
         ? """
 
-              public static java.nio.<bufferType> <name>$Buffer(MemorySegment ms) {
+              public static java.nio.<bufferType> <name>$Buffer(
+                  java.lang.foreign.MemorySegment ms) {
                 return <segmentCall>.asByteBuffer()
                     .order(java.nio.ByteOrder.nativeOrder())<bufferConversion>;
               }
 
-              public static <type>[] <name>$Array(MemorySegment ms) {
+              public static <type>[] <name>$Array(
+                  java.lang.foreign.MemorySegment ms) {
                 var value = new <type>[(int) FM$DIMENSION$<name>$0];
                 for (<indexType> index = 0; index < value.length; index++) {
                   value[(int) index] = <name>(ms, index);
@@ -465,11 +480,13 @@ final class IndexedFieldGenerator {
                 return value;
               }
 
-              public static <type>[] <name>(MemorySegment ms) {
+              public static <type>[] <name>(
+                  java.lang.foreign.MemorySegment ms) {
                 return <name>$Array(ms);
               }
 
-              public static void <name>(MemorySegment ms, <type>[] value) {
+              public static void <name>(
+                  java.lang.foreign.MemorySegment ms, <type>[] value) {
                 java.util.Objects.requireNonNull(value, "value");
                 if (value.length != FM$DIMENSION$<name>$0) {
                   throw new IllegalArgumentException(
@@ -523,12 +540,13 @@ final class IndexedFieldGenerator {
     var elementType = indexed.element().typeName();
     var arrayType = indexed.declaredTypeName();
     var allocatorParameter = needsAllocator
-        ? "SegmentAllocator allocator, " : "";
+        ? "java.lang.foreign.SegmentAllocator allocator, " : "";
     var allocatorArgument = needsAllocator ? "allocator, " : "";
 
     out.write("""
 
-          public static <arrayType> <name>$Array(MemorySegment ms) {
+          public static <arrayType> <name>$Array(
+              java.lang.foreign.MemorySegment ms) {
             var value = new <elementType>[(int) FM$DIMENSION$<name>$0];
             for (long index = 0; index < value.length; index++) {
               value[(int) index] = <name>(ms, index);
@@ -536,11 +554,12 @@ final class IndexedFieldGenerator {
             return value;
           }
 
-          public static <arrayType> <name>(MemorySegment ms) {
+          public static <arrayType> <name>(
+              java.lang.foreign.MemorySegment ms) {
             return <name>$Array(ms);
           }
 
-          public static void <name>(MemorySegment ms,
+          public static void <name>(java.lang.foreign.MemorySegment ms,
               <allocatorParameter><arrayType> value) {
             java.util.Objects.requireNonNull(value, "value");
             if (value.length != FM$DIMENSION$<name>$0) {

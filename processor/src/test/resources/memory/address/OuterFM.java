@@ -1,36 +1,35 @@
 package pkg;
 
-import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class OuterFM {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.structLayout(
+          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
         pkg.PairBoxFM.FM$LAYOUT.withName("box"),
         pkg.IntBoxFM.FM$LAYOUT.withName("intBox"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static Outer reinterpret(MemorySegment ms) {
+  public static Outer reinterpret(java.lang.foreign.MemorySegment ms) {
     return fromMemorySegment(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -38,7 +37,7 @@ public final class OuterFM {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -46,57 +45,57 @@ public final class OuterFM {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static Outer at(MemorySegment array, long index) {
+  public static Outer at(java.lang.foreign.MemorySegment array, long index) {
     return fromMemorySegment(FM$at(array, index));
   }
 
   public static void toMemorySegment(
-      Outer from, MemorySegment ms, SegmentAllocator ff$allocator) {
+      Outer from, java.lang.foreign.MemorySegment ms, java.lang.foreign.SegmentAllocator ff$allocator) {
     box(ms, ff$allocator, from.box());
     intBox(ms, ff$allocator, from.intBox());
   }
 
-  public static MemorySegment toMemorySegment(
-      SegmentAllocator allocator, Outer from) {
+  public static java.lang.foreign.MemorySegment toMemorySegment(
+      java.lang.foreign.SegmentAllocator allocator, Outer from) {
     var ms = allocate(allocator);
     toMemorySegment(from, ms, allocator);
     return ms;
   }
 
-  public static Outer fromMemorySegment(MemorySegment ms) {
+  public static Outer fromMemorySegment(java.lang.foreign.MemorySegment ms) {
     return new Outer(
         box(ms),
         intBox(ms));
   }
 
-  public static final MemoryLayout.PathElement FM$PE$box =
-      MemoryLayout.PathElement.groupElement("box");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$box =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("box");
 
-  public static pkg.PairBox box(MemorySegment ms) {
+  public static pkg.PairBox box(java.lang.foreign.MemorySegment ms) {
     return pkg.PairBoxFM.fromMemorySegment(ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$box),
         FM$LAYOUT.select(FM$PE$box).byteSize()));
   }
 
   public static void box(
-      MemorySegment ms, SegmentAllocator allocator, pkg.PairBox value) {
+      java.lang.foreign.MemorySegment ms, java.lang.foreign.SegmentAllocator allocator, pkg.PairBox value) {
     var layout = FM$LAYOUT.select(FM$PE$box);
     var slice = ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$box), layout.byteSize());
     pkg.PairBoxFM.toMemorySegment(value, slice, allocator);
   }
 
-  public static final MemoryLayout.PathElement FM$PE$intBox =
-      MemoryLayout.PathElement.groupElement("intBox");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$intBox =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("intBox");
 
-  public static pkg.IntBox intBox(MemorySegment ms) {
+  public static pkg.IntBox intBox(java.lang.foreign.MemorySegment ms) {
     return pkg.IntBoxFM.fromMemorySegment(ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$intBox),
         FM$LAYOUT.select(FM$PE$intBox).byteSize()));
   }
 
   public static void intBox(
-      MemorySegment ms, SegmentAllocator allocator, pkg.IntBox value) {
+      java.lang.foreign.MemorySegment ms, java.lang.foreign.SegmentAllocator allocator, pkg.IntBox value) {
     var layout = FM$LAYOUT.select(FM$PE$intBox);
     var slice = ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$intBox), layout.byteSize());

@@ -92,22 +92,22 @@ public class DispatchTableProcessor extends AbstractProcessor {
       }
 
       out.write("""
-          import java.lang.foreign.*;
-          import java.lang.invoke.MethodHandle;
-
           @javax.annotation.processing.Generated(
               "<generator>")
           public final class <name> implements <interface> {
-            private static final Linker FF$LINKER = Linker.nativeLinker();
+            private static final java.lang.foreign.Linker FF$LINKER =
+                java.lang.foreign.Linker.nativeLinker();
 
-            public static final MemoryLayout FD$LAYOUT =
-                MemoryLayout.sequenceLayout(<slotCount>L, ValueLayout.ADDRESS);
+            public static final java.lang.foreign.MemoryLayout FD$LAYOUT =
+                java.lang.foreign.MemoryLayout.sequenceLayout(<slotCount>L,
+                    java.lang.foreign.ValueLayout.ADDRESS);
 
-            public static <name> reinterpret(MemorySegment ms) {
+            public static <name> reinterpret(
+                java.lang.foreign.MemorySegment ms) {
               return new <name>(ms.reinterpret(FD$LAYOUT.byteSize()));
             }
 
-            public final MemorySegment ms;
+            public final java.lang.foreign.MemorySegment ms;
 
           """
           .replace("<generator>", getClass().getCanonicalName())
@@ -192,7 +192,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
       ExecutableGenerator generator, int index) throws IOException {
     out.write("""
 
-          private static final MethodHandle <mh> = FF$LINKER.downcallHandle(
+          private static final java.lang.invoke.MethodHandle <mh> =
+              FF$LINKER.downcallHandle(
               <descriptor>);
         """
         .replace("<mh>", "FF$MD$" + index)
@@ -202,7 +203,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
   private void writeConstructor(Writer out, String className,
       List<ExecutableGenerator> generators) throws IOException {
     out.write("""
-          public <class>(MemorySegment ms) {
+          public <class>(java.lang.foreign.MemorySegment ms) {
             this.ms = ms;
         <initializers>
           }
@@ -225,7 +226,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
       result.append("""
           this.<mh> = FF$MD$<index>.bindTo(
-              ms.getAtIndex(ValueLayout.ADDRESS, <slot>L));
+              ms.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, <slot>L));
           """
           .replace("<mh>", generator.methodHandleName)
           .replace("<index>", Integer.toString(i))

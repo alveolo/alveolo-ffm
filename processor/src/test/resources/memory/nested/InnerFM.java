@@ -1,36 +1,35 @@
 package pkg;
 
-import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class InnerFM implements Inner {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
-        ValueLayout.JAVA_INT.withName("a"),
-        ValueLayout.JAVA_INT.withName("b"),
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.structLayout(
+          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.ValueLayout.JAVA_INT.withName("a"),
+        java.lang.foreign.ValueLayout.JAVA_INT.withName("b"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static InnerFM reinterpret(MemorySegment ms) {
+  public static InnerFM reinterpret(java.lang.foreign.MemorySegment ms) {
     return new InnerFM(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -38,7 +37,7 @@ public final class InnerFM implements Inner {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -46,22 +45,22 @@ public final class InnerFM implements Inner {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static InnerFM at(MemorySegment array, long index) {
+  public static InnerFM at(java.lang.foreign.MemorySegment array, long index) {
     return new InnerFM(FM$at(array, index));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public InnerFM(SegmentAllocator allocator) {
+  public InnerFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate(allocator));
   }
 
-  public InnerFM(MemorySegment ms) {
+  public InnerFM(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$a =
-      MemoryLayout.PathElement.groupElement("a");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$a =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("a");
 
   public static final java.lang.invoke.VarHandle FM$VH$a =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -76,8 +75,8 @@ public final class InnerFM implements Inner {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$b =
-      MemoryLayout.PathElement.groupElement("b");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$b =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("b");
 
   public static final java.lang.invoke.VarHandle FM$VH$b =
       java.lang.invoke.MethodHandles.insertCoordinates(

@@ -1,36 +1,35 @@
 package pkg;
 
-import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class RenamedChoice implements SimpleChoice {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.unionLayout(
-          org.alveolo.ffm.ForeignUtils.unionPad(new MemoryLayout [] {
-        ValueLayout.JAVA_INT.withName("i"),
-        ValueLayout.JAVA_FLOAT.withName("f"),
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.unionLayout(
+          org.alveolo.ffm.ForeignUtils.unionPad(new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.ValueLayout.JAVA_INT.withName("i"),
+        java.lang.foreign.ValueLayout.JAVA_FLOAT.withName("f"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static RenamedChoice reinterpret(MemorySegment ms) {
+  public static RenamedChoice reinterpret(java.lang.foreign.MemorySegment ms) {
     return new RenamedChoice(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -38,7 +37,7 @@ public final class RenamedChoice implements SimpleChoice {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -46,22 +45,22 @@ public final class RenamedChoice implements SimpleChoice {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static RenamedChoice at(MemorySegment array, long index) {
+  public static RenamedChoice at(java.lang.foreign.MemorySegment array, long index) {
     return new RenamedChoice(FM$at(array, index));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public RenamedChoice(SegmentAllocator allocator) {
+  public RenamedChoice(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate(allocator));
   }
 
-  public RenamedChoice(MemorySegment ms) {
+  public RenamedChoice(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$i =
-      MemoryLayout.PathElement.groupElement("i");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$i =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("i");
 
   public static final java.lang.invoke.VarHandle FM$VH$i =
       java.lang.invoke.MethodHandles.insertCoordinates(
@@ -76,8 +75,8 @@ public final class RenamedChoice implements SimpleChoice {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$f =
-      MemoryLayout.PathElement.groupElement("f");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$f =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("f");
 
   public static final java.lang.invoke.VarHandle FM$VH$f =
       java.lang.invoke.MethodHandles.insertCoordinates(

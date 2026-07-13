@@ -1,39 +1,38 @@
 package pkg;
 
-import java.lang.foreign.*;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class FieldModeAccessorsFM implements FieldModeAccessors {
-  public static final MemoryLayout FM$LAYOUT =
-      MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new MemoryLayout [] {
+  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+      java.lang.foreign.MemoryLayout.structLayout(
+          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
         pkg.InnerRecordFM.FM$LAYOUT.withName("recordDefault"),
-        ValueLayout.ADDRESS.withName("interfaceDefault"),
+        java.lang.foreign.ValueLayout.ADDRESS.withName("interfaceDefault"),
         pkg.InnerInterfaceFM.FM$LAYOUT.withName("interfaceTypeUseValue"),
         pkg.TypeAddressRecordFM.FM$LAYOUT.withName("fieldOverridesTypeAddress"),
-        ValueLayout.ADDRESS.withName("fieldOverridesTypeValue"),
+        java.lang.foreign.ValueLayout.ADDRESS.withName("fieldOverridesTypeValue"),
       }));
 
-  public static MemorySegment allocate(SegmentAllocator allocator) {
+  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
     return allocator.allocate(
       FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
   }
 
-  public static MemorySegment allocate(
-      SegmentAllocator allocator, long count) {
+  public static java.lang.foreign.MemorySegment allocate(
+      java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
     return allocator.allocate(FM$LAYOUT, count);
   }
 
-  public static FieldModeAccessorsFM reinterpret(MemorySegment ms) {
+  public static FieldModeAccessorsFM reinterpret(java.lang.foreign.MemorySegment ms) {
     return new FieldModeAccessorsFM(ms.reinterpret(FM$LAYOUT.byteSize()));
   }
 
-  public static MemorySegment reinterpret(
-      MemorySegment ms, long count) {
+  public static java.lang.foreign.MemorySegment reinterpret(
+      java.lang.foreign.MemorySegment ms, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
@@ -41,7 +40,7 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
         FM$LAYOUT.byteSize(), count));
   }
 
-  private static MemorySegment FM$at(MemorySegment array, long index) {
+  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
     if (index < 0) {
       throw new IndexOutOfBoundsException(index);
     }
@@ -49,22 +48,22 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
         index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
   }
 
-  public static FieldModeAccessorsFM at(MemorySegment array, long index) {
+  public static FieldModeAccessorsFM at(java.lang.foreign.MemorySegment array, long index) {
     return new FieldModeAccessorsFM(FM$at(array, index));
   }
 
-  public final MemorySegment ms;
+  public final java.lang.foreign.MemorySegment ms;
 
-  public FieldModeAccessorsFM(SegmentAllocator allocator) {
+  public FieldModeAccessorsFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate(allocator));
   }
 
-  public FieldModeAccessorsFM(MemorySegment ms) {
+  public FieldModeAccessorsFM(java.lang.foreign.MemorySegment ms) {
     this.ms = ms;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$recordDefault =
-      MemoryLayout.PathElement.groupElement("recordDefault");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$recordDefault =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("recordDefault");
 
   public pkg.InnerRecord recordDefault() {
     return pkg.InnerRecordFM.fromMemorySegment(ms.asSlice(
@@ -80,15 +79,15 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$interfaceDefault =
-      MemoryLayout.PathElement.groupElement("interfaceDefault");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$interfaceDefault =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("interfaceDefault");
 
   public static final java.lang.invoke.VarHandle FM$VH$interfaceDefault =
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$interfaceDefault), 1, 0L);
 
   public pkg.InnerInterface interfaceDefault() {
-    return pkg.InnerInterfaceFM.reinterpret((MemorySegment) FM$VH$interfaceDefault.get(ms));
+    return pkg.InnerInterfaceFM.reinterpret((java.lang.foreign.MemorySegment) FM$VH$interfaceDefault.get(ms));
   }
 
   public FieldModeAccessorsFM interfaceDefault(pkg.InnerInterface value) {
@@ -96,8 +95,8 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$interfaceTypeUseValue =
-      MemoryLayout.PathElement.groupElement("interfaceTypeUseValue");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$interfaceTypeUseValue =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("interfaceTypeUseValue");
 
   public pkg.InnerInterface interfaceTypeUseValue() {
     return new pkg.InnerInterfaceFM(ms.asSlice(
@@ -109,13 +108,13 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     var layout = FM$LAYOUT.select(FM$PE$interfaceTypeUseValue);
     var slice = ms.asSlice(
         FM$LAYOUT.byteOffset(FM$PE$interfaceTypeUseValue), layout.byteSize());
-    MemorySegment.copy(((pkg.InnerInterfaceFM)value).ms, 0,
+    java.lang.foreign.MemorySegment.copy(((pkg.InnerInterfaceFM)value).ms, 0,
         slice, 0, layout.byteSize());
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeAddress =
-      MemoryLayout.PathElement.groupElement("fieldOverridesTypeAddress");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$fieldOverridesTypeAddress =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("fieldOverridesTypeAddress");
 
   public pkg.TypeAddressRecord fieldOverridesTypeAddress() {
     return pkg.TypeAddressRecordFM.fromMemorySegment(ms.asSlice(
@@ -131,15 +130,15 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     return this;
   }
 
-  public static final MemoryLayout.PathElement FM$PE$fieldOverridesTypeValue =
-      MemoryLayout.PathElement.groupElement("fieldOverridesTypeValue");
+  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$fieldOverridesTypeValue =
+      java.lang.foreign.MemoryLayout.PathElement.groupElement("fieldOverridesTypeValue");
 
   public static final java.lang.invoke.VarHandle FM$VH$fieldOverridesTypeValue =
       java.lang.invoke.MethodHandles.insertCoordinates(
           FM$LAYOUT.varHandle(FM$PE$fieldOverridesTypeValue), 1, 0L);
 
   public pkg.TypeValueInterface fieldOverridesTypeValue() {
-    return pkg.TypeValueInterfaceFM.reinterpret((MemorySegment) FM$VH$fieldOverridesTypeValue.get(ms));
+    return pkg.TypeValueInterfaceFM.reinterpret((java.lang.foreign.MemorySegment) FM$VH$fieldOverridesTypeValue.get(ms));
   }
 
   public FieldModeAccessorsFM fieldOverridesTypeValue(pkg.TypeValueInterface value) {
