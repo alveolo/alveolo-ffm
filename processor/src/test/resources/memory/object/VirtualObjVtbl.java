@@ -7,11 +7,11 @@ interface VirtualObjVtbl {
 
   @org.alveolo.ffm.Slot(2)
   int method(
-      VirtualObj ff$self,
+      VirtualObj self$f,
       int arg);
 
   @org.alveolo.ffm.Slot(4)
   int sum(
-      VirtualObj ff$self,
+      VirtualObj self$f,
       @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values);
 }

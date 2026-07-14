@@ -1,31 +1,31 @@
-package pkg;
+package passmode;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.DispatchTableProcessor")
-public final class VirtualObjVtblFD implements VirtualObjVtbl {
+public final class VirtualStructVtbl implements VirtualStructVtblSpec {
   private static final java.lang.foreign.Linker Linker$F =
       java.lang.foreign.Linker.nativeLinker();
 
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
-      java.lang.foreign.MemoryLayout.sequenceLayout(5L,
+      java.lang.foreign.MemoryLayout.sequenceLayout(2L,
           java.lang.foreign.ValueLayout.ADDRESS);
 
-  public static VirtualObjVtblFD reinterpret$F(
+  public static VirtualStructVtbl reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment$f) {
-    return new VirtualObjVtblFD(memorySegment$f.reinterpret(
+    return new VirtualStructVtbl(memorySegment$f.reinterpret(
         MemoryLayout$F.byteSize()));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public VirtualObjVtblFD(java.lang.foreign.MemorySegment memorySegment$f) {
+  public VirtualStructVtbl(java.lang.foreign.MemorySegment memorySegment$f) {
     this.MemorySegment$F = memorySegment$f;
     this.MethodHandle$0$F = DowncallHandle$0$F.bindTo(
         MemorySegment$F.getAtIndex(
-            java.lang.foreign.ValueLayout.ADDRESS, 2L));
+            java.lang.foreign.ValueLayout.ADDRESS, 0L));
     this.MethodHandle$1$F = DowncallHandle$1$F.bindTo(
         MemorySegment$F.getAtIndex(
-            java.lang.foreign.ValueLayout.ADDRESS, 4L));
+            java.lang.foreign.ValueLayout.ADDRESS, 1L));
   }
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
@@ -33,17 +33,23 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+          java.lang.foreign.ValueLayout.ADDRESS,
+          passmode.CircularValue.MemoryLayout$F,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$0$F;
 
-  public int method(
-      pkg.VirtualObj self$f,
-      int arg) {
+  public int generatedCircular(
+      passmode.VirtualStructSpec self$f,
+      passmode.CircularDefault defaultValue,
+      passmode.CircularValue value,
+      passmode.CircularAddress address) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
-          ((pkg.VirtualObjFM)self$f).MemorySegment$F,
-          arg);
+          ((passmode.VirtualStruct)self$f).MemorySegment$F,
+          defaultValue.MemorySegment$F,
+          value.MemorySegment$F,
+          address.MemorySegment$F);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -56,24 +62,20 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.ADDRESS,
+          passmode.CircularAddress.MemoryLayout$F,
           java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$1$F;
 
-  public int sum(
-      pkg.VirtualObj self$f,
-      @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
-    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var values$size$f = values.length;
-      if (values$size$f != 3) {
-        throw new IllegalArgumentException("values length must be 3");
-      }
-      var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
-      java.lang.foreign.MemorySegment.copy(
-          values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
+  public int generatedOverrides(
+      passmode.VirtualStructSpec self$f,
+      passmode.CircularAddress value,
+      passmode.CircularValue address) {
+    try {
       return (int) MethodHandle$1$F.invokeExact(
-          ((pkg.VirtualObjFM)self$f).MemorySegment$F,
-          values$MemorySegment$f);
+          ((passmode.VirtualStruct)self$f).MemorySegment$F,
+          value.MemorySegment$F,
+          address.MemorySegment$F);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

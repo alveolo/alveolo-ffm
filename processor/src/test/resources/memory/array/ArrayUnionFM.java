@@ -1,132 +1,143 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class ArrayUnionFM implements ArrayUnion {
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+  public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.unionLayout(
-          org.alveolo.ffm.ForeignUtils.unionPad(new java.lang.foreign.MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.unionPad(
+              new java.lang.foreign.MemoryLayout [] {
         java.lang.foreign.MemoryLayout.sequenceLayout(4L,
             java.lang.foreign.ValueLayout.JAVA_SHORT).withName("words"),
       }));
 
-  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
-    return allocator.allocate(
-      FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f) {
+    return allocator$f.allocate(
+      MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
-  public static java.lang.foreign.MemorySegment allocate(
-      java.lang.foreign.SegmentAllocator allocator, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator.allocate(FM$LAYOUT, count);
+    return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static ArrayUnionFM reinterpret(java.lang.foreign.MemorySegment ms) {
-    return new ArrayUnionFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  public static ArrayUnionFM reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f) {
+    return new ArrayUnionFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret(
-      java.lang.foreign.MemorySegment ms, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return ms.reinterpret(Math.multiplyExact(
-        FM$LAYOUT.byteSize(), count));
+    return memorySegment$f.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count$f));
   }
 
-  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(index);
+  private static java.lang.foreign.MemorySegment elementAt$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    if (index$f < 0) {
+      throw new IndexOutOfBoundsException(index$f);
     }
-    return array.asSlice(Math.multiplyExact(
-        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+    return array$f.asSlice(Math.multiplyExact(
+        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static ArrayUnionFM at(java.lang.foreign.MemorySegment array, long index) {
-    return new ArrayUnionFM(FM$at(array, index));
+  public static ArrayUnionFM at$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    return new ArrayUnionFM(elementAt$F(array$f, index$f));
   }
 
-  public final java.lang.foreign.MemorySegment ms;
+  public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public ArrayUnionFM(java.lang.foreign.SegmentAllocator allocator) {
-    this(allocate(allocator));
+  public ArrayUnionFM(java.lang.foreign.SegmentAllocator allocator$f) {
+    this(allocate$F(allocator$f));
   }
 
-  public ArrayUnionFM(java.lang.foreign.MemorySegment ms) {
-    this.ms = ms;
+  public ArrayUnionFM(java.lang.foreign.MemorySegment memorySegment$f) {
+    this.MemorySegment$F = memorySegment$f;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$words =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("words");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      words$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("words");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$words$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      words$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$words =
-      FM$LAYOUT.select(FM$PE$words);
+  public static final java.lang.foreign.MemoryLayout
+      words$MemoryLayout$F =
+          MemoryLayout$F.select(words$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$words =
+  public static final java.lang.foreign.MemoryLayout
+      words$ElementMemoryLayout$F =
       java.lang.foreign.ValueLayout.JAVA_SHORT;
 
-  public static final long FM$OFFSET$words =
-      FM$LAYOUT.byteOffset(FM$PE$words);
+  public static final long words$Sequence0Dimension$F = 4L;
 
-  public static final long FM$SIZE$words =
-      FM$LAYOUT$words.byteSize();
-
-  public static final long FM$DIMENSION$words$0 = 4L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$words =
+  public static final java.lang.invoke.VarHandle words$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$words, FM$PE$words$0), 1, 0L);
+          MemoryLayout$F.varHandle(
+              words$PathElement$F, words$Sequence0PathElement$F), 1, 0L);
 
-  public java.lang.foreign.MemorySegment words$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$words, FM$SIZE$words);
+  public java.lang.foreign.MemorySegment
+      wordsAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(words$PathElement$F),
+        words$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment words$MemorySegment(long index) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$words,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
-        FM$ELEMENT_LAYOUT$words.byteSize());
+  public java.lang.foreign.MemorySegment
+      wordsAsMemorySegment$F(long index$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            words$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+        words$ElementMemoryLayout$F.byteSize());
   }
 
   public short words(long index) {
-    return (short) FM$VH$words.get(ms, index);
+    return (short) words$VarHandle$F.get(MemorySegment$F, index);
   }
 
   public ArrayUnionFM words(
       long index,
-      short value) {
-    FM$VH$words.set(ms, index, value);
+      short value$f) {
+    words$VarHandle$F.set(MemorySegment$F, index, value$f);
     return this;
   }
 
-  public java.nio.ShortBuffer words$Buffer() {
-    return words$MemorySegment().asByteBuffer()
+  public java.nio.ShortBuffer wordsAsBuffer$F() {
+    return wordsAsMemorySegment$F().asByteBuffer()
         .order(java.nio.ByteOrder.nativeOrder()).asShortBuffer();
   }
 
-  public short[] words$Array() {
-    var value = new short[(int) FM$DIMENSION$words$0];
-    for (long index = 0; index < value.length; index++) {
-      value[(int) index] = words(index);
+  public short[] wordsToArray$F() {
+    var result$f =
+        new short[(int) words$Sequence0Dimension$F];
+    for (long index$f = 0;
+        index$f < result$f.length; index$f++) {
+      result$f[(int) index$f] = words(index$f);
     }
-    return value;
+    return result$f;
   }
 
-  public ArrayUnionFM words(short[] value) {
-    java.util.Objects.requireNonNull(value, "value");
-    if (value.length != FM$DIMENSION$words$0) {
+  public ArrayUnionFM wordsFromArray$F(short[] value$f) {
+    java.util.Objects.requireNonNull(value$f, "value");
+    if (value$f.length != words$Sequence0Dimension$F) {
       throw new IllegalArgumentException(
-          "words length must be " + FM$DIMENSION$words$0);
+          "words length must be " + words$Sequence0Dimension$F);
     }
-    for (long index = 0; index < value.length; index++) {
-      words(index, value[(int) index]);
+    for (long index$f = 0;
+        index$f < value$f.length; index$f++) {
+      words(index$f, value$f[(int) index$f]);
     }
     return this;
   }

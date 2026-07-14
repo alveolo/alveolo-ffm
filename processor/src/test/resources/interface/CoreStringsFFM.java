@@ -1,51 +1,54 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
 public final class CoreStringsFFM implements CoreStrings {
-  public static final CoreStringsFFM INSTANCE = new CoreStringsFFM();
+  public static final CoreStringsFFM INSTANCE$F = new CoreStringsFFM();
 
   private CoreStringsFFM() {}
 
-  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
+  public static final java.lang.foreign.Linker Linker$F =
+      java.lang.foreign.Linker.nativeLinker();
 
-  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LOOKUP();
+  public static final java.lang.foreign.SymbolLookup
+      SymbolLookup$F = SymbolLookup$F();
 
-  private static java.lang.foreign.SymbolLookup FF$LOOKUP() {
+  private static java.lang.foreign.SymbolLookup SymbolLookup$F() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
         CoreStrings.class,
-        FF$LINKER.defaultLookup(),
+        Linker$F.defaultLookup(),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
             "CoreFoundation", "",
             new org.alveolo.ffm.Library.OS[] {},
             org.alveolo.ffm.Library.Kind.FRAMEWORK));
   }
 
-  private static final java.lang.invoke.MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("CFStringGetLength"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("CFStringGetLength"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_LONG,
           java.lang.foreign.ValueLayout.ADDRESS));
 
   public long CFStringGetLength(
       java.lang.String value) {
-    java.lang.foreign.MemorySegment ff$cfString$value = java.lang.foreign.MemorySegment.NULL;
+    java.lang.foreign.MemorySegment value$CFString$f = java.lang.foreign.MemorySegment.NULL;
     try {
-      ff$cfString$value = org.alveolo.ffm.macos.CFStringSupport.toCFString(value);
-      return (long) FF$MH$0.invokeExact(
-          ff$cfString$value);
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+      value$CFString$f = org.alveolo.ffm.macos.CFStringSupport.toCFString(value);
+      return (long) MethodHandle$0$F.invokeExact(
+          value$CFString$f);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     } finally {
-      org.alveolo.ffm.macos.CFStringSupport.release(ff$cfString$value);
+      org.alveolo.ffm.macos.CFStringSupport.release(value$CFString$f);
     }
   }
 
-  private static final java.lang.invoke.MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("CFStringCompare"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$1$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("CFStringCompare"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_LONG,
           java.lang.foreign.ValueLayout.ADDRESS,
@@ -56,27 +59,28 @@ public final class CoreStringsFFM implements CoreStrings {
       java.lang.String left,
       java.lang.String right,
       long options) {
-    java.lang.foreign.MemorySegment ff$cfString$left = java.lang.foreign.MemorySegment.NULL;
-    java.lang.foreign.MemorySegment ff$cfString$right = java.lang.foreign.MemorySegment.NULL;
+    java.lang.foreign.MemorySegment left$CFString$f = java.lang.foreign.MemorySegment.NULL;
+    java.lang.foreign.MemorySegment right$CFString$f = java.lang.foreign.MemorySegment.NULL;
     try {
-      ff$cfString$left = org.alveolo.ffm.macos.CFStringSupport.toCFString(left);
-      ff$cfString$right = org.alveolo.ffm.macos.CFStringSupport.toCFString(right);
-      return (long) FF$MH$1.invokeExact(
-          ff$cfString$left,
-          ff$cfString$right,
+      left$CFString$f = org.alveolo.ffm.macos.CFStringSupport.toCFString(left);
+      right$CFString$f = org.alveolo.ffm.macos.CFStringSupport.toCFString(right);
+      return (long) MethodHandle$1$F.invokeExact(
+          left$CFString$f,
+          right$CFString$f,
           options);
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     } finally {
-      org.alveolo.ffm.macos.CFStringSupport.release(ff$cfString$left);
-      org.alveolo.ffm.macos.CFStringSupport.release(ff$cfString$right);
+      org.alveolo.ffm.macos.CFStringSupport.release(left$CFString$f);
+      org.alveolo.ffm.macos.CFStringSupport.release(right$CFString$f);
     }
   }
 
-  private static final java.lang.invoke.MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("CFStringCreateWithCString"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$2$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("CFStringCreateWithCString"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.ADDRESS,
           java.lang.foreign.ValueLayout.ADDRESS,
@@ -87,21 +91,21 @@ public final class CoreStringsFFM implements CoreStrings {
       java.lang.foreign.MemorySegment allocator,
       java.lang.String cString,
       int encoding) {
-    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
-      var ff$CFString$r = (java.lang.foreign.MemorySegment) FF$MH$2.invokeExact(
+    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      var cfStringResult$f = (java.lang.foreign.MemorySegment) MethodHandle$2$F.invokeExact(
           allocator,
-          ff$arena.allocateFrom(cString),
+          arena$f.allocateFrom(cString),
           encoding);
       try {
         return org.alveolo.ffm.macos.CFStringSupport
-            .toJavaString(ff$CFString$r);
+            .toJavaString(cfStringResult$f);
       } finally {
-        org.alveolo.ffm.macos.CFStringSupport.release(ff$CFString$r);
+        org.alveolo.ffm.macos.CFStringSupport.release(cfStringResult$f);
       }
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 }

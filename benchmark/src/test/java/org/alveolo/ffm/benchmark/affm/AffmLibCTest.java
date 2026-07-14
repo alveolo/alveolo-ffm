@@ -7,7 +7,7 @@ import java.lang.foreign.Arena;
 import org.junit.jupiter.api.Test;
 
 class AffmLibCTest {
-  private static final AffmLibC affm = AffmLibCFFM.INSTANCE;
+  private static final AffmLibC affm = AffmLibCFFM.INSTANCE$F;
 
   @Test
   void primitives() {
@@ -48,11 +48,16 @@ class AffmLibCTest {
 
   @Test
   void alignment() {
-    assertEquals(0L, AlignmentFM.FM$LAYOUT.byteOffset(AlignmentFM.FM$PE$b));
-    assertEquals(4L, AlignmentFM.FM$LAYOUT.byteOffset(AlignmentFM.FM$PE$i));
-    assertEquals(8L, AlignmentFM.FM$LAYOUT.byteOffset(AlignmentFM.FM$PE$x));
-    assertEquals(10L, AlignmentFM.FM$LAYOUT.byteOffset(AlignmentFM.FM$PE$c));
-    assertEquals(16L, AlignmentFM.FM$LAYOUT.byteOffset(AlignmentFM.FM$PE$l));
+    assertEquals(0L, AlignmentFM.MemoryLayout$F.byteOffset(
+        AlignmentFM.b$PathElement$F));
+    assertEquals(4L, AlignmentFM.MemoryLayout$F.byteOffset(
+        AlignmentFM.i$PathElement$F));
+    assertEquals(8L, AlignmentFM.MemoryLayout$F.byteOffset(
+        AlignmentFM.x$PathElement$F));
+    assertEquals(10L, AlignmentFM.MemoryLayout$F.byteOffset(
+        AlignmentFM.c$PathElement$F));
+    assertEquals(16L, AlignmentFM.MemoryLayout$F.byteOffset(
+        AlignmentFM.l$PathElement$F));
   }
 
   // @Test

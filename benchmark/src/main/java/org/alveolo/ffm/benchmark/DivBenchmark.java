@@ -26,7 +26,7 @@ import org.openjdk.jmh.infra.Blackhole;
 @Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class DivBenchmark {
-  private static final AffmLibC affm = AffmLibCFFM.INSTANCE;
+  private static final AffmLibC affm = AffmLibCFFM.INSTANCE$F;
   private static final JnaLibC jna = JnaLibC.INSTANCE;
 
   // JNR does not support struct-by-value passing:

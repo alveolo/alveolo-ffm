@@ -4,8 +4,11 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.STATIC;
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -38,8 +41,9 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     if (roundEnv.processingOver()) return true;
 
     var messager = processingEnv.getMessager();
+    var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
+    var generator = new ForeignMemoryGenerator(processingEnv, generatedTypes);
 
-    var generator = new ForeignMemoryGenerator(processingEnv);
     for (var annotation : annotations) {
       if (annotation.getQualifiedName().contentEquals(
           Virtual.class.getCanonicalName())) {
@@ -56,7 +60,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
               try {
                 var struct = type.getAnnotation(Struct.class);
                 if (struct != null) {
-                  validateSimpleClassName(annotation, struct, struct.name());
+                  validateSimpleClassName(type, struct, struct.name());
+                  validateGeneratedClassName(type, struct,
+                      foreignMemorySimpleClassName(type));
+                  validateUserIdentifiers(type);
                   validateTopLevelType(type, struct);
                   if (struct.vtable()
                       && type.getKind() == ElementKind.RECORD) {
@@ -71,7 +78,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
                 var union = type.getAnnotation(Union.class);
                 if (union != null) {
-                  validateSimpleClassName(annotation, union, union.name());
+                  validateSimpleClassName(type, union, union.name());
+                  validateGeneratedClassName(type, union,
+                      foreignMemorySimpleClassName(type));
+                  validateUserIdentifiers(type);
                   validateTopLevelType(type, union);
                   if (type.getKind() == ElementKind.RECORD) {
                     messager.printError("@" + annotation.getSimpleName()

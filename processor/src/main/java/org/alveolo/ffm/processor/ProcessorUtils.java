@@ -5,9 +5,13 @@ import static javax.lang.model.SourceVersion.isIdentifier;
 import static javax.lang.model.SourceVersion.isKeyword;
 
 import java.lang.annotation.Annotation;
+import java.util.List;
 
-import javax.lang.model.element.NestingKind;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
@@ -28,6 +32,42 @@ public class ProcessorUtils {
       throw new ProcessorError(element, "@"
           + annotation.annotationType().getSimpleName()
           + " name must be a simple Java class name, not: " + name);
+  }
+
+  static <T extends Annotation> void validateGeneratedClassName(
+      TypeElement element, T annotation, String name) throws ProcessorError {
+    if (name.indexOf('$') < 0) return;
+
+    throw new ProcessorError(element,
+        "Generated @" + annotation.annotationType().getSimpleName()
+            + " class name must not contain '$': " + name);
+  }
+
+  static void validateUserIdentifiers(TypeElement element)
+      throws ProcessorError {
+    if (isAlveoloGeneratedSpecification(element)) return;
+
+    validateUserIdentifier(element, element.getSimpleName().toString(),
+        "type");
+
+    for (var component : element.getRecordComponents()) {
+      validateUserIdentifier(component, component.getSimpleName().toString(),
+          "record component");
+    }
+
+    for (var enclosed : element.getEnclosedElements()) {
+      if (!(enclosed instanceof ExecutableElement method)
+          || method.getKind() != ElementKind.METHOD) {
+        continue;
+      }
+
+      validateUserIdentifier(method, method.getSimpleName().toString(),
+          "method");
+      for (var parameter : method.getParameters()) {
+        validateUserIdentifier(parameter,
+            parameter.getSimpleName().toString(), "parameter");
+      }
+    }
   }
 
   static <T extends Annotation> void validateTopLevelType(
@@ -81,6 +121,20 @@ public class ProcessorUtils {
     return generatedSimpleClassName(element, override, "FD");
   }
 
+  static String vtableSpecificationSimpleClassName(TypeElement element) {
+    if (hasSpecSuffix(element))
+      return foreignMemorySimpleClassName(element) + "VtblSpec";
+
+    return element.getSimpleName() + "Vtbl";
+  }
+
+  static String vtableImplementationSimpleClassName(TypeElement element) {
+    if (hasSpecSuffix(element))
+      return foreignMemorySimpleClassName(element) + "Vtbl";
+
+    return element.getSimpleName() + "VtblFD";
+  }
+
   static String packageName(TypeElement element, Elements elements) {
     return elements.getPackageOf(element).getQualifiedName().toString();
   }
@@ -107,6 +161,55 @@ public class ProcessorUtils {
 
   private static String generatedSimpleClassName(
       TypeElement element, String override, String suffix) {
-    return !override.isEmpty() ? override : element.getSimpleName() + suffix;
+    if (!override.isEmpty()) return override;
+
+    var sourceName = element.getSimpleName().toString();
+    return hasSpecSuffix(element)
+        ? sourceName.substring(0, sourceName.length() - "Spec".length())
+        : sourceName + suffix;
+  }
+
+  private static boolean hasSpecSuffix(TypeElement element) {
+    var name = element.getSimpleName().toString();
+    return element.getKind() == ElementKind.INTERFACE
+        && name.length() > "Spec".length()
+        && name.endsWith("Spec");
+  }
+
+  private static void validateUserIdentifier(
+      Element element, String name, String kind)
+      throws ProcessorError {
+    if (!name.endsWith("$F") && !name.endsWith("$f")) return;
+
+    throw new ProcessorError(element,
+        "User " + kind + " names ending in '$F' or '$f' are reserved for "
+            + "generated identifiers: " + name);
+  }
+
+  private static boolean isAlveoloGeneratedSpecification(
+      TypeElement element) {
+    for (var annotation : element.getAnnotationMirrors()) {
+      if (!annotation.getAnnotationType().toString()
+          .equals("javax.annotation.processing.Generated")) {
+        continue;
+      }
+
+      for (var entry : annotation.getElementValues().entrySet()) {
+        if (!entry.getKey().getSimpleName().contentEquals("value")) continue;
+
+        if (entry.getValue().getValue() instanceof List<?> values
+            && values.stream()
+                .filter(AnnotationValue.class::isInstance)
+                .map(AnnotationValue.class::cast)
+                .map(AnnotationValue::getValue)
+                .map(Object::toString)
+                .anyMatch(value -> value.startsWith(
+                    "org.alveolo.ffm.processor."))) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 }

@@ -6,7 +6,6 @@ import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.STATIC;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.qualifyName;
-import static org.alveolo.ffm.processor.ProcessorUtils.sourceReturnType;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -32,7 +31,7 @@ import org.alveolo.ffm.Virtual;
 /// memory-backed `@Struct` interfaces, including vtable metadata, dispatch
 /// tables, symbol holders, and delegated method implementations.
 final class ObjectMethodsGenerator {
-  static final String VTABLE_FIELD = "ff$vtbl";
+  static final String VTABLE_FIELD = "vtable$F";
 
   record Methods(
       List<ExecutableElement> methods,
@@ -72,15 +71,23 @@ final class ObjectMethodsGenerator {
       return methods.hasVirtualMethods();
     }
 
+    boolean hasUsableVirtualMethods() {
+      return virtualGenerators.stream().anyMatch(generator ->
+          !generator.hasErrors);
+    }
+
     boolean hasSymbolMethods() {
       return methods.hasSymbolMethods();
     }
   }
 
   private final ProcessingEnvironment processingEnv;
+  private final GeneratedTypeRegistry generatedTypes;
 
-  ObjectMethodsGenerator(ProcessingEnvironment processingEnv) {
+  ObjectMethodsGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes) {
     this.processingEnv = processingEnv;
+    this.generatedTypes = generatedTypes;
   }
 
   static boolean isObjectMethod(ExecutableElement method) {
@@ -192,11 +199,12 @@ final class ObjectMethodsGenerator {
 
   void writeDispatchTable(TypeElement iface, Prepared prepared)
       throws IOException {
-    if (!prepared.hasVirtualMethods()) return;
+    if (!prepared.hasUsableVirtualMethods()) return;
 
     var elements = processingEnv.getElementUtils();
     var packageName = packageName(iface, elements);
-    var vtableSimpleName = iface.getSimpleName() + "Vtbl";
+    var vtableSimpleName =
+        ProcessorUtils.vtableSpecificationSimpleClassName(iface);
     var vtableClassName = qualifyName(packageName, vtableSimpleName);
 
     var file = processingEnv.getFiler()
@@ -230,7 +238,7 @@ final class ObjectMethodsGenerator {
             """
             .replace("<slot>", Integer.toString(virtualSlot(method)))
             .replace("<signature>",
-                dispatchTableMethodSignature(iface, method)));
+                dispatchTableMethodSignature(iface, generator)));
       }
 
       out.write("}\n");
@@ -241,32 +249,25 @@ final class ObjectMethodsGenerator {
     out.write("""
 
           public static final java.lang.foreign.MemoryLayout.PathElement
-              FM$PE$ff$vtbl =
+              vtable$F$PathElement$F =
                   java.lang.foreign.MemoryLayout.PathElement
-                      .groupElement("ff$vtbl");
+                      .groupElement("vtable$F");
 
-          public static final java.lang.invoke.VarHandle FM$VH$ff$vtbl =
+          public static final java.lang.invoke.VarHandle
+              vtable$F$VarHandle$F =
               java.lang.invoke.MethodHandles.insertCoordinates(
-                  FM$LAYOUT.varHandle(FM$PE$ff$vtbl), 1, 0L);
+                  MemoryLayout$F.varHandle(vtable$F$PathElement$F), 1, 0L);
         """);
   }
 
   void writeSymbolHolder(Writer out, Prepared prepared) throws IOException {
     if (prepared.symbolGenerators().isEmpty()) return;
 
-    out.write("""
-
-          private static final class FF$SYMBOLS {
-        """);
-
     for (var generator : prepared.symbolGenerators()) {
       if (!generator.hasErrors) {
-        out.write(generator.methodHandleDeclaration()
-            .replace("\n  ", "\n    "));
+        out.write(generator.methodHandleDeclaration());
       }
     }
-
-    out.write("  }\n");
   }
 
   void writeObjectMethods(Writer out, Prepared prepared)
@@ -279,8 +280,7 @@ final class ObjectMethodsGenerator {
             prepared.virtualGenerators().get(virtualIndex++));
       } else {
         var generator = prepared.symbolGenerators().get(symbolIndex++);
-        out.write(generator.methodOnly(
-            "FF$SYMBOLS." + generator.methodHandleName));
+        out.write(generator.methodOnly(generator.methodHandleName));
       }
     }
   }
@@ -346,18 +346,21 @@ final class ObjectMethodsGenerator {
       List<ExecutableElement> methods) {
     return methods.stream()
         .map(method -> new ExecutableGenerator(
-            processingEnv, method, "FF$VH$unused", true))
+            processingEnv, generatedTypes, method,
+            "UnusedMethodHandle$F", true))
         .toList();
   }
 
   private ExecutableGenerator symbolGenerator(ExecutableElement method,
       int index, String symbolOwnerClassName) {
     return new ExecutableGenerator(
-        processingEnv, method, "FF$MH$" + index, false,
+        processingEnv, generatedTypes, method,
+        "SymbolMethodHandle$" + index + "$F", false,
         List.of(new ExecutableGenerator.NativeArgument(
-            "java.lang.foreign.ValueLayout.ADDRESS", "this.ms")),
-        symbolOwnerClassName + ".FF$LINKER",
-        symbolOwnerClassName + ".FF$LOOKUP");
+            "java.lang.foreign.ValueLayout.ADDRESS",
+            "this.MemorySegment$F")),
+        symbolOwnerClassName + ".Linker$F",
+        symbolOwnerClassName + ".SymbolLookup$F");
   }
 
   private void writeVirtualMethod(Writer out, ExecutableGenerator generator)
@@ -374,7 +377,7 @@ final class ObjectMethodsGenerator {
         .map(VariableElement::getSimpleName)
         .map(Object::toString)
         .toList());
-    var call = "ff$vtbl()." + method.getSimpleName()
+    var call = "Vtable$F()." + method.getSimpleName()
         + args.stream().collect(joining(", ", "(", ")"));
 
     var statement = method.getReturnType().getKind() == TypeKind.VOID
@@ -392,14 +395,15 @@ final class ObjectMethodsGenerator {
   }
 
   private String dispatchTableMethodSignature(
-      TypeElement iface, ExecutableElement method) {
+      TypeElement iface, ExecutableGenerator generator) {
+    var method = generator.element;
     var params = new ArrayList<String>();
-    params.add(iface.getSimpleName() + " ff$self");
-    params.addAll(method.getParameters().stream()
-        .map(ProcessorUtils::sourceParameter)
+    params.add(iface.getSimpleName() + " self$f");
+    params.addAll(generator.parameterGenerators.stream()
+        .map(VariableGenerator::bridgeSignature)
         .toList());
 
-    return sourceReturnType(method)
+    return generator.bridgeReturnTypeName()
         + " " + method.getSimpleName()
         + params.stream().collect(joining(",\n      ", "(\n      ", ")"));
   }

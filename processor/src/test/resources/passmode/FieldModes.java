@@ -1,4 +1,4 @@
-package pkg;
+package passmode;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.Struct;

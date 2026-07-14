@@ -68,8 +68,8 @@ abstract class AbstractProcessorTest {
         .withClasspath(files)
         .withProcessors(
             new DispatchTableProcessor(),
-            new ForeignMemoryProcessor(),
-            new ForeignInterfaceProcessor())
+            new ForeignInterfaceProcessor(),
+            new ForeignMemoryProcessor())
         .compile(sources);
   }
 

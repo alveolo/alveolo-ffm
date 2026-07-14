@@ -60,8 +60,26 @@ record IndexedField(
         .collect(joining(", "));
   }
 
-  String commaPrefixedParameterDeclarations() {
-    return ", " + parameterDeclarations();
+  String syntheticParameterDeclarations() {
+    return dimensions.stream()
+        .map(d -> d.typeName() + " " + syntheticName(d))
+        .collect(joining(", "));
+  }
+
+  String syntheticParameterNames() {
+    return dimensions.stream()
+        .map(IndexedField::syntheticName)
+        .collect(joining(", "));
+  }
+
+  String commaPrefixedSyntheticParameterDeclarations() {
+    return ", " + syntheticParameterDeclarations();
+  }
+
+  static String syntheticName(Dimension dimension) {
+    return dimension.name().endsWith("$f")
+        ? dimension.name()
+        : dimension.name() + "$f";
   }
 
   boolean primitive() {

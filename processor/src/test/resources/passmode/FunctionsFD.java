@@ -1,8 +1,8 @@
-package pkg;
+package passmode;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.DispatchTableProcessor")
-public final class XyzVtblFD implements XyzVtbl {
+public final class FunctionsFD implements Functions {
   private static final java.lang.foreign.Linker Linker$F =
       java.lang.foreign.Linker.nativeLinker();
 
@@ -10,46 +10,49 @@ public final class XyzVtblFD implements XyzVtbl {
       java.lang.foreign.MemoryLayout.sequenceLayout(4L,
           java.lang.foreign.ValueLayout.ADDRESS);
 
-  public static XyzVtblFD reinterpret$F(
+  public static FunctionsFD reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment$f) {
-    return new XyzVtblFD(memorySegment$f.reinterpret(
+    return new FunctionsFD(memorySegment$f.reinterpret(
         MemoryLayout$F.byteSize()));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public XyzVtblFD(java.lang.foreign.MemorySegment memorySegment$f) {
+  public FunctionsFD(java.lang.foreign.MemorySegment memorySegment$f) {
     this.MemorySegment$F = memorySegment$f;
     this.MethodHandle$0$F = DowncallHandle$0$F.bindTo(
         MemorySegment$F.getAtIndex(
-            java.lang.foreign.ValueLayout.ADDRESS, 1L));
+            java.lang.foreign.ValueLayout.ADDRESS, 0L));
     this.MethodHandle$1$F = DowncallHandle$1$F.bindTo(
         MemorySegment$F.getAtIndex(
-            java.lang.foreign.ValueLayout.ADDRESS, 3L));
+            java.lang.foreign.ValueLayout.ADDRESS, 1L));
     this.MethodHandle$2$F = DowncallHandle$2$F.bindTo(
         MemorySegment$F.getAtIndex(
             java.lang.foreign.ValueLayout.ADDRESS, 2L));
     this.MethodHandle$3$F = DowncallHandle$3$F.bindTo(
         MemorySegment$F.getAtIndex(
-            java.lang.foreign.ValueLayout.ADDRESS, 0L));
+            java.lang.foreign.ValueLayout.ADDRESS, 3L));
   }
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
       Linker$F.downcallHandle(
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+          java.lang.foreign.ValueLayout.ADDRESS,
+          passmode.ValueStructFM.MemoryLayout$F,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$0$F;
 
-  public int add(
-      int a,
-      int b) {
+  public int generatedInterfaces(
+      passmode.DefaultStructFM defaultValue,
+      passmode.ValueStructFM value,
+      passmode.AddressStructFM address) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
-          a,
-          b);
+          defaultValue.MemorySegment$F,
+          value.MemorySegment$F,
+          address.MemorySegment$F);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -61,18 +64,21 @@ public final class XyzVtblFD implements XyzVtbl {
       Linker$F.downcallHandle(
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+          java.lang.foreign.ValueLayout.ADDRESS,
+          passmode.CircularValue.MemoryLayout$F,
+          java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$1$F;
 
-  public int sub(
-      int a,
-      int b) {
+  public int generatedCircular(
+      passmode.CircularDefault defaultValue,
+      passmode.CircularValue value,
+      passmode.CircularAddress address) {
     try {
       return (int) MethodHandle$1$F.invokeExact(
-          a,
-          b);
+          defaultValue.MemorySegment$F,
+          value.MemorySegment$F,
+          address.MemorySegment$F);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -83,16 +89,22 @@ public final class XyzVtblFD implements XyzVtbl {
   private static final java.lang.invoke.MethodHandle DowncallHandle$2$F =
       Linker$F.downcallHandle(
       java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_LONG,
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          passmode.DefaultRecordFM.MemoryLayout$F,
+          passmode.ValueRecordFM.MemoryLayout$F,
           java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$2$F;
 
-  public long strlen(
-      java.lang.String utf8z) {
+  public int originalRecords(
+      passmode.DefaultRecord defaultValue,
+      passmode.ValueRecord value,
+      passmode.AddressRecord address) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      return (long) MethodHandle$2$F.invokeExact(
-          arena$f.allocateFrom(utf8z));
+      return (int) MethodHandle$2$F.invokeExact(
+          passmode.DefaultRecordFM.toMemorySegment$F(arena$f, defaultValue),
+          passmode.ValueRecordFM.toMemorySegment$F(arena$f, value),
+          passmode.AddressRecordFM.toMemorySegment$F(arena$f, address));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -104,22 +116,18 @@ public final class XyzVtblFD implements XyzVtbl {
       Linker$F.downcallHandle(
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
+          passmode.AddressStructFM.MemoryLayout$F,
           java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$3$F;
 
-  public int sum(
-      @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
-    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var values$size$f = values.length;
-      if (values$size$f != 3) {
-        throw new IllegalArgumentException("values length must be 3");
-      }
-      var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
-      java.lang.foreign.MemorySegment.copy(
-          values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
+  public int generatedOverrides(
+      passmode.AddressStructFM interfaceValue,
+      passmode.ValueStructFM interfaceAddress) {
+    try {
       return (int) MethodHandle$3$F.invokeExact(
-          values$MemorySegment$f);
+          interfaceValue.MemorySegment$F,
+          interfaceAddress.MemorySegment$F);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

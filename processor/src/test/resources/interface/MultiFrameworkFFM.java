@@ -1,21 +1,22 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
 public final class MultiFrameworkFFM implements MultiFramework {
-  public static final MultiFrameworkFFM INSTANCE = new MultiFrameworkFFM();
+  public static final MultiFrameworkFFM INSTANCE$F = new MultiFrameworkFFM();
 
   private MultiFrameworkFFM() {}
 
-  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
+  public static final java.lang.foreign.Linker Linker$F =
+      java.lang.foreign.Linker.nativeLinker();
 
-  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LOOKUP();
+  public static final java.lang.foreign.SymbolLookup
+      SymbolLookup$F = SymbolLookup$F();
 
-  private static java.lang.foreign.SymbolLookup FF$LOOKUP() {
+  private static java.lang.foreign.SymbolLookup SymbolLookup$F() {
     return org.alveolo.ffm.ForeignUtils.libraryLookup(
         MultiFramework.class,
-        FF$LINKER.defaultLookup(),
+        Linker$F.defaultLookup(),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
             "CoreFoundation", "",
             new org.alveolo.ffm.Library.OS[] {},

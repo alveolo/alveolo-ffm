@@ -1,124 +1,130 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class VirtualObjFM implements VirtualObj {
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+  public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
-        java.lang.foreign.ValueLayout.ADDRESS.withName("ff$vtbl"),
+          org.alveolo.ffm.ForeignUtils.structPad(
+              new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.ValueLayout.ADDRESS.withName("vtable$F"),
         java.lang.foreign.ValueLayout.JAVA_INT.withName("field"),
       }));
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$ff$vtbl =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("ff$vtbl");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      vtable$F$PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .groupElement("vtable$F");
 
-  public static final java.lang.invoke.VarHandle FM$VH$ff$vtbl =
+  public static final java.lang.invoke.VarHandle
+      vtable$F$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$ff$vtbl), 1, 0L);
+          MemoryLayout$F.varHandle(vtable$F$PathElement$F), 1, 0L);
 
-  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
-    return allocator.allocate(
-      FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f) {
+    return allocator$f.allocate(
+      MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
-  public static java.lang.foreign.MemorySegment allocate(
-      java.lang.foreign.SegmentAllocator allocator, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator.allocate(FM$LAYOUT, count);
+    return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static VirtualObjFM reinterpret(java.lang.foreign.MemorySegment ms) {
-    return new VirtualObjFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  public static VirtualObjFM reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f) {
+    return new VirtualObjFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret(
-      java.lang.foreign.MemorySegment ms, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return ms.reinterpret(Math.multiplyExact(
-        FM$LAYOUT.byteSize(), count));
+    return memorySegment$f.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count$f));
   }
 
-  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(index);
+  private static java.lang.foreign.MemorySegment elementAt$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    if (index$f < 0) {
+      throw new IndexOutOfBoundsException(index$f);
     }
-    return array.asSlice(Math.multiplyExact(
-        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+    return array$f.asSlice(Math.multiplyExact(
+        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static VirtualObjFM at(java.lang.foreign.MemorySegment array, long index) {
-    return new VirtualObjFM(FM$at(array, index));
+  public static VirtualObjFM at$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    return new VirtualObjFM(elementAt$F(array$f, index$f));
   }
 
-  public final java.lang.foreign.MemorySegment ms;
+  public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  private final VirtualObjVtbl ff$vtbl;
+  private final VirtualObjVtblFD Vtable$F;
 
-  public VirtualObjFM(java.lang.foreign.SegmentAllocator allocator) {
-    this(allocate(allocator));
+  public VirtualObjFM(java.lang.foreign.SegmentAllocator allocator$f) {
+    this(allocate$F(allocator$f));
   }
 
-  public VirtualObjFM(java.lang.foreign.MemorySegment ms) {
-    this.ms = ms;
-    this.ff$vtbl = VirtualObjVtblFD.reinterpret((java.lang.foreign.MemorySegment) FM$VH$ff$vtbl.get(ms));
+  public VirtualObjFM(java.lang.foreign.MemorySegment memorySegment$f) {
+    this.MemorySegment$F = memorySegment$f;
+    this.Vtable$F = VirtualObjVtblFD.reinterpret$F((java.lang.foreign.MemorySegment) vtable$F$VarHandle$F.get(MemorySegment$F));
   }
 
-  private VirtualObjVtbl ff$vtbl() {
-    return ff$vtbl;
+  private VirtualObjVtblFD Vtable$F() {
+    return Vtable$F;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$field =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("field");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      field$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("field");
 
-  public static final java.lang.invoke.VarHandle FM$VH$field =
+  public static final java.lang.invoke.VarHandle field$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$field), 1, 0L);
+          MemoryLayout$F.varHandle(field$PathElement$F), 1, 0L);
 
   public int field() {
-    return (int) FM$VH$field.get(ms);
+    return (int) field$VarHandle$F.get(MemorySegment$F);
   }
 
-  public VirtualObjFM field(int value) {
-    FM$VH$field.set(ms, value);
+  public VirtualObjFM field(int value$f) {
+    field$VarHandle$F.set(MemorySegment$F, value$f);
     return this;
   }
 
-  private static final class FF$SYMBOLS {
-
-    private static final java.lang.invoke.MethodHandle FF$MH$0 = pkg.NativeApiFFM.FF$LINKER.downcallHandle(
-        pkg.NativeApiFFM.FF$LOOKUP.findOrThrow("native_symbol"),
-        java.lang.foreign.FunctionDescriptor.of(
-            java.lang.foreign.ValueLayout.JAVA_INT,
-            java.lang.foreign.ValueLayout.ADDRESS,
-            java.lang.foreign.ValueLayout.JAVA_INT));
-  }
+  private static final java.lang.invoke.MethodHandle SymbolMethodHandle$0$F =
+      pkg.NativeApiFFM.Linker$F.downcallHandle(
+      pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_symbol"),
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.JAVA_INT));
 
   public int method(
       int arg) {
-    return ff$vtbl().method(this, arg);
+    return Vtable$F().method(this, arg);
   }
 
   public int sum(
       @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
-    return ff$vtbl().sum(this, values);
+    return Vtable$F().sum(this, values);
   }
 
   public int call(
       int arg) {
     try {
-      return (int) FF$SYMBOLS.FF$MH$0.invokeExact(
-          this.ms,
+      return (int) SymbolMethodHandle$0$F.invokeExact(
+          this.MemorySegment$F,
           arg);
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 }

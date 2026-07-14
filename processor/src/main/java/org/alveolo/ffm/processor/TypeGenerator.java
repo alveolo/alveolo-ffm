@@ -1,9 +1,8 @@
 package org.alveolo.ffm.processor;
 
-import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
-
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
+import java.util.ArrayList;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -15,6 +14,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.Sequence;
@@ -42,26 +42,40 @@ sealed class TypeGenerator permits VariableGenerator {
 
   final ProcessingEnvironment processingEnv;
   final Elements elements;
+  final Types types;
+  final GeneratedTypeRegistry generatedTypes;
+  final Element useSite;
   final TypeMirror typeMirror;
   final TypeElement typeElement;
+  final GeneratedTypeRegistry.Wrapper generatedWrapper;
   final long sequence;
 
-  TypeGenerator(ProcessingEnvironment processingEnv, TypeMirror typeMirror) {
-    this(processingEnv, typeMirror, sequence(typeMirror));
+  TypeGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes, TypeMirror typeMirror,
+      Element useSite) {
+    this(processingEnv, generatedTypes, typeMirror, useSite,
+        sequence(typeMirror));
   }
 
-  TypeGenerator(ProcessingEnvironment processingEnv, TypeMirror typeMirror,
-      long sequence) {
+  TypeGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes, TypeMirror typeMirror,
+      Element useSite, long sequence) {
     this.processingEnv = processingEnv;
     elements = processingEnv.getElementUtils();
+    types = processingEnv.getTypeUtils();
+    this.generatedTypes = generatedTypes;
+    this.useSite = useSite;
     this.typeMirror = typeMirror;
-    typeElement = (TypeElement) processingEnv
-        .getTypeUtils().asElement(typeMirror);
+    typeElement = (TypeElement) types.asElement(typeMirror);
+    generatedWrapper = generatedTypes.find(typeMirror, useSite);
     this.sequence = sequence;
   }
 
   /// Java type name
   String typeName() {
+    if (generatedWrapper != null)
+      return generatedWrapper.className();
+
     if (typeMirror.getKind().isPrimitive())
       return switch (typeMirror.getKind()) {
         case BOOLEAN -> "boolean";
@@ -82,9 +96,41 @@ sealed class TypeGenerator permits VariableGenerator {
     return typeMirror.toString();
   }
 
+  /// Source type used in an intermediate generated specification. Type-use
+  /// annotations must survive so the processor consuming that specification sees
+  /// the same native pass mode.
+  String bridgeTypeName() {
+    if (generatedWrapper == null) return typeMirror.toString();
+
+    var annotations = new ArrayList<String>();
+
+    for (var annotation : typeMirror.getAnnotationMirrors()) {
+      annotations.add(annotation.toString());
+    }
+
+    if (!hasTypeUseAddress() && !hasTypeUseValue()) {
+      if (hasTypeAddress()) {
+        annotations.add("@" + Address.class.getCanonicalName());
+      } else if (hasTypeValue()) {
+        annotations.add("@" + Value.class.getCanonicalName());
+      }
+    }
+
+    if (annotations.isEmpty())
+      return generatedWrapper.className();
+
+    var annotationSource = String.join(" ", annotations);
+    var className = generatedWrapper.className();
+    var separator = className.lastIndexOf('.');
+
+    return separator < 0 ? annotationSource + " " + className
+        : className.substring(0, separator + 1) + annotationSource + " "
+            + className.substring(separator + 1);
+  }
+
   /// MemoryLayout type such as:
   /// * `ValueLayout.JAVA_INT` for primitive types
-  /// * `Nested.FM$LAYOUT` for nested structs/unions
+  /// * `Nested.MemoryLayout$F` for nested structs/unions
   /// * `ValueLayout.ADDRESS` for reference types
   /// * `MemoryLayout.sequenceLayout(5L, ValueLayout.JAVA_INT)` for primitive
   ///   arrays and NIO buffers
@@ -98,7 +144,7 @@ sealed class TypeGenerator permits VariableGenerator {
 
     if (isForeignMemory())
       return isValue()
-          ? foreignMemoryClassName(typeElement, elements) + ".FM$LAYOUT"
+          ? foreignMemoryClassName() + ".MemoryLayout$F"
           : "java.lang.foreign.ValueLayout.ADDRESS";
 
     return directLayout();
@@ -143,8 +189,7 @@ sealed class TypeGenerator permits VariableGenerator {
     }
 
     var kind = bufferElementKind();
-    return kind == null ? null
-        : processingEnv.getTypeUtils().getPrimitiveType(kind);
+    return kind == null ? null : types.getPrimitiveType(kind);
   }
 
   String elementTypeName() {
@@ -168,15 +213,14 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   TypeMirror arrayComponentType() {
-    return typeMirror.getKind() == TypeKind.ARRAY
-        ? ((ArrayType) typeMirror).getComponentType()
-        : null;
+    return typeMirror.getKind() != TypeKind.ARRAY ? null
+        : ((ArrayType) typeMirror).getComponentType();
   }
 
   TypeGenerator arrayComponentGenerator() {
     var component = arrayComponentType();
     return component == null ? null
-        : new TypeGenerator(processingEnv, component);
+        : new TypeGenerator(processingEnv, generatedTypes, component, useSite);
   }
 
   boolean isValueStructRecordArray() {
@@ -312,6 +356,8 @@ sealed class TypeGenerator permits VariableGenerator {
     if (hasTypeAddress()) return true;
     if (hasTypeValue()) return false;
 
+    if (isForeignMemoryImplementation()) return true;
+
     if (isForeignMemory())
       return typeElement.getKind() == ElementKind.INTERFACE;
 
@@ -319,8 +365,8 @@ sealed class TypeGenerator permits VariableGenerator {
     return false;
   }
 
-  boolean hasAddressAnnotation() {
-    return hasTypeUseAddress() || hasTypeAddress();
+  boolean isForeignMemoryImplementation() {
+    return generatedWrapper != null || hasWrapperMemorySegment(typeElement);
   }
 
   boolean isPrimitiveAddress() {
@@ -328,25 +374,19 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   boolean isValue() {
-    if (isPrimitive()) return !isPrimitiveAddress();
-
-    if (hasTypeUseAddress()) return false;
-    if (hasTypeUseValue()) return true;
-
-    if (hasTypeAddress()) return false;
-    if (hasTypeValue()) return true;
-
-    if (isForeignMemory())
-      return typeElement.getKind() == ElementKind.RECORD;
-
-    // default
-    return true;
+    return !isAddress();
   }
 
   boolean isForeignMemory() {
-    return typeElement != null
-        && (typeElement.getAnnotation(Struct.class) != null
-            || typeElement.getAnnotation(Union.class) != null);
+    return isForeignMemoryImplementation()
+        || (typeElement != null
+            && (typeElement.getAnnotation(Struct.class) != null
+                || typeElement.getAnnotation(Union.class) != null));
+  }
+
+  String foreignMemoryClassName() {
+    return isForeignMemoryImplementation() ? typeName()
+        : ProcessorUtils.foreignMemoryClassName(typeElement, elements);
   }
 
   boolean hasConflictingPassModeAnnotations() {
@@ -364,12 +404,39 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   private boolean hasTypeAddress() {
-    return typeElement != null
-        && typeElement.getAnnotation(Address.class) != null;
+    var annotationSource = typeAnnotationSource();
+    return annotationSource != null
+        && annotationSource.getAnnotation(Address.class) != null;
   }
 
   private boolean hasTypeValue() {
-    return typeElement != null
-        && typeElement.getAnnotation(Value.class) != null;
+    var annotationSource = typeAnnotationSource();
+    return annotationSource != null
+        && annotationSource.getAnnotation(Value.class) != null;
+  }
+
+  private TypeElement typeAnnotationSource() {
+    if (generatedWrapper != null)
+      return generatedWrapper.specification();
+
+    if (!hasWrapperMemorySegment(typeElement))
+      return typeElement;
+
+    for (var iface : typeElement.getInterfaces()) {
+      if (types.asElement(iface) instanceof TypeElement spec
+          && (spec.getAnnotation(Struct.class) != null
+              || spec.getAnnotation(Union.class) != null))
+        return spec;
+    }
+
+    return typeElement;
+  }
+
+  private boolean hasWrapperMemorySegment(TypeElement type) {
+    return type != null && type.getKind() == ElementKind.CLASS
+        && type.getEnclosedElements().stream()
+            .anyMatch(field -> field.getKind() == ElementKind.FIELD
+                && field.getSimpleName().contentEquals("MemorySegment$F")
+                && field.asType().toString().equals(MEMORY_SEGMENT));
   }
 }

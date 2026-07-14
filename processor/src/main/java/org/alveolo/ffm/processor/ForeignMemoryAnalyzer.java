@@ -33,10 +33,13 @@ final class ForeignMemoryAnalyzer {
   ) {}
 
   private final ProcessingEnvironment processingEnv;
+  private final GeneratedTypeRegistry generatedTypes;
   private final Messager messager;
 
-  ForeignMemoryAnalyzer(ProcessingEnvironment processingEnv) {
+  ForeignMemoryAnalyzer(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes) {
     this.processingEnv = processingEnv;
+    this.generatedTypes = generatedTypes;
     messager = processingEnv.getMessager();
   }
 
@@ -120,9 +123,9 @@ final class ForeignMemoryAnalyzer {
       var fieldType = accessor.getReturnType();
       if (fieldType.getKind() == TypeKind.ARRAY) {
         messager.printError(
-            "Array-returning interface fields are not supported; declare an "
-                + "indexed element accessor whose int or long parameters "
-                + "carry @Sequence",
+            "Array-returning interface fields are not supported; declare an"
+                + " indexed element accessor whose int or long parameters"
+                + " carry @Sequence",
             accessor);
         for (var method : methods) {
           addUnsupportedMethod(unsupportedMethods, method);
@@ -130,13 +133,14 @@ final class ForeignMemoryAnalyzer {
         continue;
       }
 
-      var accessorGenerator = new VariableGenerator(processingEnv, fieldName,
-          fieldType, TypeGenerator.sequence(fieldType, accessor), accessor);
+      var accessorGenerator = new VariableGenerator(
+          processingEnv, generatedTypes, fieldName, fieldType,
+          TypeGenerator.sequence(fieldType, accessor), accessor);
       var bufferField = accessorGenerator.isNioBuffer();
       if (bufferField) {
         messager.printError(
-            "NIO Buffer types are not supported as @Struct or @Union fields; "
-                + "declare an indexed element accessor, for example 'int "
+            "NIO Buffer types are not supported as @Struct or @Union fields;"
+                + " declare an indexed element accessor, for example 'int "
                 + fieldName + "(@Sequence(N) long index)'",
             accessor);
       }
@@ -166,7 +170,8 @@ final class ForeignMemoryAnalyzer {
 
     for (var component : record.getRecordComponents()) {
       if (component.asType().getKind() != TypeKind.ARRAY) {
-        fields.add(new VariableGenerator(processingEnv, component));
+        fields.add(new VariableGenerator(
+            processingEnv, generatedTypes, component));
         continue;
       }
 
@@ -175,7 +180,8 @@ final class ForeignMemoryAnalyzer {
         // Keep a generated, throwing converter after reporting the focused
         // diagnostic. This avoids secondary "generated class not found"
         // errors in clients that compile alongside the invalid declaration.
-        fields.add(new VariableGenerator(processingEnv, component));
+        fields.add(new VariableGenerator(
+            processingEnv, generatedTypes, component));
         continue;
       }
 
@@ -212,8 +218,8 @@ final class ForeignMemoryAnalyzer {
       }
       if (kind == TypeKind.INT && size > Integer.MAX_VALUE) {
         messager.printError(
-            "An int indexed field parameter cannot address a dimension "
-                + "larger than Integer.MAX_VALUE",
+            "An int indexed field parameter cannot address a dimension"
+                + " larger than Integer.MAX_VALUE",
             parameter);
         valid = false;
       }
@@ -227,12 +233,12 @@ final class ForeignMemoryAnalyzer {
     var type = accessor.getReturnType();
     var name = accessor.getSimpleName().toString();
     var element = new VariableGenerator(
-        processingEnv, name, type, 1L, accessor);
+        processingEnv, generatedTypes, name, type, 1L, accessor);
 
     if (TypeGenerator.hasSequence(type, accessor)) {
       messager.printError(
-          "Place @Sequence on each indexed field parameter, not on the "
-              + "accessor return",
+          "Place @Sequence on each indexed field parameter, not on the"
+              + " accessor return",
           accessor);
       valid = false;
     }
@@ -250,9 +256,9 @@ final class ForeignMemoryAnalyzer {
     if (dimensions.size() == 1 && element.isPrimitive()
         && dimensions.getFirst().size() > Integer.MAX_VALUE) {
       messager.printError(
-          "One-dimensional primitive indexed fields cannot exceed "
-              + "Integer.MAX_VALUE because Java array and Buffer views use "
-              + "int sizes",
+          "One-dimensional primitive indexed fields cannot exceed"
+              + " Integer.MAX_VALUE because Java array and Buffer views use"
+              + " int sizes",
           accessor);
       valid = false;
     }
@@ -288,20 +294,20 @@ final class ForeignMemoryAnalyzer {
     }
     if (size > Integer.MAX_VALUE) {
       messager.printError(
-          "Record array field @Sequence value cannot exceed "
-              + "Integer.MAX_VALUE",
+          "Record array field @Sequence value cannot exceed Integer.MAX_VALUE",
           component);
       valid = false;
     }
 
-    var element = new VariableGenerator(processingEnv,
-        component.getSimpleName().toString(), componentType, 1L, component);
+    var element = new VariableGenerator(
+        processingEnv, generatedTypes, component.getSimpleName().toString(),
+        componentType, 1L, component);
     if (!validIndexedElement(element, true)) {
       valid = false;
     }
     if (!valid) return null;
 
-    var dimension = new IndexedField.Dimension("index", "long", size);
+    var dimension = new IndexedField.Dimension("index$f", "long", size);
 
     return new IndexedField(element, component.asType(),
         List.of(dimension), component, true);
@@ -319,27 +325,29 @@ final class ForeignMemoryAnalyzer {
     if (element.isPrimitive()) return true;
 
     if (recordSnapshot) {
-      if (!element.isForeignMemory()
-          || !element.isRecord()
-          || !element.isValue()) {
-        messager.printError(
-            "Record arrays support primitives and value-style @Struct "
-                + "record elements only",
-            element.element);
-        return false;
-      }
-      return true;
+      if (element.isForeignMemory() && element.isRecord() && element.isValue())
+        return true;
+
+      messager.printError(
+          "Record arrays support primitives and"
+              + " value-style @Struct record elements only",
+          element.element);
+      return false;
     }
 
-    if (element.isMemorySegment()) return true;
-    if (element.isForeignMemory()
-        && (element.isValue() || element.isAddress()))
+    if (element.isMemorySegment())
       return true;
 
+    if (element.isForeignMemory()) {
+      if (element.isValue() || element.isAddress())
+        return true;
+    }
+
     messager.printError(
-        "Indexed fields support primitives, MemorySegment, and @Struct or "
-            + "@Union elements",
+        "Indexed fields support primitives, MemorySegment,"
+            + " and @Struct or @Union elements",
         element.element);
+
     return false;
   }
 
@@ -365,11 +373,11 @@ final class ForeignMemoryAnalyzer {
       if (componentType.getKind() == TypeKind.ARRAY) {
         continue;
       }
-      if (new TypeGenerator(processingEnv, componentType).isNioBuffer()) {
+      if (new TypeGenerator(processingEnv, generatedTypes,
+          componentType, component).isNioBuffer()) {
         messager.printError(
-            "NIO Buffer types are not supported as record components; "
-                + "use a one-dimensional array component annotated "
-                + "@Sequence",
+            "NIO Buffer types are not supported as record components;"
+                + " use a one-dimensional array component annotated @Sequence",
             component);
       }
     }
@@ -388,16 +396,15 @@ final class ForeignMemoryAnalyzer {
 
       if (field.hasSequenceOnUnsupportedType()) {
         messager.printError(
-            "@Sequence on interface fields belongs on int or long indexed "
-                + "accessor parameters",
+            "@Sequence on interface fields belongs on int or long indexed"
+                + " accessor parameters",
             field.element);
         continue;
       }
 
       if (field.isString()) {
         messager.printError(
-            "String fields are not supported on @Struct or @Union memory "
-                + "types",
+            "String fields are not supported on @Struct or @Union memory types",
             field.element);
         return;
       }
@@ -429,20 +436,19 @@ final class ForeignMemoryAnalyzer {
       var valueType = componentType.getKind() == TypeKind.ARRAY
           ? ((ArrayType) componentType).getComponentType()
           : componentType;
-      var componentGenerator = componentType.getKind() == TypeKind.ARRAY
-          ? new VariableGenerator(processingEnv,
+      var componentGen = componentType.getKind() == TypeKind.ARRAY
+          ? new VariableGenerator(processingEnv, generatedTypes,
               component.getSimpleName().toString(), valueType, 1L, component)
-          : new VariableGenerator(processingEnv, component);
+          : new VariableGenerator(processingEnv, generatedTypes, component);
 
-      if (componentGenerator.isPrimitiveAddress())
+      if (componentGen.isPrimitiveAddress())
         return true;
 
-      if (isRecordAddress(componentGenerator))
+      if (isRecordAddress(componentGen))
         return true;
 
-      if (componentGenerator.isRecord() && componentGenerator.isValue()
-          && recordConverterNeedsAllocator(
-              componentGenerator.typeElement, visited))
+      if (componentGen.isRecord() && componentGen.isValue()
+          && recordConverterNeedsAllocator(componentGen.typeElement, visited))
         return true;
     }
 

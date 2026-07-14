@@ -1,93 +1,99 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class ldiv_tFM implements ldiv_t {
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+  public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(
+              new java.lang.foreign.MemoryLayout [] {
         java.lang.foreign.ValueLayout.JAVA_INT.withName("quot"),
         java.lang.foreign.ValueLayout.JAVA_INT.withName("rem"),
       }));
 
-  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
-    return allocator.allocate(
-      FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f) {
+    return allocator$f.allocate(
+      MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
-  public static java.lang.foreign.MemorySegment allocate(
-      java.lang.foreign.SegmentAllocator allocator, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator.allocate(FM$LAYOUT, count);
+    return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static ldiv_tFM reinterpret(java.lang.foreign.MemorySegment ms) {
-    return new ldiv_tFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  public static ldiv_tFM reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f) {
+    return new ldiv_tFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret(
-      java.lang.foreign.MemorySegment ms, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return ms.reinterpret(Math.multiplyExact(
-        FM$LAYOUT.byteSize(), count));
+    return memorySegment$f.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count$f));
   }
 
-  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(index);
+  private static java.lang.foreign.MemorySegment elementAt$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    if (index$f < 0) {
+      throw new IndexOutOfBoundsException(index$f);
     }
-    return array.asSlice(Math.multiplyExact(
-        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+    return array$f.asSlice(Math.multiplyExact(
+        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static ldiv_tFM at(java.lang.foreign.MemorySegment array, long index) {
-    return new ldiv_tFM(FM$at(array, index));
+  public static ldiv_tFM at$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    return new ldiv_tFM(elementAt$F(array$f, index$f));
   }
 
-  public final java.lang.foreign.MemorySegment ms;
+  public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public ldiv_tFM(java.lang.foreign.SegmentAllocator allocator) {
-    this(allocate(allocator));
+  public ldiv_tFM(java.lang.foreign.SegmentAllocator allocator$f) {
+    this(allocate$F(allocator$f));
   }
 
-  public ldiv_tFM(java.lang.foreign.MemorySegment ms) {
-    this.ms = ms;
+  public ldiv_tFM(java.lang.foreign.MemorySegment memorySegment$f) {
+    this.MemorySegment$F = memorySegment$f;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$quot =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("quot");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      quot$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("quot");
 
-  public static final java.lang.invoke.VarHandle FM$VH$quot =
+  public static final java.lang.invoke.VarHandle quot$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$quot), 1, 0L);
+          MemoryLayout$F.varHandle(quot$PathElement$F), 1, 0L);
 
   public int quot() {
-    return (int) FM$VH$quot.get(ms);
+    return (int) quot$VarHandle$F.get(MemorySegment$F);
   }
 
-  public ldiv_tFM quot(int value) {
-    FM$VH$quot.set(ms, value);
+  public ldiv_tFM quot(int value$f) {
+    quot$VarHandle$F.set(MemorySegment$F, value$f);
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$rem =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("rem");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      rem$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("rem");
 
-  public static final java.lang.invoke.VarHandle FM$VH$rem =
+  public static final java.lang.invoke.VarHandle rem$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$rem), 1, 0L);
+          MemoryLayout$F.varHandle(rem$PathElement$F), 1, 0L);
 
   public int rem() {
-    return (int) FM$VH$rem.get(ms);
+    return (int) rem$VarHandle$F.get(MemorySegment$F);
   }
 
-  public ldiv_tFM rem(int value) {
-    FM$VH$rem.set(ms, value);
+  public ldiv_tFM rem(int value$f) {
+    rem$VarHandle$F.set(MemorySegment$F, value$f);
     return this;
   }
 }

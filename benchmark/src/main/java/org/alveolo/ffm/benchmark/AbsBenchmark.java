@@ -26,7 +26,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
 public class AbsBenchmark {
-  private static final AffmLibCFFM affm = AffmLibCFFM.INSTANCE;
+  private static final AffmLibCFFM affm = AffmLibCFFM.INSTANCE$F;
   private static final JnaLibC jna = JnaLibC.INSTANCE;
   private static final JnrLibC jnr = JnrLibC.INSTANCE;
 

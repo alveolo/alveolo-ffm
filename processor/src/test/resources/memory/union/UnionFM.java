@@ -1,93 +1,99 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class UnionFM implements Union {
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+  public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.unionLayout(
-          org.alveolo.ffm.ForeignUtils.unionPad(new java.lang.foreign.MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.unionPad(
+              new java.lang.foreign.MemoryLayout [] {
         java.lang.foreign.ValueLayout.JAVA_INT.withName("i"),
         java.lang.foreign.ValueLayout.JAVA_DOUBLE.withName("d"),
       }));
 
-  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
-    return allocator.allocate(
-      FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f) {
+    return allocator$f.allocate(
+      MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
-  public static java.lang.foreign.MemorySegment allocate(
-      java.lang.foreign.SegmentAllocator allocator, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator.allocate(FM$LAYOUT, count);
+    return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static UnionFM reinterpret(java.lang.foreign.MemorySegment ms) {
-    return new UnionFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  public static UnionFM reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f) {
+    return new UnionFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret(
-      java.lang.foreign.MemorySegment ms, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return ms.reinterpret(Math.multiplyExact(
-        FM$LAYOUT.byteSize(), count));
+    return memorySegment$f.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count$f));
   }
 
-  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(index);
+  private static java.lang.foreign.MemorySegment elementAt$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    if (index$f < 0) {
+      throw new IndexOutOfBoundsException(index$f);
     }
-    return array.asSlice(Math.multiplyExact(
-        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+    return array$f.asSlice(Math.multiplyExact(
+        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static UnionFM at(java.lang.foreign.MemorySegment array, long index) {
-    return new UnionFM(FM$at(array, index));
+  public static UnionFM at$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    return new UnionFM(elementAt$F(array$f, index$f));
   }
 
-  public final java.lang.foreign.MemorySegment ms;
+  public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public UnionFM(java.lang.foreign.SegmentAllocator allocator) {
-    this(allocate(allocator));
+  public UnionFM(java.lang.foreign.SegmentAllocator allocator$f) {
+    this(allocate$F(allocator$f));
   }
 
-  public UnionFM(java.lang.foreign.MemorySegment ms) {
-    this.ms = ms;
+  public UnionFM(java.lang.foreign.MemorySegment memorySegment$f) {
+    this.MemorySegment$F = memorySegment$f;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$i =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("i");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      i$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("i");
 
-  public static final java.lang.invoke.VarHandle FM$VH$i =
+  public static final java.lang.invoke.VarHandle i$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$i), 1, 0L);
+          MemoryLayout$F.varHandle(i$PathElement$F), 1, 0L);
 
   public int i() {
-    return (int) FM$VH$i.get(ms);
+    return (int) i$VarHandle$F.get(MemorySegment$F);
   }
 
-  public UnionFM i(int value) {
-    FM$VH$i.set(ms, value);
+  public UnionFM i(int value$f) {
+    i$VarHandle$F.set(MemorySegment$F, value$f);
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$d =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("d");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      d$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("d");
 
-  public static final java.lang.invoke.VarHandle FM$VH$d =
+  public static final java.lang.invoke.VarHandle d$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$d), 1, 0L);
+          MemoryLayout$F.varHandle(d$PathElement$F), 1, 0L);
 
   public double d() {
-    return (double) FM$VH$d.get(ms);
+    return (double) d$VarHandle$F.get(MemorySegment$F);
   }
 
-  public UnionFM d(double value) {
-    FM$VH$d.set(ms, value);
+  public UnionFM d(double value$f) {
+    d$VarHandle$F.set(MemorySegment$F, value$f);
     return this;
   }
 }

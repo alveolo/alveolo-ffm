@@ -1,19 +1,21 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
 public final class LibCFFM implements LibC {
-  public static final LibCFFM INSTANCE = new LibCFFM();
+  public static final LibCFFM INSTANCE$F = new LibCFFM();
 
   private LibCFFM() {}
 
-  public static final java.lang.foreign.Linker FF$LINKER = java.lang.foreign.Linker.nativeLinker();
+  public static final java.lang.foreign.Linker Linker$F =
+      java.lang.foreign.Linker.nativeLinker();
 
-  public static final java.lang.foreign.SymbolLookup FF$LOOKUP = FF$LINKER.defaultLookup();
+  public static final java.lang.foreign.SymbolLookup
+      SymbolLookup$F = Linker$F.defaultLookup();
 
-  private static final java.lang.invoke.MethodHandle FF$MH$0 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("abs"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("abs"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.JAVA_INT));
@@ -21,17 +23,18 @@ public final class LibCFFM implements LibC {
   public int abs(
       int number) {
     try {
-      return (int) FF$MH$0.invokeExact(
+      return (int) MethodHandle$0$F.invokeExact(
           number);
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 
-  private static final java.lang.invoke.MethodHandle FF$MH$1 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("abs"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$1$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("abs"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.JAVA_INT));
@@ -39,41 +42,43 @@ public final class LibCFFM implements LibC {
   public int renamed(
       int number) {
     try {
-      return (int) FF$MH$1.invokeExact(
+      return (int) MethodHandle$1$F.invokeExact(
           number);
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 
-  private static final java.lang.invoke.MethodHandle FF$MH$2 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("div"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$2$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("div"),
       java.lang.foreign.FunctionDescriptor.of(
-          pkg.div_tFM.FM$LAYOUT,
+          pkg.div_tFM.MemoryLayout$F,
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.JAVA_INT));
 
   public pkg.div_t div(
       int numerator,
       int denominator) {
-    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
-      return pkg.div_tFM.fromMemorySegment((java.lang.foreign.MemorySegment) FF$MH$2.invokeExact(
-          (java.lang.foreign.SegmentAllocator) ff$arena,
+    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      return pkg.div_tFM.fromMemorySegment$F((java.lang.foreign.MemorySegment) MethodHandle$2$F.invokeExact(
+          (java.lang.foreign.SegmentAllocator) arena$f,
           numerator,
           denominator));
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 
-  private static final java.lang.invoke.MethodHandle FF$MH$3 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("ldiv"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$3$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("ldiv"),
       java.lang.foreign.FunctionDescriptor.of(
-          pkg.ldiv_tFM.FM$LAYOUT,
+          pkg.ldiv_tFM.MemoryLayout$F,
           java.lang.foreign.ValueLayout.JAVA_LONG,
           java.lang.foreign.ValueLayout.JAVA_LONG));
 
@@ -82,39 +87,39 @@ public final class LibCFFM implements LibC {
       long numerator,
       long denominator) {
     try {
-      return new pkg.ldiv_tFM((java.lang.foreign.MemorySegment) FF$MH$3.invokeExact(
+      return new pkg.ldiv_tFM((java.lang.foreign.MemorySegment) MethodHandle$3$F.invokeExact(
           allocator,
           numerator,
           denominator));
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 
-  // TODO support and use FF$LINKER.canonicalLayouts().get("size_t")
-  // and how invokeExact would work with different size data?
-  private static final java.lang.invoke.MethodHandle FF$MH$4 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("strlen"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$4$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("strlen"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_LONG,
           java.lang.foreign.ValueLayout.ADDRESS));
 
   public long strlen(
       java.lang.String utf8z) {
-    try (var ff$arena = java.lang.foreign.Arena.ofConfined()) {
-      return (long) FF$MH$4.invokeExact(
-          ff$arena.allocateFrom(utf8z));
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      return (long) MethodHandle$4$F.invokeExact(
+          arena$f.allocateFrom(utf8z));
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 
-  private static final java.lang.invoke.MethodHandle FF$MH$5 = FF$LINKER.downcallHandle(
-      FF$LOOKUP.findOrThrow("l64a"),
+  private static final java.lang.invoke.MethodHandle MethodHandle$5$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("l64a"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.ADDRESS,
           java.lang.foreign.ValueLayout.JAVA_LONG));
@@ -122,14 +127,14 @@ public final class LibCFFM implements LibC {
   public java.lang.String l64a(
       long n) {
     try {
-      var ff$string$r = (java.lang.foreign.MemorySegment) FF$MH$5.invokeExact(
+      var stringResult$f = (java.lang.foreign.MemorySegment) MethodHandle$5$F.invokeExact(
           n);
-      return ff$string$r.address() == 0L ? null
-          : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);
-    } catch (RuntimeException|Error ff$e) {
-      throw ff$e;
-    } catch (Throwable ff$t) {
-      throw new AssertionError(ff$t);
+      return stringResult$f.address() == 0L ? null
+          : stringResult$f.reinterpret(Long.MAX_VALUE).getString(0L);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
     }
   }
 }

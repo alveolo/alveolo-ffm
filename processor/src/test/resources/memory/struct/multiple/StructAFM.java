@@ -1,93 +1,99 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class StructAFM implements StructA {
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+  public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(
+              new java.lang.foreign.MemoryLayout [] {
         java.lang.foreign.ValueLayout.JAVA_INT.withName("x"),
         java.lang.foreign.ValueLayout.JAVA_INT.withName("y"),
       }));
 
-  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
-    return allocator.allocate(
-      FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f) {
+    return allocator$f.allocate(
+      MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
-  public static java.lang.foreign.MemorySegment allocate(
-      java.lang.foreign.SegmentAllocator allocator, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator.allocate(FM$LAYOUT, count);
+    return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static StructAFM reinterpret(java.lang.foreign.MemorySegment ms) {
-    return new StructAFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  public static StructAFM reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f) {
+    return new StructAFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret(
-      java.lang.foreign.MemorySegment ms, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return ms.reinterpret(Math.multiplyExact(
-        FM$LAYOUT.byteSize(), count));
+    return memorySegment$f.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count$f));
   }
 
-  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(index);
+  private static java.lang.foreign.MemorySegment elementAt$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    if (index$f < 0) {
+      throw new IndexOutOfBoundsException(index$f);
     }
-    return array.asSlice(Math.multiplyExact(
-        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+    return array$f.asSlice(Math.multiplyExact(
+        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static StructAFM at(java.lang.foreign.MemorySegment array, long index) {
-    return new StructAFM(FM$at(array, index));
+  public static StructAFM at$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    return new StructAFM(elementAt$F(array$f, index$f));
   }
 
-  public final java.lang.foreign.MemorySegment ms;
+  public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public StructAFM(java.lang.foreign.SegmentAllocator allocator) {
-    this(allocate(allocator));
+  public StructAFM(java.lang.foreign.SegmentAllocator allocator$f) {
+    this(allocate$F(allocator$f));
   }
 
-  public StructAFM(java.lang.foreign.MemorySegment ms) {
-    this.ms = ms;
+  public StructAFM(java.lang.foreign.MemorySegment memorySegment$f) {
+    this.MemorySegment$F = memorySegment$f;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$x =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("x");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      x$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("x");
 
-  public static final java.lang.invoke.VarHandle FM$VH$x =
+  public static final java.lang.invoke.VarHandle x$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$x), 1, 0L);
+          MemoryLayout$F.varHandle(x$PathElement$F), 1, 0L);
 
   public int x() {
-    return (int) FM$VH$x.get(ms);
+    return (int) x$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructAFM x(int value) {
-    FM$VH$x.set(ms, value);
+  public StructAFM x(int value$f) {
+    x$VarHandle$F.set(MemorySegment$F, value$f);
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$y =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("y");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      y$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("y");
 
-  public static final java.lang.invoke.VarHandle FM$VH$y =
+  public static final java.lang.invoke.VarHandle y$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$y), 1, 0L);
+          MemoryLayout$F.varHandle(y$PathElement$F), 1, 0L);
 
   public int y() {
-    return (int) FM$VH$y.get(ms);
+    return (int) y$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructAFM y(int value) {
-    FM$VH$y.set(ms, value);
+  public StructAFM y(int value$f) {
+    y$VarHandle$F.set(MemorySegment$F, value$f);
     return this;
   }
 }

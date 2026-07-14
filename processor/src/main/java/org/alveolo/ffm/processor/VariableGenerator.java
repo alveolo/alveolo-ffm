@@ -1,7 +1,5 @@
 package org.alveolo.ffm.processor;
 
-import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
-
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -21,24 +19,30 @@ final class VariableGenerator extends TypeGenerator {
 
   VariableGenerator(
       ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes,
       VariableElement element) {
-    this(processingEnv, element.getSimpleName().toString(), element.asType(),
-        sequence(element.asType(), element), element);
+    this(processingEnv, generatedTypes, element.getSimpleName().toString(),
+        element.asType(), sequence(element.asType(), element), element);
   }
 
   VariableGenerator(
       ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes,
       RecordComponentElement element) {
-    this(processingEnv, element.getSimpleName().toString(), element.asType(),
+    this(processingEnv, generatedTypes,
+        element.getSimpleName().toString(), element.asType(),
         sequence(element.asType(), element), element);
   }
 
-  VariableGenerator(ProcessingEnvironment processingEnv, String name,
+  VariableGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes, String name,
       TypeMirror typeMirror, long sequence, Element element) {
-    super(processingEnv, typeMirror, sequence);
+    super(processingEnv, generatedTypes, typeMirror, element, sequence);
     this.element = element;
     this.name = name;
+
     hasExplicitSequence = hasSequence(typeMirror, element);
+
     var countedByAnnotation = element.getAnnotation(CountedBy.class);
     countedBy = countedByAnnotation == null
         ? null : countedByAnnotation.value();
@@ -52,6 +56,10 @@ final class VariableGenerator extends TypeGenerator {
   /// Variable signature such as: `int i`
   String signature() {
     return typeName() + " " + name();
+  }
+
+  String bridgeSignature() {
+    return bridgeTypeName() + " " + name();
   }
 
   String argumentLayout() {
@@ -73,11 +81,11 @@ final class VariableGenerator extends TypeGenerator {
   /// Source code for passing an argument to a native function
   /// * `argX` for primitive types or directly passed `MemorySegment` or
   ///   `SegmentAllocator`
-  /// * `argX.ms` for struct/union implementation passed by reference
-  /// * `((StructFM) argX).ms` for struct/union interface passed by reference
-  /// * `ff$arena.allocateFrom(argX)` for Java `String` to C `char*` conversion
-  /// * `ff$cfString$argX` for Java `@CFString String` conversion
-  /// * `StructFM.toMemorySegment(ff$arena, argX)` for records conversion
+  /// * `argX.MemorySegment$F` for a struct/union implementation by reference
+  /// * `((StructFM) argX).MemorySegment$F` for an interface by reference
+  /// * `arena$f.allocateFrom(argX)` for Java `String` to C `char*` conversion
+  /// * `argX$CFString$f` for Java `@CFString String` conversion
+  /// * `StructFM.toMemorySegment$F(arena$f, argX)` for records conversion
   String invoke() {
     if (isPrimitiveAddress())
       return segmentName();
@@ -92,20 +100,23 @@ final class VariableGenerator extends TypeGenerator {
       return cfStringName();
 
     if (isString())
-      return "ff$arena.allocateFrom(" + name() + ")";
+      return "arena$f.allocateFrom(" + name() + ")";
+
+    if (isForeignMemoryImplementation())
+      return name() + ".MemorySegment$F";
 
     if (isRecord())
-      return foreignMemoryClassName(typeElement, elements)
-          + ".toMemorySegment(ff$arena, " + name() + ")";
+      return foreignMemoryClassName()
+          + ".toMemorySegment$F(arena$f, " + name() + ")";
 
     return (typeElement.getKind() == ElementKind.INTERFACE)
-        ? "((" + foreignMemoryClassName(typeElement, elements) + ")" + name()
-            + ").ms"
-        : name() + ".ms";
+        ? "((" + foreignMemoryClassName() + ") " + name()
+            + ").MemorySegment$F"
+        : name() + ".MemorySegment$F";
   }
 
   String cfStringName() {
-    return "ff$cfString$" + name();
+    return name() + "$CFString$f";
   }
 
   boolean hasInAnnotation() {
@@ -163,7 +174,7 @@ final class VariableGenerator extends TypeGenerator {
 
   String primitiveAddressInitializer() {
     return """
-        var <segment> = ff$arena.allocate(<layout>);
+        var <segment> = arena$f.allocate(<layout>);
         <segment>.set(<layout>, 0L, <name>);
         """
         .replace("<segment>", segmentName())
@@ -192,7 +203,7 @@ final class VariableGenerator extends TypeGenerator {
     return """
         <sizeInitializer>
         <sequenceCheck>
-        var <segment> = ff$arena.allocate(<layout>, <size>);
+        var <segment> = arena$f.allocate(<layout>, <size>);
         <copyIn>
         """
         .replace("<sizeInitializer>\n", sizeInitializer(
@@ -216,7 +227,7 @@ final class VariableGenerator extends TypeGenerator {
         var <segment> = <direct>
             ? java.lang.foreign.MemorySegment.ofBuffer(<name>).asSlice(
                 0L, Math.multiplyExact(<layout>.byteSize(), (long) <size>))
-            : ff$arena.allocate(<layout>, <size>);
+            : arena$f.allocate(<layout>, <size>);
         <copyIn>
         """
         .replace("<position>", positionName())
@@ -239,8 +250,8 @@ final class VariableGenerator extends TypeGenerator {
     return """
         <sizeInitializer>
         <sequenceCheck>
-        var <segment> = ff$arena.allocate(
-            <foreignClass>.FM$LAYOUT, <size>);
+        var <segment> = arena$f.allocate(
+            <foreignClass>.MemoryLayout$F, <size>);
         <copyIn>
         """
         .replace("<sizeInitializer>\n", sizeInitializer(
@@ -282,7 +293,8 @@ final class VariableGenerator extends TypeGenerator {
 
     return """
         if (<size> != <sequence>) {
-          throw new IllegalArgumentException("<name> <sizeWord> must be <sequence>");
+          throw new IllegalArgumentException(
+              "<name> <sizeWord> must be <sequence>");
         }
         """
         .replace("<size>", sizeName())
@@ -354,10 +366,10 @@ final class VariableGenerator extends TypeGenerator {
     return """
         for (var <index> = 0; <index> < <size>; <index>++) {
           <segment>.asSlice(
-              (long) <index> * <foreignClass>.FM$LAYOUT.byteSize(),
-              <foreignClass>.FM$LAYOUT).copyFrom(
-                  <foreignClass>.toMemorySegment(
-                      ff$arena, <name>[<index>]));
+              (long) <index> * <foreignClass>.MemoryLayout$F.byteSize(),
+              <foreignClass>.MemoryLayout$F).copyFrom(
+                  <foreignClass>.toMemorySegment$F(
+                      arena$f, <name>[<index>]));
         }
         """
         .replace("<index>", indexName())
@@ -419,10 +431,10 @@ final class VariableGenerator extends TypeGenerator {
   private String recordArrayCopyOut() {
     return """
         for (var <index> = 0; <index> < <size>; <index>++) {
-          <name>[<index>] = <foreignClass>.fromMemorySegment(
+          <name>[<index>] = <foreignClass>.fromMemorySegment$F(
               <segment>.asSlice(
-                  (long) <index> * <foreignClass>.FM$LAYOUT.byteSize(),
-                  <foreignClass>.FM$LAYOUT));
+                  (long) <index> * <foreignClass>.MemoryLayout$F.byteSize(),
+                  <foreignClass>.MemoryLayout$F));
         }
         """
         .replace("<index>", indexName())
@@ -453,35 +465,35 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   private String segmentName() {
-    return "ff$ms$" + name;
+    return name + "$MemorySegment$f";
   }
 
   private String sizeName() {
-    return "ff$size$" + name;
+    return name + "$size$f";
   }
 
   private String positionName() {
-    return "ff$position$" + name;
+    return name + "$position$f";
   }
 
   private String directName() {
-    return "ff$direct$" + name;
+    return name + "$direct$f";
   }
 
   private String indexName() {
-    return "ff$i$" + name;
+    return name + "$index$f";
   }
 
   private String availableName() {
-    return "ff$available$" + name;
+    return name + "$available$f";
   }
 
   private String countName() {
-    return "ff$count$" + name;
+    return name + "$count$f";
   }
 
   private String recordForeignMemoryClassName() {
-    return foreignMemoryClassName(arrayComponentGenerator().typeElement,
-        elements);
+    return ProcessorUtils.foreignMemoryClassName(
+        arrayComponentGenerator().typeElement, elements);
   }
 }

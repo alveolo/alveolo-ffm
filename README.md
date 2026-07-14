@@ -24,10 +24,10 @@ public interface NativeMath {
 The processor generates `NativeMathFFM`, with a ready-to-use singleton:
 
 ```java
-var sum = NativeMathFFM.INSTANCE.add_ints(19, 23);
+var sum = NativeMathFFM.INSTANCE$F.add_ints(19, 23);
 
 var values = new int[] {1, 2, 3};
-NativeMathFFM.INSTANCE.scale(values, values.length, 10);
+NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
 // values == {10, 20, 30}
 ```
 
@@ -49,8 +49,20 @@ NativeMathFFM.INSTANCE.scale(values, values.length, 10);
 Generated names are intentionally predictable:
 
 - `NativeMath` -> `NativeMathFFM`
+- `NativeMathSpec` -> `NativeMath`
 - `timeval` -> `timevalFM`
 - `Pair` -> `PairFM`
+
+For annotated interfaces, a trailing `Spec` is removed instead of adding the
+usual generated-class suffix. Records always retain their full declared name
+and use the normal generated-class suffix. An explicitly configured generated
+name still takes precedence. Generated vtable specifications follow the same
+rule: a `NativeObjectSpec` struct produces `NativeObjectVtblSpec`, whose
+generated dispatch-table class is `NativeObjectVtbl`.
+
+Identifiers consumed by the processor must not end in the reserved `$F` or
+`$f` suffix. Generated infrastructure and additional public helpers use `$F`;
+synthetic implementation details use `$f`.
 
 Annotated types must currently be top-level declarations; nested annotated
 types are rejected with a compile-time diagnostic.
@@ -145,7 +157,7 @@ Generated code uses `Linker.nativeLinker()` and `downcallHandle(...)`.
 Methods on the source interface become methods on the generated implementation:
 
 ```java
-var length = LibCFFM.INSTANCE.stringLength("hello");
+var length = LibCFFM.INSTANCE$F.stringLength("hello");
 ```
 
 Default and static methods are ignored by the processor, so the interface can
@@ -237,10 +249,11 @@ public record div_t(int quot, int rem) {}
 
 The processor generates a layout helper with:
 
-- `FM$LAYOUT`
-- path elements and var handles
-- `allocate(...)`
-- record conversion helpers
+- `MemoryLayout$F`
+- `<field>$PathElement$F` path elements and `<field>$VarHandle$F` var handles
+- `allocate$F(...)`
+- `toMemorySegment$F(...)` and `fromMemorySegment$F(...)` record conversion
+  helpers
 
 For mutable memory-backed wrappers, use an interface:
 
@@ -293,11 +306,11 @@ public interface Samples {
 This maps to an inline C field such as `int values[3]`, not an `int*` pointer.
 The generated wrapper implements `values(long)`, adds a fluent
 `values(long, int)` setter, and exposes the complete field as
-`values$MemorySegment()`. A one-dimensional primitive field also provides
-`values$Buffer()`, a `values$Array()` snapshot, and an exact-length
-`values(array)` replacement helper. Boolean and byte fields use `ByteBuffer`;
-the boolean view exposes the underlying one-byte representation.
-`values$MemorySegment(index)` selects one element when byte-level access is
+`valuesAsMemorySegment$F()`. A one-dimensional primitive field also provides
+`valuesAsBuffer$F()`, a `valuesToArray$F()` snapshot, and an exact-length
+`valuesFromArray$F(array)` replacement helper. Boolean and byte fields use
+`ByteBuffer`; the boolean view exposes the underlying one-byte representation.
+`valuesAsMemorySegment$F(index)` selects one element when byte-level access is
 useful. The indexed path performs FFM bounds checks against the declared extent.
 
 Use one index per C dimension. Parameter order is outermost to innermost, so
@@ -349,18 +362,18 @@ arrays:
 record Point(int x, int y) {}
 
 try (var arena = Arena.ofConfined()) {
-  var points = PointFM.allocate(arena, 3);
-  var first = PointFM.at(points, 0);
+  var points = PointFM.allocate$F(arena, 3);
+  var first = PointFM.at$F(points, 0);
 }
 ```
 
-`allocate(allocator, count)` creates contiguous storage for `count`
-layouts. `reinterpret(segment, count)` gives pointer-like native memory an
+`allocate$F(allocator, count)` creates contiguous storage for `count`
+layouts. `reinterpret$F(segment, count)` gives pointer-like native memory an
 explicit array extent; the caller remains responsible for proving that many
 elements are accessible and for keeping the underlying memory alive.
 
-For a memory-backed interface, `at(segment, index)` returns an element view
-that aliases the array. For a record, `at(...)` returns a detached snapshot.
+For a memory-backed interface, `at$F(segment, index)` returns an element view
+that aliases the array. For a record, `at$F(...)` returns a detached snapshot.
 No generic whole-element copy helper is generated.
 
 ## Value vs Address
@@ -384,6 +397,14 @@ public interface NativePairs {
 
   int pair_sum_interface(@Value PairS value);
 }
+```
+
+A foreign-method parameter may also use the generated class of a memory-backed
+interface directly. It is address-like by default, just like its source
+interface; use `@Value` to override that pass mode:
+
+```java
+int tcgetattr(int fd, termiosFM value);
 ```
 
 If a `@ForeignInterface` method returns a struct by value, the generated wrapper
@@ -458,7 +479,7 @@ not native contiguous-array carriers.
 
 Array and buffer return types are rejected because a native pointer return has
 no implied extent or lifetime. Bind it as `MemorySegment`, then use the target
-struct's `reinterpret(segment, count)` and `at(...)` helpers when the
+struct's `reinterpret$F(segment, count)` and `at$F(...)` helpers when the
 native contract supplies a trustworthy element count.
 
 ### Extent
@@ -519,7 +540,7 @@ call, but the generated wrapper does not manage a pointer retained afterward;
 use an explicit, suitably scoped `MemorySegment` API for persistent native
 pointers.
 
-Inline array views such as `values$MemorySegment()` alias their containing
+Inline array views such as `valuesAsMemorySegment$F()` alias their containing
 struct and inherit its arena lifetime. Pointer elements stored with `@Address`
 do not transfer ownership: the containing struct does not extend the pointee
 lifetime. Record pointee setters may materialize storage in a caller-supplied

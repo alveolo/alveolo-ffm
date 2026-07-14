@@ -3,7 +3,6 @@ package org.alveolo.ffm.processor;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
-import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -11,19 +10,13 @@ import java.util.stream.Stream;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Symbol;
 
 class ExecutableGenerator {
-  final ProcessingEnvironment processingEnv;
   final Messager messager;
-  final Elements elements;
-  final Types types;
   final ExecutableElement element;
   final boolean hasErrors;
   final String methodHandleName;
@@ -37,26 +30,26 @@ class ExecutableGenerator {
   record NativeArgument(String layout, String expression) {}
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes,
       ExecutableElement element, String methodHandleName) {
-    this(processingEnv, element, methodHandleName, false);
+    this(processingEnv, generatedTypes, element, methodHandleName, false);
   }
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes,
       ExecutableElement element, String methodHandleName,
       boolean instanceMethodHandle) {
-    this(processingEnv, element, methodHandleName,
-        instanceMethodHandle, List.of(), "FF$LINKER", "FF$LOOKUP");
+    this(processingEnv, generatedTypes, element, methodHandleName,
+        instanceMethodHandle, List.of(), "Linker$F", "SymbolLookup$F");
   }
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes,
       ExecutableElement element, String methodHandleName,
       boolean instanceMethodHandle,
       List<NativeArgument> leadingNativeArguments,
       String linkerExpression, String lookupExpression) {
-    this.processingEnv = processingEnv;
     messager = processingEnv.getMessager();
-    elements = processingEnv.getElementUtils();
-    types = processingEnv.getTypeUtils();
     this.element = element;
     this.methodHandleName = methodHandleName;
     this.instanceMethodHandle = instanceMethodHandle;
@@ -64,10 +57,12 @@ class ExecutableGenerator {
     this.linkerExpression = linkerExpression;
     this.lookupExpression = lookupExpression;
 
-    returnGenerator = new TypeGenerator(processingEnv, element.getReturnType());
+    returnGenerator = new TypeGenerator(
+        processingEnv, generatedTypes, element.getReturnType(), element);
 
     parameterGenerators = element.getParameters().stream()
-        .map(param -> new VariableGenerator(processingEnv, param))
+        .map(param -> new VariableGenerator(
+            processingEnv, generatedTypes, param))
         .toList();
 
     hasErrors = checkParameterTypes();
@@ -102,10 +97,10 @@ class ExecutableGenerator {
             <declarations>
             try <confinedArena>{
               <body>
-            } catch (RuntimeException|Error ff$e) {
-              throw ff$e;
-            } catch (Throwable ff$t) {
-              throw new AssertionError(ff$t);
+            } catch (RuntimeException|Error exception$f) {
+              throw exception$f;
+            } catch (Throwable throwable$f) {
+              throw new AssertionError(throwable$f);
             }<finallyBlock>
           }
         """
@@ -185,7 +180,10 @@ class ExecutableGenerator {
         .collect(joining("," + newLine, prefix + newLine, ")"));
   }
 
-  private String returnTypeName() {
+  String returnTypeName() {
+    if (returnGenerator.isForeignMemoryImplementation())
+      return returnGenerator.typeName();
+
     if (returnGenerator.isCFString())
       return returnGenerator.typeName();
 
@@ -195,9 +193,13 @@ class ExecutableGenerator {
     return element.getReturnType().toString();
   }
 
+  String bridgeReturnTypeName() {
+    return returnGenerator.bridgeTypeName();
+  }
+
   private String confinedArena() {
     return needsConfinedArena()
-        ? "(var ff$arena = java.lang.foreign.Arena.ofConfined()) " : "";
+        ? "(var arena$f = java.lang.foreign.Arena.ofConfined()) " : "";
   }
 
   private Stream<String> invoke(String methodHandleExpression) {
@@ -224,9 +226,11 @@ class ExecutableGenerator {
     if (returnGenerator.isString())
       return stringInvoke(call, copyOut);
 
+    if (returnGenerator.isForeignMemoryImplementation())
+      return returnWithCopyOut(foreignMemoryExpression(call), copyOut);
+
     if (returnGenerator.isForeignMemory())
-      return returnWithCopyOut(foreignMemoryExpression(returnType, call),
-          copyOut);
+      return returnWithCopyOut(foreignMemoryExpression(call), copyOut);
 
     // returnType.getKind() == TypeKind.VOID
     return statementWithCopyOut(call, copyOut);
@@ -243,7 +247,7 @@ class ExecutableGenerator {
     // allocator parameter is rejected unless it is passed here.
     var paramsList = Stream.of(
         Stream.ofNullable(needsLocalAllocator
-            ? "(java.lang.foreign.SegmentAllocator) ff$arena" : null),
+            ? "(java.lang.foreign.SegmentAllocator) arena$f" : null),
         leadingNativeArguments.stream().map(NativeArgument::expression),
         parameterGenerators.stream().map(VariableGenerator::invoke))
         .flatMap(identity());
@@ -257,9 +261,9 @@ class ExecutableGenerator {
       return ("return " + expression + ";").lines();
 
     var all = Stream.of(
-        ("var ff$result = " + expression + ";").lines(),
+        ("var result$f = " + expression + ";").lines(),
         copyOut.stream(),
-        Stream.of("return ff$result;"));
+        Stream.of("return result$f;"));
 
     return all.flatMap(identity());
   }
@@ -273,24 +277,24 @@ class ExecutableGenerator {
   }
 
   private String recordExpression(TypeMirror returnType, String call) {
-    var type = (TypeElement) types.asElement(returnType);
-    String className = foreignMemoryClassName(type, elements);
+    String className = returnGenerator.foreignMemoryClassName();
 
     return returnGenerator.isValue()
-        ? className + ".fromMemorySegment((java.lang.foreign.MemorySegment) "
+        ? className + ".fromMemorySegment$F("
+            + "(java.lang.foreign.MemorySegment) "
             + call + ")"
-        : className + ".reinterpret((java.lang.foreign.MemorySegment) "
+        : className + ".reinterpret$F((java.lang.foreign.MemorySegment) "
             + call + ")";
   }
 
   private Stream<String> stringInvoke(String call, List<String> copyOut) {
     var all = Stream.of(
-        ("var ff$string$r = (java.lang.foreign.MemorySegment) "
+        ("var stringResult$f = (java.lang.foreign.MemorySegment) "
             + call + ";").lines(),
         copyOut.stream(),
         """
-            return ff$string$r.address() == 0L ? null
-                : ff$string$r.reinterpret(Long.MAX_VALUE).getString(0L);
+            return stringResult$f.address() == 0L ? null
+                : stringResult$f.reinterpret(Long.MAX_VALUE).getString(0L);
             """
             .stripTrailing()
             .lines());
@@ -309,17 +313,17 @@ class ExecutableGenerator {
     var conversion = returnWithCopyOut(
         """
             org.alveolo.ffm.macos.CFStringSupport
-                .toJavaString(ff$CFString$r)
+                .toJavaString(cfStringResult$f)
             """
             .stripTrailing(),
         copyOut);
 
     return """
-        var ff$CFString$r = <result>;
+        var cfStringResult$f = <result>;
         try {
         <conversion>
         } finally {
-          org.alveolo.ffm.macos.CFStringSupport.release(ff$CFString$r);
+          org.alveolo.ffm.macos.CFStringSupport.release(cfStringResult$f);
         }
         """
         .stripTrailing()
@@ -332,11 +336,11 @@ class ExecutableGenerator {
       String call, List<String> copyOut) {
     var layout = returnGenerator.valueLayout();
     var all = Stream.of(
-        ("var ff$address$r = (java.lang.foreign.MemorySegment) "
+        ("var addressResult$f = (java.lang.foreign.MemorySegment) "
             + call + ";").lines(),
         copyOut.stream(),
         """
-            return ff$address$r.reinterpret(<layout>.byteSize())
+            return addressResult$f.reinterpret(<layout>.byteSize())
                 .get(<layout>, 0L);
             """
             .stripTrailing()
@@ -346,14 +350,13 @@ class ExecutableGenerator {
     return all.flatMap(identity());
   }
 
-  private String foreignMemoryExpression(TypeMirror returnType, String call) {
-    var type = (TypeElement) types.asElement(returnType);
-    String className = foreignMemoryClassName(type, elements);
+  private String foreignMemoryExpression(String call) {
+    String className = returnGenerator.foreignMemoryClassName();
 
     return returnGenerator.isValue()
         ? "new " + className + "((java.lang.foreign.MemorySegment) "
             + call + ")"
-        : className + ".reinterpret((java.lang.foreign.MemorySegment) "
+        : className + ".reinterpret$F((java.lang.foreign.MemorySegment) "
             + call + ")";
   }
 
@@ -418,7 +421,8 @@ class ExecutableGenerator {
   boolean checkParameterTypes() {
     boolean hasUnsupported = false;
 
-    boolean needsExternalAllocator = returnGenerator.isForeignMemory()
+    boolean needsExternalAllocator = (returnGenerator.isForeignMemory()
+        || returnGenerator.isForeignMemoryImplementation())
         && !returnGenerator.isRecord() && returnGenerator.isValue();
 
     if (needsExternalAllocator) {

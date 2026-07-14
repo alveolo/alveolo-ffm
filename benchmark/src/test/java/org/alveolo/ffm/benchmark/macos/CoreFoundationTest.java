@@ -14,7 +14,7 @@ class CoreFoundationTest {
   void getsCFStringLengthFromJavaString() {
     assumeMac();
 
-    var coreFoundation = CoreFoundationFFM.INSTANCE;
+    var coreFoundation = CoreFoundationFFM.INSTANCE$F;
 
     assertEquals(5L, coreFoundation.CFStringGetLength("ASCII"));
     assertEquals(6L, coreFoundation.CFStringGetLength("Юникод"));
@@ -24,7 +24,7 @@ class CoreFoundationTest {
   void convertsOwnedCFStringReturnToJavaString() {
     assumeMac();
 
-    var coreFoundation = CoreFoundationFFM.INSTANCE;
+    var coreFoundation = CoreFoundationFFM.INSTANCE$F;
 
     assertEquals("ASCII!", coreFoundation.create(MemorySegment.NULL,
         "ASCII!", CFStringSupport.kCFStringEncodingUTF8));

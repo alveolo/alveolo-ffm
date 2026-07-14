@@ -1,14 +1,13 @@
-package pkg;
+package passmode;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class timevalFM implements timeval {
+public final class CircularDefault implements CircularDefaultSpec {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        java.lang.foreign.ValueLayout.JAVA_INT.withName("tv_sec"),
-        java.lang.foreign.ValueLayout.JAVA_INT.withName("tv_usec"),
+        passmode.CircularValue.MemoryLayout$F.withName("value"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -25,9 +24,9 @@ public final class timevalFM implements timeval {
     return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static timevalFM reinterpret$F(
+  public static CircularDefault reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment$f) {
-    return new timevalFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+    return new CircularDefault(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -48,52 +47,40 @@ public final class timevalFM implements timeval {
         index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static timevalFM at$F(
+  public static CircularDefault at$F(
       java.lang.foreign.MemorySegment array$f, long index$f) {
-    return new timevalFM(elementAt$F(array$f, index$f));
+    return new CircularDefault(elementAt$F(array$f, index$f));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public timevalFM(java.lang.foreign.SegmentAllocator allocator$f) {
+  public CircularDefault(java.lang.foreign.SegmentAllocator allocator$f) {
     this(allocate$F(allocator$f));
   }
 
-  public timevalFM(java.lang.foreign.MemorySegment memorySegment$f) {
+  public CircularDefault(java.lang.foreign.MemorySegment memorySegment$f) {
     this.MemorySegment$F = memorySegment$f;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
-      tv_sec$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("tv_sec");
+      value$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("value");
 
-  public static final java.lang.invoke.VarHandle tv_sec$VarHandle$F =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(tv_sec$PathElement$F), 1, 0L);
-
-  public int tv_sec() {
-    return (int) tv_sec$VarHandle$F.get(MemorySegment$F);
+  public passmode.CircularValue value() {
+    return new passmode.CircularValue(MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(value$PathElement$F),
+        MemoryLayout$F.select(value$PathElement$F).byteSize()));
   }
 
-  public timevalFM tv_sec(int value$f) {
-    tv_sec$VarHandle$F.set(MemorySegment$F, value$f);
-    return this;
-  }
-
-  public static final java.lang.foreign.MemoryLayout.PathElement
-      tv_usec$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("tv_usec");
-
-  public static final java.lang.invoke.VarHandle tv_usec$VarHandle$F =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(tv_usec$PathElement$F), 1, 0L);
-
-  public int tv_usec() {
-    return (int) tv_usec$VarHandle$F.get(MemorySegment$F);
-  }
-
-  public timevalFM tv_usec(int value$f) {
-    tv_usec$VarHandle$F.set(MemorySegment$F, value$f);
+  public CircularDefault value(passmode.CircularValue value$f) {
+    var memoryLayout$f =
+        MemoryLayout$F.select(value$PathElement$F);
+    var slice$f = MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(value$PathElement$F),
+        memoryLayout$f.byteSize());
+    java.lang.foreign.MemorySegment.copy(
+        value$f.MemorySegment$F, 0,
+        slice$f, 0, memoryLayout$f.byteSize());
     return this;
   }
 }

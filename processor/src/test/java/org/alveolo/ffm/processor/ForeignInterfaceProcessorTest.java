@@ -7,6 +7,40 @@ import org.junit.jupiter.api.Test;
 
 class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   @Test
+  void stripsSpecFromForeignInterfaceNames() {
+    var source = forSourceString("test.LibrarySpec", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        interface LibrarySpec {}
+
+        class UseLibrary {
+          Library value;
+        }
+        """);
+
+    assertThat(compile(source)).succeeded();
+  }
+
+  @Test
+  void rejectsReservedCopiedParameterSuffix() {
+    var source = forSourceString("test.BadParameter", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        interface BadParameter {
+          void call(int result$f);
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "User parameter names ending in '$F' or '$f' are reserved");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void generatesEmptyFFM() {
     var c = compile("interface/Empty.java");
     assertThat(c).succeeded();
@@ -29,14 +63,6 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
     assertGenerated(c, "pkg.LibCFFM", "interface/LibCFFM.java");
     assertGenerated(c, "pkg.div_tFM", "value/div_tFM.java");
     assertGenerated(c, "pkg.ldiv_tFM", "value/ldiv_tFM.java");
-  }
-
-  @Test
-  void generatesPassModeFFM() {
-    var c = compile("interface/passmode/PassMode.java");
-    assertThat(c).succeeded();
-    assertGenerated(c, "pkg.PassModeFFM",
-        "interface/passmode/PassModeFFM.java");
   }
 
   @Test

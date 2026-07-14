@@ -6,6 +6,7 @@ import static org.alveolo.ffm.processor.ProcessorUtils.sourceMethodSignature;
 import java.io.IOException;
 import java.io.Writer;
 
+import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
 
@@ -15,14 +16,14 @@ import javax.lang.model.element.ElementKind;
 /// source declaration order. Indexed field details remain delegated
 /// to [IndexedFieldGenerator].
 final class ForeignMemoryAccessorGenerator {
-  private final ProcessingEnvironment processingEnv;
+  private final Messager messager;
   private final ForeignMemoryAnalyzer analyzer;
   private final IndexedFieldGenerator indexedFieldGenerator;
 
   ForeignMemoryAccessorGenerator(ProcessingEnvironment processingEnv,
       ForeignMemoryAnalyzer analyzer,
       IndexedFieldGenerator indexedFieldGenerator) {
-    this.processingEnv = processingEnv;
+    messager = processingEnv.getMessager();
     this.analyzer = analyzer;
     this.indexedFieldGenerator = indexedFieldGenerator;
   }
@@ -76,7 +77,7 @@ final class ForeignMemoryAccessorGenerator {
         .anyMatch(analyzer::needsAllocatorWrite);
 
     var fromMemorySegmentFields = variables.stream()
-        .map(field -> field.name() + "(ms)")
+        .map(field -> field.name() + "(memorySegment$f)")
         .collect(joining(",\n        "));
 
     var toMemorySegmentFields = recordFieldWrites(fields, needsAllocator)
@@ -84,15 +85,17 @@ final class ForeignMemoryAccessorGenerator {
 
     var toMemorySegmentTemplate = needsAllocator
         ? """
-            public static void toMemorySegment(
-                <source> from, java.lang.foreign.MemorySegment ms,
-                java.lang.foreign.SegmentAllocator ff$allocator) {
+            public static void toMemorySegment$F(
+                <source> source$f,
+                java.lang.foreign.MemorySegment memorySegment$f,
+                java.lang.foreign.SegmentAllocator allocator$f) {
               <toMemorySegmentFields>
             }
             """
         : """
-            public static void toMemorySegment(
-                <source> from, java.lang.foreign.MemorySegment ms) {
+            public static void toMemorySegment$F(
+                <source> source$f,
+                java.lang.foreign.MemorySegment memorySegment$f) {
               <toMemorySegmentFields>
             }
             """;
@@ -106,15 +109,16 @@ final class ForeignMemoryAccessorGenerator {
 
         <toMemorySegmentMethod>
 
-          public static java.lang.foreign.MemorySegment toMemorySegment(
-              java.lang.foreign.SegmentAllocator allocator, <source> from) {
-            var ms = allocate(allocator);
+          public static java.lang.foreign.MemorySegment toMemorySegment$F(
+              java.lang.foreign.SegmentAllocator allocator$f,
+              <source> source$f) {
+            var memorySegment$f = allocate$F(allocator$f);
             <toMemorySegment>
-            return ms;
+            return memorySegment$f;
           }
 
-          public static <source> fromMemorySegment(
-              java.lang.foreign.MemorySegment ms) {
+          public static <source> fromMemorySegment$F(
+              java.lang.foreign.MemorySegment memorySegment$f) {
             return new <source>(
                 <fromMemorySegmentFields>);
           }
@@ -122,8 +126,8 @@ final class ForeignMemoryAccessorGenerator {
         .replace("<toMemorySegmentMethod>", toMemorySegmentMethod)
         .replace("<source>", sourceClassName)
         .replace("<toMemorySegment>", needsAllocator
-            ? "toMemorySegment(from, ms, allocator);"
-            : "toMemorySegment(from, ms);")
+            ? "toMemorySegment$F(source$f, memorySegment$f, allocator$f);"
+            : "toMemorySegment$F(source$f, memorySegment$f);")
         .replace("<fromMemorySegmentFields>", fromMemorySegmentFields));
   }
 
@@ -132,7 +136,7 @@ final class ForeignMemoryAccessorGenerator {
     out.write("""
 
           public static final java.lang.foreign.MemoryLayout.PathElement
-              FM$PE$<name> = java.lang.foreign.MemoryLayout.PathElement
+              <name>$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
                   .groupElement("<name>");
         """
         .replace("<name>", field.name()));
@@ -145,16 +149,16 @@ final class ForeignMemoryAccessorGenerator {
       return;
 
     var initializer = field.sequence > 1
-        ? "FM$LAYOUT.varHandle(FM$PE$<name>);"
+        ? "MemoryLayout$F.varHandle(<name>$PathElement$F);"
         : """
             java.lang.invoke.MethodHandles.insertCoordinates(
-                FM$LAYOUT.varHandle(FM$PE$<name>), 1, 0L);
+                MemoryLayout$F.varHandle(<name>$PathElement$F), 1, 0L);
             """
             .stripTrailing();
 
     out.write("""
 
-          public static final java.lang.invoke.VarHandle FM$VH$<name> =
+          public static final java.lang.invoke.VarHandle <name>$VarHandle$F =
               <initializer>
         """
         .replace("<initializer>", initializer.replace("\n", "\n      "))
@@ -176,9 +180,9 @@ final class ForeignMemoryAccessorGenerator {
         ? analyzer.needsAllocatorWrite(field)
         : analyzer.indexedArrayNeedsAllocator(indexed));
 
-    return "<name>(ms, <allocator>from.<name>());"
+    return "<name>(memorySegment$f, <allocator>source$f.<name>());"
         .replace("<name>", name)
-        .replace("<allocator>", needsAllocator ? "ff$allocator, " : "");
+        .replace("<allocator>", needsAllocator ? "allocator$f, " : "");
   }
 
   private void writeUnsupportedMethods(Writer out,
@@ -196,7 +200,7 @@ final class ForeignMemoryAccessorGenerator {
 
   /// Receiver style for generated field accessors: records use static accessors
   /// over an explicit MemorySegment parameter; memory-backed interfaces use
-  /// instance accessors over `this.ms` with fluent setters.
+  /// instance accessors over `this.MemorySegment$F` with fluent setters.
   private record AccessorTarget(boolean isStatic, String className) {
     static final AccessorTarget STATIC = new AccessorTarget(true, null);
 
@@ -206,7 +210,8 @@ final class ForeignMemoryAccessorGenerator {
 
     String getterHead(VariableGenerator field) {
       return (isStatic
-          ? "public static <type> <name>(java.lang.foreign.MemorySegment ms)"
+          ? "public static <type> <name>("
+              + "java.lang.foreign.MemorySegment memorySegment$f)"
           : "public <type> <name>()")
               .replace("<type>", field.typeName())
               .replace("<name>", field.name());
@@ -224,25 +229,27 @@ final class ForeignMemoryAccessorGenerator {
     private String staticSetterHead(boolean needsAllocator) {
       return needsAllocator
           ? "public static void <name>(\n"
-              + "      java.lang.foreign.MemorySegment ms, "
-              + "java.lang.foreign.SegmentAllocator allocator,"
-              + " <type> value)"
-          : "public static void <name>(java.lang.foreign.MemorySegment ms, "
-              + "<type> value)";
+              + "      java.lang.foreign.MemorySegment memorySegment$f, "
+              + "java.lang.foreign.SegmentAllocator allocator$f,"
+              + " <type> value$f)"
+          : "public static void <name>("
+              + "java.lang.foreign.MemorySegment memorySegment$f, "
+              + "<type> value$f)";
     }
 
     private String fluentSetterHead(boolean needsAllocator) {
       return needsAllocator
           ? "public <class> <name>(\n"
-              + "      java.lang.foreign.SegmentAllocator allocator, "
-              + "<type> value)"
-          : "public <class> <name>(<type> value)";
+              + "      java.lang.foreign.SegmentAllocator allocator$f, "
+              + "<type> value$f)"
+          : "public <class> <name>(<type> value$f)";
     }
   }
 
   private void writeAccessors(Writer out, AccessorTarget target,
       VariableGenerator field) throws IOException {
     var name = field.name();
+    var segment = target.isStatic() ? "memorySegment$f" : "MemorySegment$F";
 
     if (!target.isStatic() && field.isPrimitiveAddress()) {
       reportMemoryBackedPrimitiveAddressField(field);
@@ -256,64 +263,74 @@ final class ForeignMemoryAccessorGenerator {
     }
 
     if (field.isPrimitiveAddress()) {
-      writeGetter(out, target, field, primitiveAddressGetter(field, "ms"));
+      writeGetter(out, target, field, primitiveAddressGetter(field, segment));
       writeSetter(out, target, field, true, """
-          var address = allocator.allocate(<layout>);
-          address.set(<layout>, 0L, value);
-          FM$VH$<name>.set(ms, address);
+          var address$f = allocator$f.allocate(<layout>);
+          address$f.set(<layout>, 0L, value$f);
+          <name>$VarHandle$F.set(<segment>, address$f);
           """
           .stripTrailing()
           .replace("<layout>", field.valueLayout())
+          .replace("<segment>", segment)
           .replace("<name>", name));
       return;
     }
 
     var typeElement = field.typeElement;
     if (isNestedValue(field)) {
-      var fieldClassName = foreignMemoryClassName(field);
+      var fieldClassName = field.foreignMemoryClassName();
 
       if (typeElement.getKind() == ElementKind.RECORD) {
         writeGetter(out, target, field, """
-            <foreignClassName>.fromMemorySegment(ms.asSlice(
-                FM$LAYOUT.byteOffset(FM$PE$<name>),
-                FM$LAYOUT.select(FM$PE$<name>).byteSize()))
+            <foreignClassName>.fromMemorySegment$F(<segment>.asSlice(
+                MemoryLayout$F.byteOffset(<name>$PathElement$F),
+                MemoryLayout$F.select(<name>$PathElement$F).byteSize()))
             """
             .stripTrailing()
             .replace("<foreignClassName>", fieldClassName)
+            .replace("<segment>", segment)
             .replace("<name>", name));
 
         var needsAllocator = analyzer.recordConverterNeedsAllocator(
             typeElement);
         writeSetter(out, target, field, needsAllocator, """
-            var layout = FM$LAYOUT.select(FM$PE$<name>);
-            var slice = ms.asSlice(
-                FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
-            <foreignClassName>.toMemorySegment(value, slice<allocator>);
+            var memoryLayout$f =
+                MemoryLayout$F.select(<name>$PathElement$F);
+            var slice$f = <segment>.asSlice(
+                MemoryLayout$F.byteOffset(<name>$PathElement$F),
+                memoryLayout$f.byteSize());
+            <foreignClassName>.toMemorySegment$F(
+                value$f, slice$f<allocator>);
             """
             .stripTrailing()
-            .replace("<allocator>", needsAllocator ? ", allocator" : "")
+            .replace("<allocator>", needsAllocator ? ", allocator$f" : "")
             .replace("<foreignClassName>", fieldClassName)
+            .replace("<segment>", segment)
             .replace("<name>", name));
       } else {
         writeGetter(out, target, field, """
-            new <foreignClassName>(ms.asSlice(
-                FM$LAYOUT.byteOffset(FM$PE$<name>),
-                FM$LAYOUT.select(FM$PE$<name>).byteSize()))
+            new <foreignClassName>(<segment>.asSlice(
+                MemoryLayout$F.byteOffset(<name>$PathElement$F),
+                MemoryLayout$F.select(<name>$PathElement$F).byteSize()))
             """
             .stripTrailing()
             .replace("<foreignClassName>", fieldClassName)
+            .replace("<segment>", segment)
             .replace("<name>", name));
 
         writeSetter(out, target, field, false, """
-            var layout = FM$LAYOUT.select(FM$PE$<name>);
-            var slice = ms.asSlice(
-                FM$LAYOUT.byteOffset(FM$PE$<name>), layout.byteSize());
+            var memoryLayout$f =
+                MemoryLayout$F.select(<name>$PathElement$F);
+            var slice$f = <segment>.asSlice(
+                MemoryLayout$F.byteOffset(<name>$PathElement$F),
+                memoryLayout$f.byteSize());
             java.lang.foreign.MemorySegment.copy(
-                ((<foreignClassName>)value).ms, 0,
-                slice, 0, layout.byteSize());
+                <sourceSegment>, 0,
+                slice$f, 0, memoryLayout$f.byteSize());
             """
             .stripTrailing()
-            .replace("<foreignClassName>", fieldClassName)
+            .replace("<sourceSegment>", nestedMemorySegment(field))
+            .replace("<segment>", segment)
             .replace("<name>", name));
       }
       return;
@@ -327,32 +344,37 @@ final class ForeignMemoryAccessorGenerator {
         return;
       }
 
-      var fieldClassName = foreignMemoryClassName(field);
-      writeGetter(out, target, field, nestedAddressGetter(field, "ms"));
+      writeGetter(out, target, field, nestedAddressGetter(field, segment));
 
       if (typeElement.getKind() == ElementKind.RECORD) {
         writeSetter(out, target, field, true, """
-            FM$VH$<name>.set(ms,
-                <foreignClassName>.toMemorySegment(allocator, value));
+            <name>$VarHandle$F.set(<segment>,
+                <foreignClassName>.toMemorySegment$F(allocator$f, value$f));
             """
             .stripTrailing()
-            .replace("<foreignClassName>", fieldClassName)
+            .replace("<foreignClassName>", field.foreignMemoryClassName())
+            .replace("<segment>", segment)
             .replace("<name>", name));
       } else {
         writeSetter(out, target, field, false,
-            "FM$VH$<name>.set(ms, ((<fieldClass>) value).ms);"
-                .replace("<fieldClass>", fieldClassName)
+            "<name>$VarHandle$F.set(<segment>, <sourceSegment>);"
+                .replace("<sourceSegment>",
+                    nestedMemorySegment(field))
+                .replace("<segment>", segment)
                 .replace("<name>", name));
       }
       return;
     }
 
     writeGetter(out, target, field,
-        "(<type>) FM$VH$<name>.get(ms)"
+        "(<type>) <name>$VarHandle$F.get(<segment>)"
             .replace("<type>", field.typeName())
+            .replace("<segment>", segment)
             .replace("<name>", name));
     writeSetter(out, target, field, false,
-        "FM$VH$<name>.set(ms, value);".replace("<name>", name));
+        "<name>$VarHandle$F.set(<segment>, value$f);"
+            .replace("<segment>", segment)
+            .replace("<name>", name));
   }
 
   private void writeGetter(Writer out, AccessorTarget target,
@@ -398,18 +420,21 @@ final class ForeignMemoryAccessorGenerator {
 
     out.write("""
 
-          public static <type> <name>(java.lang.foreign.MemorySegment ms) {
+          public static <type> <name>(
+              java.lang.foreign.MemorySegment memorySegment$f) {
             throw new RuntimeException("Check compile errors!");
           }
 
           public static void <name>(
-              java.lang.foreign.MemorySegment ms, <type> value) {
+              java.lang.foreign.MemorySegment memorySegment$f,
+              <type> value$f) {
             throw new RuntimeException("Check compile errors!");
           }
 
           public static void <name>(
-              java.lang.foreign.MemorySegment ms,
-              java.lang.foreign.SegmentAllocator allocator, <type> value) {
+              java.lang.foreign.MemorySegment memorySegment$f,
+              java.lang.foreign.SegmentAllocator allocator$f,
+              <type> value$f) {
             throw new RuntimeException("Check compile errors!");
           }
         """
@@ -424,7 +449,7 @@ final class ForeignMemoryAccessorGenerator {
     var setter = writeSetter
         ? """
 
-            public <class> <name>(<type> value) {
+            public <class> <name>(<type> value$f) {
               throw new RuntimeException("Check compile errors!");
             }
             """
@@ -452,7 +477,7 @@ final class ForeignMemoryAccessorGenerator {
 
   private void reportMemoryBackedRecordAddressField(
       VariableGenerator field) {
-    processingEnv.getMessager().printError(
+    messager.printError(
         "@Address record fields are not supported on memory-backed "
             + "@Struct or @Union interfaces; use an interface struct or "
             + "MemorySegment for persistent pointer fields",
@@ -461,7 +486,7 @@ final class ForeignMemoryAccessorGenerator {
 
   private void reportMemoryBackedPrimitiveAddressField(
       VariableGenerator field) {
-    processingEnv.getMessager().printError(
+    messager.printError(
         "@Address primitive fields are not supported on memory-backed "
             + "@Struct or @Union interfaces; use a memory-backed interface "
             + "type or MemorySegment for persistent pointer fields",
@@ -478,24 +503,27 @@ final class ForeignMemoryAccessorGenerator {
 
   private String nestedAddressGetter(
       VariableGenerator field, String segment) {
-    return foreignMemoryClassName(field)
-        + ".reinterpret((java.lang.foreign.MemorySegment) FM$VH$"
-        + field.name()
+    return field.foreignMemoryClassName()
+        + ".reinterpret$F((java.lang.foreign.MemorySegment) "
+        + field.name() + "$VarHandle$F"
         + ".get(" + segment + "))";
   }
 
   private String primitiveAddressGetter(
       VariableGenerator field, String segment) {
     var layout = field.valueLayout();
-    var address = "((java.lang.foreign.MemorySegment) FM$VH$" + field.name()
+    var address = "((java.lang.foreign.MemorySegment) " + field.name()
+        + "$VarHandle$F"
         + ".get(" + segment + "))";
 
     return address + ".reinterpret(" + layout + ".byteSize())\n"
         + "    .get(" + layout + ", 0L)";
   }
 
-  private String foreignMemoryClassName(VariableGenerator field) {
-    return ProcessorUtils.foreignMemoryClassName(
-        field.typeElement, processingEnv.getElementUtils());
+  private String nestedMemorySegment(VariableGenerator field) {
+    return field.isForeignMemoryImplementation()
+        ? "value$f.MemorySegment$F"
+        : "((" + field.foreignMemoryClassName() + ") value$f"
+            + ").MemorySegment$F";
   }
 }

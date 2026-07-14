@@ -7,6 +7,46 @@ import org.junit.jupiter.api.Test;
 
 class DispatchTableProcessorTest extends AbstractProcessorTest {
   @Test
+  void stripsSpecFromDispatchTableNames() {
+    var source = forSourceString("test.CallbacksSpec", """
+        package test;
+
+        @org.alveolo.ffm.DispatchTable
+        interface CallbacksSpec {
+          @org.alveolo.ffm.Slot(0)
+          void call();
+        }
+
+        class UseCallbacks {
+          Callbacks value;
+        }
+        """);
+
+    assertThat(compile(source)).succeeded();
+  }
+
+  @Test
+  void permitsReservedSuffixesInAlveoloGeneratedBridgeSpecifications() {
+    var source = forSourceString("test.CallbackBridgeSpec", """
+        package test;
+
+        @javax.annotation.processing.Generated(
+            "org.alveolo.ffm.processor.ForeignMemoryProcessor")
+        @org.alveolo.ffm.DispatchTable
+        interface CallbackBridgeSpec {
+          @org.alveolo.ffm.Slot(0)
+          void call(int self$f);
+        }
+
+        class UseCallbackBridge {
+          CallbackBridge value;
+        }
+        """);
+
+    assertThat(compile(source)).succeeded();
+  }
+
+  @Test
   void generatesDispatchTableFD() {
     var c = compile("dispatch/XyzVtbl.java");
     assertThat(c).succeeded();

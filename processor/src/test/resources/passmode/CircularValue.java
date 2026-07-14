@@ -1,14 +1,13 @@
-package pkg;
+package passmode;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class timevalFM implements timeval {
+public final class CircularValue implements CircularValueSpec {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        java.lang.foreign.ValueLayout.JAVA_INT.withName("tv_sec"),
-        java.lang.foreign.ValueLayout.JAVA_INT.withName("tv_usec"),
+        java.lang.foreign.ValueLayout.ADDRESS.withName("value"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -25,9 +24,9 @@ public final class timevalFM implements timeval {
     return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static timevalFM reinterpret$F(
+  public static CircularValue reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment$f) {
-    return new timevalFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+    return new CircularValue(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -48,52 +47,35 @@ public final class timevalFM implements timeval {
         index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static timevalFM at$F(
+  public static CircularValue at$F(
       java.lang.foreign.MemorySegment array$f, long index$f) {
-    return new timevalFM(elementAt$F(array$f, index$f));
+    return new CircularValue(elementAt$F(array$f, index$f));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public timevalFM(java.lang.foreign.SegmentAllocator allocator$f) {
+  public CircularValue(java.lang.foreign.SegmentAllocator allocator$f) {
     this(allocate$F(allocator$f));
   }
 
-  public timevalFM(java.lang.foreign.MemorySegment memorySegment$f) {
+  public CircularValue(java.lang.foreign.MemorySegment memorySegment$f) {
     this.MemorySegment$F = memorySegment$f;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
-      tv_sec$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("tv_sec");
+      value$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("value");
 
-  public static final java.lang.invoke.VarHandle tv_sec$VarHandle$F =
+  public static final java.lang.invoke.VarHandle value$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(tv_sec$PathElement$F), 1, 0L);
+          MemoryLayout$F.varHandle(value$PathElement$F), 1, 0L);
 
-  public int tv_sec() {
-    return (int) tv_sec$VarHandle$F.get(MemorySegment$F);
+  public passmode.CircularAddress value() {
+    return passmode.CircularAddress.reinterpret$F((java.lang.foreign.MemorySegment) value$VarHandle$F.get(MemorySegment$F));
   }
 
-  public timevalFM tv_sec(int value$f) {
-    tv_sec$VarHandle$F.set(MemorySegment$F, value$f);
-    return this;
-  }
-
-  public static final java.lang.foreign.MemoryLayout.PathElement
-      tv_usec$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("tv_usec");
-
-  public static final java.lang.invoke.VarHandle tv_usec$VarHandle$F =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(tv_usec$PathElement$F), 1, 0L);
-
-  public int tv_usec() {
-    return (int) tv_usec$VarHandle$F.get(MemorySegment$F);
-  }
-
-  public timevalFM tv_usec(int value$f) {
-    tv_usec$VarHandle$F.set(MemorySegment$F, value$f);
+  public CircularValue value(passmode.CircularAddress value$f) {
+    value$VarHandle$F.set(MemorySegment$F, value$f.MemorySegment$F);
     return this;
   }
 }

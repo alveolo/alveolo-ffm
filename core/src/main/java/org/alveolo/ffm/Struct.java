@@ -15,7 +15,9 @@ import java.lang.annotation.Target;
 @Retention(SOURCE)
 public @interface Struct {
   /// Override the generated simple class name. The generated class stays in the
-  /// same package as the annotated type. Defaults to type name + `FM`.
+  /// same package as the annotated type. By default, a trailing `Spec` is removed
+  /// from an interface name; other interfaces and all records use type name +
+  /// `FM`.
   String name() default "";
 
   /// Reserve the first struct field for a native dispatch table pointer.

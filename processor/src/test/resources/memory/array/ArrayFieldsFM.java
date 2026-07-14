@@ -1,479 +1,521 @@
 package pkg;
 
-
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
 public final class ArrayFieldsFM implements ArrayFields {
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT =
+  public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
-          org.alveolo.ffm.ForeignUtils.structPad(new java.lang.foreign.MemoryLayout [] {
+          org.alveolo.ffm.ForeignUtils.structPad(
+              new java.lang.foreign.MemoryLayout [] {
         java.lang.foreign.MemoryLayout.sequenceLayout(3L,
             java.lang.foreign.ValueLayout.JAVA_BOOLEAN).withName("flags"),
         java.lang.foreign.MemoryLayout.sequenceLayout(2L,
             java.lang.foreign.MemoryLayout.sequenceLayout(3L,
                 java.lang.foreign.ValueLayout.JAVA_INT)).withName("matrix"),
         java.lang.foreign.MemoryLayout.sequenceLayout(2L,
-            pkg.ArrayPointFM.FM$LAYOUT).withName("points"),
+            pkg.ArrayPointFM.MemoryLayout$F).withName("points"),
         java.lang.foreign.MemoryLayout.sequenceLayout(2L,
             java.lang.foreign.ValueLayout.ADDRESS).withName("pointers"),
         java.lang.foreign.MemoryLayout.sequenceLayout(2L,
-            pkg.ArrayCellFM.FM$LAYOUT).withName("cells"),
+            pkg.ArrayCellFM.MemoryLayout$F).withName("cells"),
         java.lang.foreign.MemoryLayout.sequenceLayout(2L,
             java.lang.foreign.ValueLayout.ADDRESS).withName("references"),
         java.lang.foreign.MemoryLayout.sequenceLayout(2L,
             java.lang.foreign.ValueLayout.ADDRESS).withName("raw"),
       }));
 
-  public static java.lang.foreign.MemorySegment allocate(java.lang.foreign.SegmentAllocator allocator) {
-    return allocator.allocate(
-      FM$LAYOUT.byteSize(), FM$LAYOUT.byteAlignment());
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f) {
+    return allocator$f.allocate(
+      MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
-  public static java.lang.foreign.MemorySegment allocate(
-      java.lang.foreign.SegmentAllocator allocator, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment allocate$F(
+      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator.allocate(FM$LAYOUT, count);
+    return allocator$f.allocate(MemoryLayout$F, count$f);
   }
 
-  public static ArrayFieldsFM reinterpret(java.lang.foreign.MemorySegment ms) {
-    return new ArrayFieldsFM(ms.reinterpret(FM$LAYOUT.byteSize()));
+  public static ArrayFieldsFM reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f) {
+    return new ArrayFieldsFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret(
-      java.lang.foreign.MemorySegment ms, long count) {
-    if (count < 0) {
+  public static java.lang.foreign.MemorySegment reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
+    if (count$f < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return ms.reinterpret(Math.multiplyExact(
-        FM$LAYOUT.byteSize(), count));
+    return memorySegment$f.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count$f));
   }
 
-  private static java.lang.foreign.MemorySegment FM$at(java.lang.foreign.MemorySegment array, long index) {
-    if (index < 0) {
-      throw new IndexOutOfBoundsException(index);
+  private static java.lang.foreign.MemorySegment elementAt$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    if (index$f < 0) {
+      throw new IndexOutOfBoundsException(index$f);
     }
-    return array.asSlice(Math.multiplyExact(
-        index, FM$LAYOUT.byteSize()), FM$LAYOUT.byteSize());
+    return array$f.asSlice(Math.multiplyExact(
+        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static ArrayFieldsFM at(java.lang.foreign.MemorySegment array, long index) {
-    return new ArrayFieldsFM(FM$at(array, index));
+  public static ArrayFieldsFM at$F(
+      java.lang.foreign.MemorySegment array$f, long index$f) {
+    return new ArrayFieldsFM(elementAt$F(array$f, index$f));
   }
 
-  public final java.lang.foreign.MemorySegment ms;
+  public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public ArrayFieldsFM(java.lang.foreign.SegmentAllocator allocator) {
-    this(allocate(allocator));
+  public ArrayFieldsFM(java.lang.foreign.SegmentAllocator allocator$f) {
+    this(allocate$F(allocator$f));
   }
 
-  public ArrayFieldsFM(java.lang.foreign.MemorySegment ms) {
-    this.ms = ms;
+  public ArrayFieldsFM(java.lang.foreign.MemorySegment memorySegment$f) {
+    this.MemorySegment$F = memorySegment$f;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$flags =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("flags");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      flags$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("flags");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$flags$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      flags$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$flags =
-      FM$LAYOUT.select(FM$PE$flags);
+  public static final java.lang.foreign.MemoryLayout
+      flags$MemoryLayout$F =
+          MemoryLayout$F.select(flags$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$flags =
+  public static final java.lang.foreign.MemoryLayout
+      flags$ElementMemoryLayout$F =
       java.lang.foreign.ValueLayout.JAVA_BOOLEAN;
 
-  public static final long FM$OFFSET$flags =
-      FM$LAYOUT.byteOffset(FM$PE$flags);
+  public static final long flags$Sequence0Dimension$F = 3L;
 
-  public static final long FM$SIZE$flags =
-      FM$LAYOUT$flags.byteSize();
-
-  public static final long FM$DIMENSION$flags$0 = 3L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$flags =
+  public static final java.lang.invoke.VarHandle flags$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$flags, FM$PE$flags$0), 1, 0L);
+          MemoryLayout$F.varHandle(
+              flags$PathElement$F, flags$Sequence0PathElement$F), 1, 0L);
 
-  public java.lang.foreign.MemorySegment flags$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$flags, FM$SIZE$flags);
+  public java.lang.foreign.MemorySegment
+      flagsAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(flags$PathElement$F),
+        flags$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment flags$MemorySegment(int index) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$flags,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
-        FM$ELEMENT_LAYOUT$flags.byteSize());
+  public java.lang.foreign.MemorySegment
+      flagsAsMemorySegment$F(int index$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            flags$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+        flags$ElementMemoryLayout$F.byteSize());
   }
 
   public boolean flags(int index) {
-    return (boolean) FM$VH$flags.get(ms, index);
+    return (boolean) flags$VarHandle$F.get(MemorySegment$F, index);
   }
 
   public ArrayFieldsFM flags(
       int index,
-      boolean value) {
-    FM$VH$flags.set(ms, index, value);
+      boolean value$f) {
+    flags$VarHandle$F.set(MemorySegment$F, index, value$f);
     return this;
   }
 
-  public java.nio.ByteBuffer flags$Buffer() {
-    return flags$MemorySegment().asByteBuffer()
+  public java.nio.ByteBuffer flagsAsBuffer$F() {
+    return flagsAsMemorySegment$F().asByteBuffer()
         .order(java.nio.ByteOrder.nativeOrder());
   }
 
-  public boolean[] flags$Array() {
-    var value = new boolean[(int) FM$DIMENSION$flags$0];
-    for (int index = 0; index < value.length; index++) {
-      value[(int) index] = flags(index);
+  public boolean[] flagsToArray$F() {
+    var result$f =
+        new boolean[(int) flags$Sequence0Dimension$F];
+    for (int index$f = 0;
+        index$f < result$f.length; index$f++) {
+      result$f[(int) index$f] = flags(index$f);
     }
-    return value;
+    return result$f;
   }
 
-  public ArrayFieldsFM flags(boolean[] value) {
-    java.util.Objects.requireNonNull(value, "value");
-    if (value.length != FM$DIMENSION$flags$0) {
+  public ArrayFieldsFM flagsFromArray$F(boolean[] value$f) {
+    java.util.Objects.requireNonNull(value$f, "value");
+    if (value$f.length != flags$Sequence0Dimension$F) {
       throw new IllegalArgumentException(
-          "flags length must be " + FM$DIMENSION$flags$0);
+          "flags length must be " + flags$Sequence0Dimension$F);
     }
-    for (int index = 0; index < value.length; index++) {
-      flags(index, value[(int) index]);
+    for (int index$f = 0;
+        index$f < value$f.length; index$f++) {
+      flags(index$f, value$f[(int) index$f]);
     }
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$matrix =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("matrix");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      matrix$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("matrix");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$matrix$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      matrix$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$matrix$1 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      matrix$Sequence1PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$matrix =
-      FM$LAYOUT.select(FM$PE$matrix);
+  public static final java.lang.foreign.MemoryLayout
+      matrix$MemoryLayout$F =
+          MemoryLayout$F.select(matrix$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$matrix =
+  public static final java.lang.foreign.MemoryLayout
+      matrix$ElementMemoryLayout$F =
       java.lang.foreign.ValueLayout.JAVA_INT;
 
-  public static final long FM$OFFSET$matrix =
-      FM$LAYOUT.byteOffset(FM$PE$matrix);
+  public static final long matrix$Sequence0Dimension$F = 2L;
 
-  public static final long FM$SIZE$matrix =
-      FM$LAYOUT$matrix.byteSize();
+  public static final long matrix$Sequence1Dimension$F = 3L;
 
-  public static final long FM$DIMENSION$matrix$0 = 2L;
-
-  public static final long FM$DIMENSION$matrix$1 = 3L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$matrix =
+  public static final java.lang.invoke.VarHandle matrix$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$matrix, FM$PE$matrix$0, FM$PE$matrix$1), 1, 0L);
+          MemoryLayout$F.varHandle(
+              matrix$PathElement$F, matrix$Sequence0PathElement$F, matrix$Sequence1PathElement$F), 1, 0L);
 
-  public java.lang.foreign.MemorySegment matrix$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$matrix, FM$SIZE$matrix);
+  public java.lang.foreign.MemorySegment
+      matrixAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(matrix$PathElement$F),
+        matrix$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment matrix$MemorySegment(long row, long column) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$matrix,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(row),
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(column)),
-        FM$ELEMENT_LAYOUT$matrix.byteSize());
+  public java.lang.foreign.MemorySegment
+      matrixAsMemorySegment$F(long row$f, long column$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            matrix$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(row$f),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(column$f)),
+        matrix$ElementMemoryLayout$F.byteSize());
   }
 
   public int matrix(long row, long column) {
-    return (int) FM$VH$matrix.get(ms, row, column);
+    return (int) matrix$VarHandle$F.get(MemorySegment$F, row, column);
   }
 
   public ArrayFieldsFM matrix(
       long row, long column,
-      int value) {
-    FM$VH$matrix.set(ms, row, column, value);
+      int value$f) {
+    matrix$VarHandle$F.set(MemorySegment$F, row, column, value$f);
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$points =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("points");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      points$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("points");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$points$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      points$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$points =
-      FM$LAYOUT.select(FM$PE$points);
+  public static final java.lang.foreign.MemoryLayout
+      points$MemoryLayout$F =
+          MemoryLayout$F.select(points$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$points =
-      pkg.ArrayPointFM.FM$LAYOUT;
+  public static final java.lang.foreign.MemoryLayout
+      points$ElementMemoryLayout$F =
+      pkg.ArrayPointFM.MemoryLayout$F;
 
-  public static final long FM$OFFSET$points =
-      FM$LAYOUT.byteOffset(FM$PE$points);
+  public static final long points$Sequence0Dimension$F = 2L;
 
-  public static final long FM$SIZE$points =
-      FM$LAYOUT$points.byteSize();
-
-  public static final long FM$DIMENSION$points$0 = 2L;
-
-  public java.lang.foreign.MemorySegment points$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$points, FM$SIZE$points);
+  public java.lang.foreign.MemorySegment
+      pointsAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(points$PathElement$F),
+        points$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment points$MemorySegment(long index) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$points,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
-        FM$ELEMENT_LAYOUT$points.byteSize());
+  public java.lang.foreign.MemorySegment
+      pointsAsMemorySegment$F(long index$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            points$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+        points$ElementMemoryLayout$F.byteSize());
   }
 
   public pkg.ArrayPoint points(long index) {
-    return pkg.ArrayPointFM.fromMemorySegment(
-        points$MemorySegment(index));
+    return pkg.ArrayPointFM.fromMemorySegment$F(
+        pointsAsMemorySegment$F(index));
   }
 
   public ArrayFieldsFM points(
       long index,
-      pkg.ArrayPoint value) {
-    pkg.ArrayPointFM.toMemorySegment(
-        value, points$MemorySegment(index));
+      pkg.ArrayPoint value$f) {
+    pkg.ArrayPointFM.toMemorySegment$F(
+        value$f, pointsAsMemorySegment$F(index));
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$pointers =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("pointers");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      pointers$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("pointers");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$pointers$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      pointers$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$pointers =
-      FM$LAYOUT.select(FM$PE$pointers);
+  public static final java.lang.foreign.MemoryLayout
+      pointers$MemoryLayout$F =
+          MemoryLayout$F.select(pointers$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$pointers =
+  public static final java.lang.foreign.MemoryLayout
+      pointers$ElementMemoryLayout$F =
       java.lang.foreign.ValueLayout.ADDRESS;
 
-  public static final long FM$OFFSET$pointers =
-      FM$LAYOUT.byteOffset(FM$PE$pointers);
+  public static final long pointers$Sequence0Dimension$F = 2L;
 
-  public static final long FM$SIZE$pointers =
-      FM$LAYOUT$pointers.byteSize();
-
-  public static final long FM$DIMENSION$pointers$0 = 2L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$pointers =
+  public static final java.lang.invoke.VarHandle pointers$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$pointers, FM$PE$pointers$0), 1, 0L);
+          MemoryLayout$F.varHandle(
+              pointers$PathElement$F, pointers$Sequence0PathElement$F), 1, 0L);
 
-  public java.lang.foreign.MemorySegment pointers$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$pointers, FM$SIZE$pointers);
+  public java.lang.foreign.MemorySegment
+      pointersAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(pointers$PathElement$F),
+        pointers$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment pointers$MemorySegment(long index) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$pointers,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
-        FM$ELEMENT_LAYOUT$pointers.byteSize());
+  public java.lang.foreign.MemorySegment
+      pointersAsMemorySegment$F(long index$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            pointers$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+        pointers$ElementMemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment pointers$Address(long index) {
-    return (java.lang.foreign.MemorySegment) FM$VH$pointers.get(ms, index);
+  public java.lang.foreign.MemorySegment pointersAsAddress$F(long index$f) {
+    return (java.lang.foreign.MemorySegment)
+        pointers$VarHandle$F.get(MemorySegment$F, index$f);
   }
 
-  public ArrayFieldsFM pointers$Address(
-      long index, java.lang.foreign.MemorySegment value) {
-    FM$VH$pointers.set(ms, index,
-        value == null ? java.lang.foreign.MemorySegment.NULL : value);
+  public ArrayFieldsFM pointersAsAddress$F(
+      long index$f, java.lang.foreign.MemorySegment value$f) {
+    pointers$VarHandle$F.set(MemorySegment$F, index$f,
+        value$f == null
+            ? java.lang.foreign.MemorySegment.NULL : value$f);
     return this;
   }
 
   public pkg.ArrayPoint pointers(long index) {
-    var address = pointers$Address(index);
-    return address.address() == 0L
+    var address$f = pointersAsAddress$F(index);
+    return address$f.address() == 0L
         ? null
-        : pkg.ArrayPointFM.reinterpret(address);
+        : pkg.ArrayPointFM.reinterpret$F(address$f);
   }
 
   public ArrayFieldsFM pointers(
-      java.lang.foreign.SegmentAllocator allocator, long index,
-      pkg.ArrayPoint value) {
-    FM$VH$pointers.set(ms, index,
-        value == null
+      java.lang.foreign.SegmentAllocator allocator$f, long index,
+      pkg.ArrayPoint value$f) {
+    pointers$VarHandle$F.set(MemorySegment$F, index,
+        value$f == null
             ? java.lang.foreign.MemorySegment.NULL
-            : pkg.ArrayPointFM.toMemorySegment(
-                allocator, value));
+            : pkg.ArrayPointFM.toMemorySegment$F(
+                allocator$f, value$f));
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$cells =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("cells");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      cells$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("cells");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$cells$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      cells$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$cells =
-      FM$LAYOUT.select(FM$PE$cells);
+  public static final java.lang.foreign.MemoryLayout
+      cells$MemoryLayout$F =
+          MemoryLayout$F.select(cells$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$cells =
-      pkg.ArrayCellFM.FM$LAYOUT;
+  public static final java.lang.foreign.MemoryLayout
+      cells$ElementMemoryLayout$F =
+      pkg.ArrayCellFM.MemoryLayout$F;
 
-  public static final long FM$OFFSET$cells =
-      FM$LAYOUT.byteOffset(FM$PE$cells);
+  public static final long cells$Sequence0Dimension$F = 2L;
 
-  public static final long FM$SIZE$cells =
-      FM$LAYOUT$cells.byteSize();
-
-  public static final long FM$DIMENSION$cells$0 = 2L;
-
-  public java.lang.foreign.MemorySegment cells$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$cells, FM$SIZE$cells);
+  public java.lang.foreign.MemorySegment
+      cellsAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(cells$PathElement$F),
+        cells$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment cells$MemorySegment(long index) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$cells,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
-        FM$ELEMENT_LAYOUT$cells.byteSize());
+  public java.lang.foreign.MemorySegment
+      cellsAsMemorySegment$F(long index$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            cells$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+        cells$ElementMemoryLayout$F.byteSize());
   }
 
   public pkg.ArrayCell cells(long index) {
     return new pkg.ArrayCellFM(
-        cells$MemorySegment(index));
+        cellsAsMemorySegment$F(index));
   }
 
   public ArrayFieldsFM cells(
       long index,
-      pkg.ArrayCell value) {
+      pkg.ArrayCell value$f) {
     java.lang.foreign.MemorySegment.copy(
-        ((pkg.ArrayCellFM) value).ms, 0L,
-        cells$MemorySegment(index), 0L,
-        FM$ELEMENT_LAYOUT$cells.byteSize());
+        ((pkg.ArrayCellFM) value$f).MemorySegment$F, 0L,
+        cellsAsMemorySegment$F(index), 0L,
+        cells$ElementMemoryLayout$F.byteSize());
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$references =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("references");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      references$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("references");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$references$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      references$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$references =
-      FM$LAYOUT.select(FM$PE$references);
+  public static final java.lang.foreign.MemoryLayout
+      references$MemoryLayout$F =
+          MemoryLayout$F.select(references$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$references =
+  public static final java.lang.foreign.MemoryLayout
+      references$ElementMemoryLayout$F =
       java.lang.foreign.ValueLayout.ADDRESS;
 
-  public static final long FM$OFFSET$references =
-      FM$LAYOUT.byteOffset(FM$PE$references);
+  public static final long references$Sequence0Dimension$F = 2L;
 
-  public static final long FM$SIZE$references =
-      FM$LAYOUT$references.byteSize();
-
-  public static final long FM$DIMENSION$references$0 = 2L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$references =
+  public static final java.lang.invoke.VarHandle references$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$references, FM$PE$references$0), 1, 0L);
+          MemoryLayout$F.varHandle(
+              references$PathElement$F, references$Sequence0PathElement$F), 1, 0L);
 
-  public java.lang.foreign.MemorySegment references$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$references, FM$SIZE$references);
+  public java.lang.foreign.MemorySegment
+      referencesAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(references$PathElement$F),
+        references$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment references$MemorySegment(long index) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$references,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
-        FM$ELEMENT_LAYOUT$references.byteSize());
+  public java.lang.foreign.MemorySegment
+      referencesAsMemorySegment$F(long index$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            references$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+        references$ElementMemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment references$Address(long index) {
-    return (java.lang.foreign.MemorySegment) FM$VH$references.get(ms, index);
+  public java.lang.foreign.MemorySegment referencesAsAddress$F(long index$f) {
+    return (java.lang.foreign.MemorySegment)
+        references$VarHandle$F.get(MemorySegment$F, index$f);
   }
 
-  public ArrayFieldsFM references$Address(
-      long index, java.lang.foreign.MemorySegment value) {
-    FM$VH$references.set(ms, index,
-        value == null ? java.lang.foreign.MemorySegment.NULL : value);
+  public ArrayFieldsFM referencesAsAddress$F(
+      long index$f, java.lang.foreign.MemorySegment value$f) {
+    references$VarHandle$F.set(MemorySegment$F, index$f,
+        value$f == null
+            ? java.lang.foreign.MemorySegment.NULL : value$f);
     return this;
   }
 
   public pkg.ArrayCell references(long index) {
-    var address = references$Address(index);
-    return address.address() == 0L
+    var address$f = referencesAsAddress$F(index);
+    return address$f.address() == 0L
         ? null
-        : pkg.ArrayCellFM.reinterpret(address);
+        : pkg.ArrayCellFM.reinterpret$F(address$f);
   }
 
   public ArrayFieldsFM references(
       long index,
-      pkg.ArrayCell value) {
-    FM$VH$references.set(ms, index,
-        value == null
+      pkg.ArrayCell value$f) {
+    references$VarHandle$F.set(MemorySegment$F, index,
+        value$f == null
             ? java.lang.foreign.MemorySegment.NULL
-            : ((pkg.ArrayCellFM) value).ms);
+            : ((pkg.ArrayCellFM) value$f).MemorySegment$F);
     return this;
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$raw =
-      java.lang.foreign.MemoryLayout.PathElement.groupElement("raw");
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      raw$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("raw");
 
-  public static final java.lang.foreign.MemoryLayout.PathElement FM$PE$raw$0 =
-      java.lang.foreign.MemoryLayout.PathElement.sequenceElement();
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      raw$Sequence0PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .sequenceElement();
 
-  public static final java.lang.foreign.MemoryLayout FM$LAYOUT$raw =
-      FM$LAYOUT.select(FM$PE$raw);
+  public static final java.lang.foreign.MemoryLayout
+      raw$MemoryLayout$F =
+          MemoryLayout$F.select(raw$PathElement$F);
 
-  public static final java.lang.foreign.MemoryLayout FM$ELEMENT_LAYOUT$raw =
+  public static final java.lang.foreign.MemoryLayout
+      raw$ElementMemoryLayout$F =
       java.lang.foreign.ValueLayout.ADDRESS;
 
-  public static final long FM$OFFSET$raw =
-      FM$LAYOUT.byteOffset(FM$PE$raw);
+  public static final long raw$Sequence0Dimension$F = 2L;
 
-  public static final long FM$SIZE$raw =
-      FM$LAYOUT$raw.byteSize();
-
-  public static final long FM$DIMENSION$raw$0 = 2L;
-
-  public static final java.lang.invoke.VarHandle FM$VH$raw =
+  public static final java.lang.invoke.VarHandle raw$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          FM$LAYOUT.varHandle(FM$PE$raw, FM$PE$raw$0), 1, 0L);
+          MemoryLayout$F.varHandle(
+              raw$PathElement$F, raw$Sequence0PathElement$F), 1, 0L);
 
-  public java.lang.foreign.MemorySegment raw$MemorySegment() {
-    return ms.asSlice(FM$OFFSET$raw, FM$SIZE$raw);
+  public java.lang.foreign.MemorySegment
+      rawAsMemorySegment$F() {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(raw$PathElement$F),
+        raw$MemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment raw$MemorySegment(long index) {
-    return ms.asSlice(
-        FM$LAYOUT.byteOffset(
-            FM$PE$raw,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index)),
-        FM$ELEMENT_LAYOUT$raw.byteSize());
+  public java.lang.foreign.MemorySegment
+      rawAsMemorySegment$F(long index$f) {
+    return MemorySegment$F.asSlice(
+        MemoryLayout$F.byteOffset(
+            raw$PathElement$F,
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+        raw$ElementMemoryLayout$F.byteSize());
   }
 
-  public java.lang.foreign.MemorySegment raw$Address(long index) {
-    return (java.lang.foreign.MemorySegment) FM$VH$raw.get(ms, index);
+  public java.lang.foreign.MemorySegment rawAsAddress$F(long index$f) {
+    return (java.lang.foreign.MemorySegment)
+        raw$VarHandle$F.get(MemorySegment$F, index$f);
   }
 
-  public ArrayFieldsFM raw$Address(
-      long index, java.lang.foreign.MemorySegment value) {
-    FM$VH$raw.set(ms, index,
-        value == null ? java.lang.foreign.MemorySegment.NULL : value);
+  public ArrayFieldsFM rawAsAddress$F(
+      long index$f, java.lang.foreign.MemorySegment value$f) {
+    raw$VarHandle$F.set(MemorySegment$F, index$f,
+        value$f == null
+            ? java.lang.foreign.MemorySegment.NULL : value$f);
     return this;
   }
 
   public java.lang.foreign.MemorySegment raw(long index) {
-    return raw$Address(index);
+    return rawAsAddress$F(index);
   }
 
   public ArrayFieldsFM raw(
       long index,
-      java.lang.foreign.MemorySegment value) {
-    FM$VH$raw.set(ms, index,
-        value == null ? java.lang.foreign.MemorySegment.NULL : value);
+      java.lang.foreign.MemorySegment value$f) {
+    raw$VarHandle$F.set(MemorySegment$F, index,
+        value$f == null
+            ? java.lang.foreign.MemorySegment.NULL : value$f);
     return this;
   }
 }

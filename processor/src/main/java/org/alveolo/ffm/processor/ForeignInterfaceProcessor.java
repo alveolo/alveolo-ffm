@@ -4,8 +4,10 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -36,18 +38,20 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     if (roundEnv.processingOver()) return true;
 
     var messager = processingEnv.getMessager();
+    var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
 
     for (var annotation : annotations) {
-      var ffmElements = roundEnv.getElementsAnnotatedWith(annotation);
-
-      for (var ffm : ffmElements) {
-        if (ffm instanceof TypeElement type) {
+      for (var element : roundEnv.getElementsAnnotatedWith(annotation)) {
+        if (element instanceof TypeElement type) {
           try {
             var fi = type.getAnnotation(ForeignInterface.class);
             if (fi != null) {
-              validateSimpleClassName(annotation, fi, fi.name());
+              validateSimpleClassName(type, fi, fi.name());
+              validateGeneratedClassName(type, fi,
+                  foreignInterfaceSimpleClassName(type));
+              validateUserIdentifiers(type);
               validateTopLevelType(type, fi);
-              writeFile(type);
+              writeFile(type, generatedTypes);
             }
           } catch (ProcessorError e) {
             messager.printMessage(Diagnostic.Kind.ERROR,
@@ -64,7 +68,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     return true;
   }
 
-  private void writeFile(TypeElement iface) throws IOException {
+  private void writeFile(TypeElement iface,
+      GeneratedTypeRegistry generatedTypes) throws IOException {
     var messager = processingEnv.getMessager();
 
     if (iface.getKind() != ElementKind.INTERFACE) {
@@ -93,7 +98,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           @javax.annotation.processing.Generated(
               "<generator>")
           public final class <name> implements <interface> {
-            public static final <name> INSTANCE = new <name>();
+            public static final <name> INSTANCE$F = new <name>();
 
             private <name>() {}
 
@@ -103,20 +108,20 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           .replace("<interface>", ifaceSimpleName));
 
       out.write("""
-            public static final java.lang.foreign.Linker FF$LINKER =
+            public static final java.lang.foreign.Linker Linker$F =
                 java.lang.foreign.Linker.nativeLinker();
 
           """);
 
       if (libraries.isEmpty()) {
         out.write("""
-              public static final java.lang.foreign.SymbolLookup FF$LOOKUP =
-                  FF$LINKER.defaultLookup();
+              public static final java.lang.foreign.SymbolLookup
+                  SymbolLookup$F = Linker$F.defaultLookup();
             """);
       } else {
         out.write("""
-              public static final java.lang.foreign.SymbolLookup FF$LOOKUP =
-                  FF$LOOKUP();
+              public static final java.lang.foreign.SymbolLookup
+                  SymbolLookup$F = SymbolLookup$F();
             """
         );
         writeLookupInitializer(out, ifaceSimpleName, libraries);
@@ -131,7 +136,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           }
 
           var generator = new ExecutableGenerator(
-              processingEnv, method, "FF$MH$" + index++);
+              processingEnv, generatedTypes, method,
+              "MethodHandle$" + index++ + "$F");
 
           out.write(generator.methodWithHandle());
         }
@@ -187,10 +193,10 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       throws IOException {
     out.write("""
 
-          private static java.lang.foreign.SymbolLookup FF$LOOKUP() {
+          private static java.lang.foreign.SymbolLookup SymbolLookup$F() {
             return org.alveolo.ffm.ForeignUtils.libraryLookup(
                 <sourceClass>.class,
-                FF$LINKER.defaultLookup(),
+                Linker$F.defaultLookup(),
         <libraries>);
           }
         """

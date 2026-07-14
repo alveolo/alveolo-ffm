@@ -4,8 +4,10 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -39,6 +41,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
     if (roundEnv.processingOver()) return true;
 
+    var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
     for (var annotation : annotations) {
       var elements = roundEnv.getElementsAnnotatedWith(annotation);
 
@@ -47,9 +50,12 @@ public class DispatchTableProcessor extends AbstractProcessor {
           try {
             var dt = type.getAnnotation(DispatchTable.class);
             if (dt != null) {
-              validateSimpleClassName(annotation, dt, dt.name());
+              validateSimpleClassName(type, dt, dt.name());
+              validateGeneratedClassName(type, dt,
+                  dispatchTableSimpleClassName(type));
+              validateUserIdentifiers(type);
               validateTopLevelType(type, dt);
-              writeFile(type);
+              writeFile(type, generatedTypes);
             }
           } catch (ProcessorError e) {
             messager.printMessage(Diagnostic.Kind.ERROR,
@@ -66,7 +72,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
     return true;
   }
 
-  private void writeFile(TypeElement iface) throws ProcessorError, IOException {
+  private void writeFile(TypeElement iface,
+      GeneratedTypeRegistry generatedTypes) throws ProcessorError, IOException {
     var messager = processingEnv.getMessager();
 
     if (iface.getKind() != ElementKind.INTERFACE) {
@@ -95,19 +102,20 @@ public class DispatchTableProcessor extends AbstractProcessor {
           @javax.annotation.processing.Generated(
               "<generator>")
           public final class <name> implements <interface> {
-            private static final java.lang.foreign.Linker FF$LINKER =
+            private static final java.lang.foreign.Linker Linker$F =
                 java.lang.foreign.Linker.nativeLinker();
 
-            public static final java.lang.foreign.MemoryLayout FD$LAYOUT =
+            public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
                 java.lang.foreign.MemoryLayout.sequenceLayout(<slotCount>L,
                     java.lang.foreign.ValueLayout.ADDRESS);
 
-            public static <name> reinterpret(
-                java.lang.foreign.MemorySegment ms) {
-              return new <name>(ms.reinterpret(FD$LAYOUT.byteSize()));
+            public static <name> reinterpret$F(
+                java.lang.foreign.MemorySegment memorySegment$f) {
+              return new <name>(memorySegment$f.reinterpret(
+                  MemoryLayout$F.byteSize()));
             }
 
-            public final java.lang.foreign.MemorySegment ms;
+            public final java.lang.foreign.MemorySegment MemorySegment$F;
 
           """
           .replace("<generator>", getClass().getCanonicalName())
@@ -115,7 +123,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
           .replace("<interface>", ifaceSimpleName)
           .replace("<slotCount>", Long.toString(slotCount(methods))));
 
-      var generators = generators(methods);
+      var generators = generators(methods, generatedTypes);
       writeConstructor(out, simpleClassName, generators);
 
       for (var i = 0; i < generators.size(); i++) {
@@ -181,10 +189,11 @@ public class DispatchTableProcessor extends AbstractProcessor {
   }
 
   private List<ExecutableGenerator> generators(
-      List<ExecutableElement> methods) {
+      List<ExecutableElement> methods, GeneratedTypeRegistry generatedTypes) {
     return IntStream.range(0, methods.size())
         .mapToObj(index -> new ExecutableGenerator(
-            processingEnv, methods.get(index), "FF$MH$" + index++, true))
+            processingEnv, generatedTypes, methods.get(index),
+            "MethodHandle$" + index + "$F", true))
         .toList();
   }
 
@@ -193,18 +202,18 @@ public class DispatchTableProcessor extends AbstractProcessor {
     out.write("""
 
           private static final java.lang.invoke.MethodHandle <mh> =
-              FF$LINKER.downcallHandle(
+              Linker$F.downcallHandle(
               <descriptor>);
         """
-        .replace("<mh>", "FF$MD$" + index)
+        .replace("<mh>", "DowncallHandle$" + index + "$F")
         .replace("<descriptor>", generator.descriptor()));
   }
 
   private void writeConstructor(Writer out, String className,
       List<ExecutableGenerator> generators) throws IOException {
     out.write("""
-          public <class>(java.lang.foreign.MemorySegment ms) {
-            this.ms = ms;
+          public <class>(java.lang.foreign.MemorySegment memorySegment$f) {
+            this.MemorySegment$F = memorySegment$f;
         <initializers>
           }
         """
@@ -225,8 +234,9 @@ public class DispatchTableProcessor extends AbstractProcessor {
       }
 
       result.append("""
-          this.<mh> = FF$MD$<index>.bindTo(
-              ms.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, <slot>L));
+          this.<mh> = DowncallHandle$<index>$F.bindTo(
+              MemorySegment$F.getAtIndex(
+                  java.lang.foreign.ValueLayout.ADDRESS, <slot>L));
           """
           .replace("<mh>", generator.methodHandleName)
           .replace("<index>", Integer.toString(i))
