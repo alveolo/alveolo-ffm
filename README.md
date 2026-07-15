@@ -454,6 +454,12 @@ public interface Samples {
       @CountedBy("count") Pair[] values,
       int count,
       int delta);
+
+  void consumeVector(
+      @Value @Sequence(4) float[] values);
+
+  void consumeMatrix(
+      @Value @Sequence(9) FloatBuffer values);
 }
 ```
 
@@ -489,9 +495,21 @@ An unannotated array uses its full `array.length`. An unannotated buffer uses
 the region from `position()` through `limit()`, without changing its position.
 
 `@Sequence(n)` declares a fixed logical extent and requires the available
-element count to equal `n`. On call parameters the ABI type is still a pointer;
-the annotation is an exact Java binding contract, not C array-by-value
-semantics.
+element count to equal `n`. By default the ABI type remains a pointer and the
+annotation is an exact Java binding contract.
+
+Add `@Value` to pass the fixed array or buffer contents as a native aggregate
+instead. `@Sequence` is required in that case because the aggregate layout must
+be known when the downcall handle is created. The generated descriptor uses a
+synthetic one-field struct containing the sequence: the FFM linker accepts the
+resulting group layout as a by-value argument while the Java API can remain an
+array or buffer without a user-declared `@Struct` wrapper. `@Out` is rejected
+for these arguments because a by-value argument cannot return mutations to the
+caller.
+
+C array parameters still decay to pointers. Use `@Value` only when the target
+ABI actually defines a compatible aggregate-by-value parameter, such as an API
+from another language or a C-compatible single-array struct ABI.
 
 Use `@CountedBy("count")` when a sibling integral parameter carries the active
 element count:

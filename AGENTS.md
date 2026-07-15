@@ -4,11 +4,12 @@ This project is a wrapper around Java Foreign Function and Memory API.
 
 - Java 25, JMH benchmarks, Maven
 - No external dependencies for core
-- Markdown style JavaDoc
 - indentation base is two spaces
+- Markdown style JavaDoc
 - prefer elegant concise simple code
 - design with records / immutable objects
 - no stupid getters - just expose final field
+- test code generation with full equivalence, not contains
 - if you met problem unforeseen during planning and it doesn't solve in the
   most concise simple way - stop, explain the problem and ask for directions
   instead of falling back to introducing unexpected complexity.

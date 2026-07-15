@@ -388,4 +388,102 @@ public final class ArrayParametersFFM implements ArrayParameters {
       throw new AssertionError(throwable$f);
     }
   }
+
+  private static final java.lang.invoke.MethodHandle MethodHandle$11$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("valueArray"),
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(3L, java.lang.foreign.ValueLayout.JAVA_INT))));
+
+  public void valueArray(
+      @org.alveolo.ffm.Value @org.alveolo.ffm.Sequence(3L) int[] values) {
+    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      var values$size$f = values.length;
+      if (values$size$f != 3) {
+        throw new IllegalArgumentException(
+            "values length must be 3");
+      }
+      var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
+      java.lang.foreign.MemorySegment.copy(
+          values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
+      MethodHandle$11$F.invokeExact(
+          values$MemorySegment$f);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  private static final java.lang.invoke.MethodHandle MethodHandle$12$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("valueBuffer"),
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(2L, java.lang.foreign.ValueLayout.JAVA_INT))));
+
+  public void valueBuffer(
+      java.nio.IntBuffer values) {
+    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      var values$position$f = values.position();
+      var values$size$f = values.remaining();
+      if (values$size$f != 2) {
+        throw new IllegalArgumentException(
+            "values remaining must be 2");
+      }
+      if (values.isDirect()
+          && !values.order().equals(java.nio.ByteOrder.nativeOrder())) {
+        throw new IllegalArgumentException(
+            "direct values must use native byte order");
+      }
+      var values$direct$f = values.isDirect();
+      var values$MemorySegment$f = values$direct$f
+          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
+              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) values$size$f))
+          : arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
+      if (!values$direct$f) {
+        for (var values$index$f = 0; values$index$f < values$size$f; values$index$f++) {
+          values$MemorySegment$f.setAtIndex(java.lang.foreign.ValueLayout.JAVA_INT, values$index$f,
+              values.get(values$position$f + values$index$f));
+        }
+      }
+      MethodHandle$12$F.invokeExact(
+          values$MemorySegment$f);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  private static final java.lang.invoke.MethodHandle MethodHandle$13$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("valueRecords"),
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(2L, pkg.CallPointFM.MemoryLayout$F))));
+
+  public void valueRecords(
+      pkg.@org.alveolo.ffm.Value @org.alveolo.ffm.Sequence(2L) CallPoint[] values) {
+    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      var values$size$f = values.length;
+      if (values$size$f != 2) {
+        throw new IllegalArgumentException(
+            "values length must be 2");
+      }
+      var values$MemorySegment$f = arena$f.allocate(
+          pkg.CallPointFM.MemoryLayout$F, values$size$f);
+      for (var values$index$f = 0; values$index$f < values$size$f; values$index$f++) {
+        values$MemorySegment$f.asSlice(
+            (long) values$index$f * pkg.CallPointFM.MemoryLayout$F.byteSize(),
+            pkg.CallPointFM.MemoryLayout$F).copyFrom(
+                pkg.CallPointFM.toMemorySegment$F(
+                    arena$f, values[values$index$f]));
+      }
+      MethodHandle$13$F.invokeExact(
+          values$MemorySegment$f);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
 }

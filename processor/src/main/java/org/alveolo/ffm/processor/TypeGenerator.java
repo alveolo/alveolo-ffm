@@ -377,6 +377,10 @@ sealed class TypeGenerator permits VariableGenerator {
     return !isAddress();
   }
 
+  boolean hasExplicitValuePassMode() {
+    return hasTypeUseValue();
+  }
+
   boolean isForeignMemory() {
     return isForeignMemoryImplementation()
         || (typeElement != null
@@ -396,11 +400,25 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   private boolean hasTypeUseAddress() {
-    return typeMirror.getAnnotation(Address.class) != null;
+    return hasTypeUseAnnotation(
+        typeMirror, Address.class.getCanonicalName());
   }
 
   private boolean hasTypeUseValue() {
-    return typeMirror.getAnnotation(Value.class) != null;
+    return hasTypeUseAnnotation(
+        typeMirror, Value.class.getCanonicalName());
+  }
+
+  private static boolean hasTypeUseAnnotation(
+      TypeMirror type, String annotationName) {
+    for (var annotation : type.getAnnotationMirrors()) {
+      if (annotation.getAnnotationType().toString().equals(annotationName))
+        return true;
+    }
+
+    return type.getKind() == TypeKind.ARRAY
+        && hasTypeUseAnnotation(
+            ((ArrayType) type).getComponentType(), annotationName);
   }
 
   private boolean hasTypeAddress() {

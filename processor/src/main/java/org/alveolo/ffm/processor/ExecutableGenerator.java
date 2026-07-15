@@ -492,6 +492,27 @@ class ExecutableGenerator {
         continue;
       }
 
+      if (paramGen.isCallArrayOrBufferByValue()
+          && !paramGen.hasExplicitSequence) {
+        hasUnsupported = true;
+
+        messager.printError(
+            "@Value array and Buffer parameters require @Sequence to define "
+                + "their fixed native layout",
+            paramGen.element);
+        continue;
+      }
+
+      if (paramGen.isCallArrayOrBufferByValue()
+          && paramGen.hasOutAnnotation()) {
+        hasUnsupported = true;
+
+        messager.printError(
+            "@Out is not supported on @Value array and Buffer parameters",
+            paramGen.element);
+        continue;
+      }
+
       if (paramGen.hasCountedBy()) {
         if (!paramGen.isCallArrayOrBuffer()) {
           hasUnsupported = true;

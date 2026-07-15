@@ -26,6 +26,7 @@ import org.alveolo.ffm.Slot;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.Union;
+import org.alveolo.ffm.Value;
 import org.alveolo.ffm.Virtual;
 import org.alveolo.ffm.macos.CFString;
 import org.alveolo.ffm.macos.CFStringSupport;
@@ -49,6 +50,7 @@ abstract class AbstractProcessorTest {
     Struct.class,
     Symbol.class,
     Union.class,
+    Value.class,
     Virtual.class,
   };
 

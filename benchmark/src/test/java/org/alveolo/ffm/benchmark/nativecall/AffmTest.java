@@ -81,4 +81,9 @@ public interface AffmTest {
 
   @Symbol("sum_three_and_clobber")
   int sum_three_int_buffer(@In @Sequence(3) IntBuffer values);
+
+  int sum_int3_value(@Value @Sequence(3) int[] values);
+
+  @Symbol("sum_int3_value")
+  int sum_int3_buffer_value(@Value @Sequence(3) IntBuffer values);
 }

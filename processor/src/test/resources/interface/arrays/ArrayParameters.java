@@ -9,6 +9,7 @@ import org.alveolo.ffm.In;
 import org.alveolo.ffm.Out;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.Value;
 
 @Struct
 record CallPoint(int x, int y) {}
@@ -40,4 +41,10 @@ public interface ArrayParameters {
   void readPrefix(
       @In @CountedBy("count") IntBuffer values,
       int count);
+
+  void valueArray(@Value @Sequence(3) int[] values);
+
+  void valueBuffer(@Value @Sequence(2) IntBuffer values);
+
+  void valueRecords(@Value @Sequence(2) CallPoint[] values);
 }

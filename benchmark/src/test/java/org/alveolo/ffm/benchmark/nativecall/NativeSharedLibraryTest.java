@@ -226,6 +226,28 @@ class NativeSharedLibraryTest {
   }
 
   @Test
+  void passesPrimitiveArrayByValue() {
+    var values = new int[] {1, 2, 3};
+
+    assertEquals(6, AffmTestFFM.INSTANCE$F.sum_int3_value(values));
+
+    assertArrayEquals(new int[] {1, 2, 3}, values);
+  }
+
+  @Test
+  void passesDirectIntBufferByValue() {
+    var values = ByteBuffer.allocateDirect(3 * Integer.BYTES)
+        .order(ByteOrder.nativeOrder()).asIntBuffer();
+    values.put(0, 1).put(1, 2).put(2, 3);
+
+    assertEquals(6, AffmTestFFM.INSTANCE$F.sum_int3_buffer_value(values));
+
+    assertEquals(1, values.get(0));
+    assertEquals(2, values.get(1));
+    assertEquals(3, values.get(2));
+  }
+
+  @Test
   void copiesOutArrayParameterOnlyWhenAnnotatedOut() {
     var values = new int[] {100, 200};
 

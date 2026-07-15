@@ -74,6 +74,50 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void failsWhenValueArrayOrBufferHasNoFixedSequence() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+
+        import java.nio.IntBuffer;
+        import org.alveolo.ffm.ForeignInterface;
+        import org.alveolo.ffm.Value;
+
+        @ForeignInterface
+        public interface Lib {
+          void array(@Value int[] values);
+          void buffer(@Value IntBuffer values);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@Value array and Buffer parameters require @Sequence");
+    assertThat(c).hadErrorCount(2);
+  }
+
+  @Test
+  void failsWhenValueArrayIsOutputOnly() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          void array(
+              @org.alveolo.ffm.Value
+              @org.alveolo.ffm.Out
+              @org.alveolo.ffm.Sequence(2) int[] values);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@Out is not supported on @Value array and Buffer parameters");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void failsWhenCountedByNamesNoParameter() {
     var lib = forSourceString("test.Lib", """
         package test;

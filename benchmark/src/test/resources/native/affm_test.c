@@ -25,6 +25,10 @@ typedef struct native_arrays {
   pair* pointers[2];
 } native_arrays;
 
+typedef struct int3_value {
+  int32_t values[3];
+} int3_value;
+
 EXPORT int add_ints(int left, int right) {
   return left + right;
 }
@@ -106,4 +110,10 @@ EXPORT void increment_bytes(uint8_t* values, int32_t count) {
   for (int32_t i = 0; i < count; i++) {
     values[i] += 1;
   }
+}
+
+EXPORT int32_t sum_int3_value(int3_value value) {
+  int32_t result = value.values[0] + value.values[1] + value.values[2];
+  value.values[0] = 777;
+  return result;
 }

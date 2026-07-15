@@ -63,9 +63,11 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String argumentLayout() {
-    return isCallArrayOrBuffer()
-        ? "java.lang.foreign.ValueLayout.ADDRESS"
-        : layout();
+    if (!isCallArrayOrBuffer()) return layout();
+
+    return isCallArrayOrBufferByValue()
+        ? callArrayOrBufferValueLayout()
+        : "java.lang.foreign.ValueLayout.ADDRESS";
   }
 
   @Override
@@ -166,6 +168,23 @@ final class VariableGenerator extends TypeGenerator {
     return isArrayOrBuffer() || isValueStructRecordArray();
   }
 
+  boolean isCallArrayOrBufferByValue() {
+    return isCallArrayOrBuffer() && hasExplicitValuePassMode();
+  }
+
+  private String callArrayOrBufferValueLayout() {
+    if (hasConflictingPassModeAnnotations())
+      return VALUE_LAYOUT_NOT_SUPPORTED;
+
+    var itemLayout = isValueStructRecordArray()
+        ? recordForeignMemoryClassName() + ".MemoryLayout$F"
+        : elementLayout();
+
+    return "java.lang.foreign.MemoryLayout.structLayout("
+        + "java.lang.foreign.MemoryLayout.sequenceLayout("
+        + sequence + "L, " + itemLayout + "))";
+  }
+
   String arrayOrBufferInitializer() {
     return isValueStructRecordArray() ? recordArrayInitializer()
         : isArray() ? arrayInitializer()
@@ -196,7 +215,7 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   private boolean copyOut() {
-    return !hasInAnnotation();
+    return !isCallArrayOrBufferByValue() && !hasInAnnotation();
   }
 
   private String arrayInitializer() {
@@ -308,7 +327,7 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   private String readOnlyCheck() {
-    if (hasInAnnotation()) return "";
+    if (!copyOut()) return "";
 
     return """
         if (<name>.isReadOnly()) {
