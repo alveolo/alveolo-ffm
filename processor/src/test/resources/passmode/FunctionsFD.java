@@ -11,15 +11,15 @@ public final class FunctionsFD implements Functions {
           java.lang.foreign.ValueLayout.ADDRESS);
 
   public static FunctionsFD reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return new FunctionsFD(memorySegment$f.reinterpret(
+      java.lang.foreign.MemorySegment memorySegment) {
+    return new FunctionsFD(memorySegment.reinterpret(
         MemoryLayout$F.byteSize()));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public FunctionsFD(java.lang.foreign.MemorySegment memorySegment$f) {
-    this.MemorySegment$F = memorySegment$f;
+  public FunctionsFD(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
     this.MethodHandle$0$F = DowncallHandle$0$F.bindTo(
         MemorySegment$F.getAtIndex(
             java.lang.foreign.ValueLayout.ADDRESS, 0L));

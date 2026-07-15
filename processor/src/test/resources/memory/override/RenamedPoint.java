@@ -12,67 +12,67 @@ public final class RenamedPoint {
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    return allocator$f.allocate(
+      java.lang.foreign.SegmentAllocator allocator) {
+    return allocator.allocate(
       MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.SegmentAllocator allocator, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator$f.allocate(MemoryLayout$F, count$f);
+    return allocator.allocate(MemoryLayout$F, count);
   }
 
   public static SimpleOverrides reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return fromMemorySegment$F(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+      java.lang.foreign.MemorySegment memorySegment) {
+    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.MemorySegment memorySegment, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return memorySegment$f.reinterpret(Math.multiplyExact(
-        MemoryLayout$F.byteSize(), count$f));
+    return memorySegment.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count));
   }
 
   private static java.lang.foreign.MemorySegment elementAt$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    if (index$f < 0) {
-      throw new IndexOutOfBoundsException(index$f);
+      java.lang.foreign.MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
     }
-    return array$f.asSlice(Math.multiplyExact(
-        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+    return array.asSlice(Math.multiplyExact(
+        index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
   public static SimpleOverrides at$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    return fromMemorySegment$F(elementAt$F(array$f, index$f));
+      java.lang.foreign.MemorySegment array, long index) {
+    return fromMemorySegment$F(elementAt$F(array, index));
   }
 
   public static void toMemorySegment$F(
-      SimpleOverrides source$f,
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    x(memorySegment$f, source$f.x());
-    y(memorySegment$f, source$f.y());
+      SimpleOverrides source,
+      java.lang.foreign.MemorySegment memorySegment) {
+    x(memorySegment, source.x());
+    y(memorySegment, source.y());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
-      java.lang.foreign.SegmentAllocator allocator$f,
-      SimpleOverrides source$f) {
-    var memorySegment$f = allocate$F(allocator$f);
-    toMemorySegment$F(source$f, memorySegment$f);
-    return memorySegment$f;
+      java.lang.foreign.SegmentAllocator allocator,
+      SimpleOverrides source) {
+    var memorySegment = allocate$F(allocator);
+    toMemorySegment$F(source, memorySegment);
+    return memorySegment;
   }
 
   public static SimpleOverrides fromMemorySegment$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
+      java.lang.foreign.MemorySegment memorySegment) {
     return new SimpleOverrides(
-        x(memorySegment$f),
-        y(memorySegment$f));
+        x(memorySegment),
+        y(memorySegment));
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -83,12 +83,12 @@ public final class RenamedPoint {
       java.lang.invoke.MethodHandles.insertCoordinates(
           MemoryLayout$F.varHandle(x$PathElement$F), 1, 0L);
 
-  public static int x(java.lang.foreign.MemorySegment memorySegment$f) {
-    return (int) x$VarHandle$F.get(memorySegment$f);
+  public static int x(java.lang.foreign.MemorySegment memorySegment) {
+    return (int) x$VarHandle$F.get(memorySegment);
   }
 
-  public static void x(java.lang.foreign.MemorySegment memorySegment$f, int value$f) {
-    x$VarHandle$F.set(memorySegment$f, value$f);
+  public static void x(java.lang.foreign.MemorySegment memorySegment, int value) {
+    x$VarHandle$F.set(memorySegment, value);
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -99,11 +99,11 @@ public final class RenamedPoint {
       java.lang.invoke.MethodHandles.insertCoordinates(
           MemoryLayout$F.varHandle(y$PathElement$F), 1, 0L);
 
-  public static int y(java.lang.foreign.MemorySegment memorySegment$f) {
-    return (int) y$VarHandle$F.get(memorySegment$f);
+  public static int y(java.lang.foreign.MemorySegment memorySegment) {
+    return (int) y$VarHandle$F.get(memorySegment);
   }
 
-  public static void y(java.lang.foreign.MemorySegment memorySegment$f, int value$f) {
-    y$VarHandle$F.set(memorySegment$f, value$f);
+  public static void y(java.lang.foreign.MemorySegment memorySegment, int value) {
+    y$VarHandle$F.set(memorySegment, value);
   }
 }

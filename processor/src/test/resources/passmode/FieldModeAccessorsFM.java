@@ -15,55 +15,55 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    return allocator$f.allocate(
+      java.lang.foreign.SegmentAllocator allocator) {
+    return allocator.allocate(
       MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.SegmentAllocator allocator, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator$f.allocate(MemoryLayout$F, count$f);
+    return allocator.allocate(MemoryLayout$F, count);
   }
 
   public static FieldModeAccessorsFM reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return new FieldModeAccessorsFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+      java.lang.foreign.MemorySegment memorySegment) {
+    return new FieldModeAccessorsFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.MemorySegment memorySegment, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return memorySegment$f.reinterpret(Math.multiplyExact(
-        MemoryLayout$F.byteSize(), count$f));
+    return memorySegment.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count));
   }
 
   private static java.lang.foreign.MemorySegment elementAt$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    if (index$f < 0) {
-      throw new IndexOutOfBoundsException(index$f);
+      java.lang.foreign.MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
     }
-    return array$f.asSlice(Math.multiplyExact(
-        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+    return array.asSlice(Math.multiplyExact(
+        index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
   public static FieldModeAccessorsFM at$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    return new FieldModeAccessorsFM(elementAt$F(array$f, index$f));
+      java.lang.foreign.MemorySegment array, long index) {
+    return new FieldModeAccessorsFM(elementAt$F(array, index));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public FieldModeAccessorsFM(java.lang.foreign.SegmentAllocator allocator$f) {
-    this(allocate$F(allocator$f));
+  public FieldModeAccessorsFM(java.lang.foreign.SegmentAllocator allocator) {
+    this(allocate$F(allocator));
   }
 
-  public FieldModeAccessorsFM(java.lang.foreign.MemorySegment memorySegment$f) {
-    this.MemorySegment$F = memorySegment$f;
+  public FieldModeAccessorsFM(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -76,14 +76,14 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
         MemoryLayout$F.select(recordDefault$PathElement$F).byteSize()));
   }
 
-  public FieldModeAccessorsFM recordDefault(passmode.InnerRecord value$f) {
-    var memoryLayout$f =
+  public FieldModeAccessorsFM recordDefault(passmode.InnerRecord value) {
+    var memoryLayout =
         MemoryLayout$F.select(recordDefault$PathElement$F);
-    var slice$f = MemorySegment$F.asSlice(
+    var slice = MemorySegment$F.asSlice(
         MemoryLayout$F.byteOffset(recordDefault$PathElement$F),
-        memoryLayout$f.byteSize());
+        memoryLayout.byteSize());
     passmode.InnerRecordFM.toMemorySegment$F(
-        value$f, slice$f);
+        value, slice);
     return this;
   }
 
@@ -99,8 +99,8 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     return passmode.InnerInterfaceFM.reinterpret$F((java.lang.foreign.MemorySegment) interfaceDefault$VarHandle$F.get(MemorySegment$F));
   }
 
-  public FieldModeAccessorsFM interfaceDefault(passmode.InnerInterface value$f) {
-    interfaceDefault$VarHandle$F.set(MemorySegment$F, ((passmode.InnerInterfaceFM)value$f).MemorySegment$F);
+  public FieldModeAccessorsFM interfaceDefault(passmode.InnerInterface value) {
+    interfaceDefault$VarHandle$F.set(MemorySegment$F, ((passmode.InnerInterfaceFM) value).MemorySegment$F);
     return this;
   }
 
@@ -114,15 +114,15 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
         MemoryLayout$F.select(interfaceTypeUseValue$PathElement$F).byteSize()));
   }
 
-  public FieldModeAccessorsFM interfaceTypeUseValue(passmode.InnerInterface value$f) {
-    var memoryLayout$f =
+  public FieldModeAccessorsFM interfaceTypeUseValue(passmode.InnerInterface value) {
+    var memoryLayout =
         MemoryLayout$F.select(interfaceTypeUseValue$PathElement$F);
-    var slice$f = MemorySegment$F.asSlice(
+    var slice = MemorySegment$F.asSlice(
         MemoryLayout$F.byteOffset(interfaceTypeUseValue$PathElement$F),
-        memoryLayout$f.byteSize());
+        memoryLayout.byteSize());
     java.lang.foreign.MemorySegment.copy(
-        ((passmode.InnerInterfaceFM)value$f).MemorySegment$F, 0,
-        slice$f, 0, memoryLayout$f.byteSize());
+        ((passmode.InnerInterfaceFM) value).MemorySegment$F, 0,
+        slice, 0, memoryLayout.byteSize());
     return this;
   }
 
@@ -136,14 +136,14 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
         MemoryLayout$F.select(fieldOverridesTypeAddress$PathElement$F).byteSize()));
   }
 
-  public FieldModeAccessorsFM fieldOverridesTypeAddress(passmode.TypeAddressRecord value$f) {
-    var memoryLayout$f =
+  public FieldModeAccessorsFM fieldOverridesTypeAddress(passmode.TypeAddressRecord value) {
+    var memoryLayout =
         MemoryLayout$F.select(fieldOverridesTypeAddress$PathElement$F);
-    var slice$f = MemorySegment$F.asSlice(
+    var slice = MemorySegment$F.asSlice(
         MemoryLayout$F.byteOffset(fieldOverridesTypeAddress$PathElement$F),
-        memoryLayout$f.byteSize());
+        memoryLayout.byteSize());
     passmode.TypeAddressRecordFM.toMemorySegment$F(
-        value$f, slice$f);
+        value, slice);
     return this;
   }
 
@@ -159,8 +159,8 @@ public final class FieldModeAccessorsFM implements FieldModeAccessors {
     return passmode.TypeValueInterfaceFM.reinterpret$F((java.lang.foreign.MemorySegment) fieldOverridesTypeValue$VarHandle$F.get(MemorySegment$F));
   }
 
-  public FieldModeAccessorsFM fieldOverridesTypeValue(passmode.TypeValueInterface value$f) {
-    fieldOverridesTypeValue$VarHandle$F.set(MemorySegment$F, ((passmode.TypeValueInterfaceFM)value$f).MemorySegment$F);
+  public FieldModeAccessorsFM fieldOverridesTypeValue(passmode.TypeValueInterface value) {
+    fieldOverridesTypeValue$VarHandle$F.set(MemorySegment$F, ((passmode.TypeValueInterfaceFM) value).MemorySegment$F);
     return this;
   }
 }

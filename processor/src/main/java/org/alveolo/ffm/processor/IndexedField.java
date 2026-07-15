@@ -3,6 +3,7 @@ package org.alveolo.ffm.processor;
 import static java.util.stream.Collectors.joining;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeMirror;
@@ -48,38 +49,28 @@ record IndexedField(
     return dimensions.size() == 1;
   }
 
-  String parameterDeclarations() {
-    return dimensions.stream()
-        .map(d -> d.typeName() + " " + d.name())
+  String accessorParameterDeclarations() {
+    return IntStream.range(0, dimensions.size())
+        .mapToObj(i -> dimensions.get(i).typeName() + " index" + i + "$f")
         .collect(joining(", "));
   }
 
-  String parameterNames() {
-    return dimensions.stream()
-        .map(Dimension::name)
+  String accessorParameterNames() {
+    return IntStream.range(0, dimensions.size())
+        .mapToObj(i -> "index" + i + "$f")
         .collect(joining(", "));
   }
 
-  String syntheticParameterDeclarations() {
-    return dimensions.stream()
-        .map(d -> d.typeName() + " " + syntheticName(d))
+  String helperParameterDeclarations() {
+    return IntStream.range(0, dimensions.size())
+        .mapToObj(i -> dimensions.get(i).typeName() + " index" + i)
         .collect(joining(", "));
   }
 
-  String syntheticParameterNames() {
-    return dimensions.stream()
-        .map(IndexedField::syntheticName)
+  String helperParameterNames() {
+    return IntStream.range(0, dimensions.size())
+        .mapToObj(i -> "index" + i)
         .collect(joining(", "));
-  }
-
-  String commaPrefixedSyntheticParameterDeclarations() {
-    return ", " + syntheticParameterDeclarations();
-  }
-
-  static String syntheticName(Dimension dimension) {
-    return dimension.name().endsWith("$f")
-        ? dimension.name()
-        : dimension.name() + "$f";
   }
 
   boolean primitive() {

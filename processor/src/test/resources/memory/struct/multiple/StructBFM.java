@@ -17,55 +17,55 @@ public final class StructBFM implements StructB {
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    return allocator$f.allocate(
+      java.lang.foreign.SegmentAllocator allocator) {
+    return allocator.allocate(
       MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.SegmentAllocator allocator, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator$f.allocate(MemoryLayout$F, count$f);
+    return allocator.allocate(MemoryLayout$F, count);
   }
 
   public static StructBFM reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return new StructBFM(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+      java.lang.foreign.MemorySegment memorySegment) {
+    return new StructBFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.MemorySegment memorySegment, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return memorySegment$f.reinterpret(Math.multiplyExact(
-        MemoryLayout$F.byteSize(), count$f));
+    return memorySegment.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count));
   }
 
   private static java.lang.foreign.MemorySegment elementAt$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    if (index$f < 0) {
-      throw new IndexOutOfBoundsException(index$f);
+      java.lang.foreign.MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
     }
-    return array$f.asSlice(Math.multiplyExact(
-        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+    return array.asSlice(Math.multiplyExact(
+        index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
   public static StructBFM at$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    return new StructBFM(elementAt$F(array$f, index$f));
+      java.lang.foreign.MemorySegment array, long index) {
+    return new StructBFM(elementAt$F(array, index));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public StructBFM(java.lang.foreign.SegmentAllocator allocator$f) {
-    this(allocate$F(allocator$f));
+  public StructBFM(java.lang.foreign.SegmentAllocator allocator) {
+    this(allocate$F(allocator));
   }
 
-  public StructBFM(java.lang.foreign.MemorySegment memorySegment$f) {
-    this.MemorySegment$F = memorySegment$f;
+  public StructBFM(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -80,8 +80,8 @@ public final class StructBFM implements StructB {
     return (boolean) b$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructBFM b(boolean value$f) {
-    b$VarHandle$F.set(MemorySegment$F, value$f);
+  public StructBFM b(boolean value) {
+    b$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 
@@ -97,8 +97,8 @@ public final class StructBFM implements StructB {
     return (char) c$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructBFM c(char value$f) {
-    c$VarHandle$F.set(MemorySegment$F, value$f);
+  public StructBFM c(char value) {
+    c$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 
@@ -114,8 +114,8 @@ public final class StructBFM implements StructB {
     return (short) s$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructBFM s(short value$f) {
-    s$VarHandle$F.set(MemorySegment$F, value$f);
+  public StructBFM s(short value) {
+    s$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 
@@ -131,8 +131,8 @@ public final class StructBFM implements StructB {
     return (int) i$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructBFM i(int value$f) {
-    i$VarHandle$F.set(MemorySegment$F, value$f);
+  public StructBFM i(int value) {
+    i$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 
@@ -148,8 +148,8 @@ public final class StructBFM implements StructB {
     return (long) l$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructBFM l(long value$f) {
-    l$VarHandle$F.set(MemorySegment$F, value$f);
+  public StructBFM l(long value) {
+    l$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 
@@ -165,8 +165,8 @@ public final class StructBFM implements StructB {
     return (float) f$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructBFM f(float value$f) {
-    f$VarHandle$F.set(MemorySegment$F, value$f);
+  public StructBFM f(float value) {
+    f$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 
@@ -182,8 +182,8 @@ public final class StructBFM implements StructB {
     return (double) d$VarHandle$F.get(MemorySegment$F);
   }
 
-  public StructBFM d(double value$f) {
-    d$VarHandle$F.set(MemorySegment$F, value$f);
+  public StructBFM d(double value) {
+    d$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 }

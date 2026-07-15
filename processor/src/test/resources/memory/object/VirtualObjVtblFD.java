@@ -11,15 +11,15 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
           java.lang.foreign.ValueLayout.ADDRESS);
 
   public static VirtualObjVtblFD reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return new VirtualObjVtblFD(memorySegment$f.reinterpret(
+      java.lang.foreign.MemorySegment memorySegment) {
+    return new VirtualObjVtblFD(memorySegment.reinterpret(
         MemoryLayout$F.byteSize()));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public VirtualObjVtblFD(java.lang.foreign.MemorySegment memorySegment$f) {
-    this.MemorySegment$F = memorySegment$f;
+  public VirtualObjVtblFD(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
     this.MethodHandle$0$F = DowncallHandle$0$F.bindTo(
         MemorySegment$F.getAtIndex(
             java.lang.foreign.ValueLayout.ADDRESS, 2L));
@@ -42,7 +42,7 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
       int arg) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
-          ((pkg.VirtualObjFM)self$f).MemorySegment$F,
+          ((pkg.VirtualObjFM) self$f).MemorySegment$F,
           arg);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
@@ -66,13 +66,14 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values.length;
       if (values$size$f != 3) {
-        throw new IllegalArgumentException("values length must be 3");
+        throw new IllegalArgumentException(
+            "values length must be 3");
       }
       var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       java.lang.foreign.MemorySegment.copy(
           values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
       return (int) MethodHandle$1$F.invokeExact(
-          ((pkg.VirtualObjFM)self$f).MemorySegment$F,
+          ((pkg.VirtualObjFM) self$f).MemorySegment$F,
           values$MemorySegment$f);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;

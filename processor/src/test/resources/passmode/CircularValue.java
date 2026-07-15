@@ -11,55 +11,55 @@ public final class CircularValue implements CircularValueSpec {
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    return allocator$f.allocate(
+      java.lang.foreign.SegmentAllocator allocator) {
+    return allocator.allocate(
       MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.SegmentAllocator allocator, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator$f.allocate(MemoryLayout$F, count$f);
+    return allocator.allocate(MemoryLayout$F, count);
   }
 
   public static CircularValue reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return new CircularValue(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+      java.lang.foreign.MemorySegment memorySegment) {
+    return new CircularValue(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.MemorySegment memorySegment, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return memorySegment$f.reinterpret(Math.multiplyExact(
-        MemoryLayout$F.byteSize(), count$f));
+    return memorySegment.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count));
   }
 
   private static java.lang.foreign.MemorySegment elementAt$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    if (index$f < 0) {
-      throw new IndexOutOfBoundsException(index$f);
+      java.lang.foreign.MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
     }
-    return array$f.asSlice(Math.multiplyExact(
-        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+    return array.asSlice(Math.multiplyExact(
+        index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
   public static CircularValue at$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    return new CircularValue(elementAt$F(array$f, index$f));
+      java.lang.foreign.MemorySegment array, long index) {
+    return new CircularValue(elementAt$F(array, index));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public CircularValue(java.lang.foreign.SegmentAllocator allocator$f) {
-    this(allocate$F(allocator$f));
+  public CircularValue(java.lang.foreign.SegmentAllocator allocator) {
+    this(allocate$F(allocator));
   }
 
-  public CircularValue(java.lang.foreign.MemorySegment memorySegment$f) {
-    this.MemorySegment$F = memorySegment$f;
+  public CircularValue(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -74,8 +74,8 @@ public final class CircularValue implements CircularValueSpec {
     return passmode.CircularAddress.reinterpret$F((java.lang.foreign.MemorySegment) value$VarHandle$F.get(MemorySegment$F));
   }
 
-  public CircularValue value(passmode.CircularAddress value$f) {
-    value$VarHandle$F.set(MemorySegment$F, value$f.MemorySegment$F);
+  public CircularValue value(passmode.CircularAddress value) {
+    value$VarHandle$F.set(MemorySegment$F, value.MemorySegment$F);
     return this;
   }
 }

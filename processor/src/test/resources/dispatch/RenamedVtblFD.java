@@ -11,15 +11,15 @@ public final class RenamedVtblFD implements RenamedVtbl {
           java.lang.foreign.ValueLayout.ADDRESS);
 
   public static RenamedVtblFD reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return new RenamedVtblFD(memorySegment$f.reinterpret(
+      java.lang.foreign.MemorySegment memorySegment) {
+    return new RenamedVtblFD(memorySegment.reinterpret(
         MemoryLayout$F.byteSize()));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public RenamedVtblFD(java.lang.foreign.MemorySegment memorySegment$f) {
-    this.MemorySegment$F = memorySegment$f;
+  public RenamedVtblFD(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
     this.MethodHandle$0$F = DowncallHandle$0$F.bindTo(
         MemorySegment$F.getAtIndex(
             java.lang.foreign.ValueLayout.ADDRESS, 0L));

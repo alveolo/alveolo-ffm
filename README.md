@@ -62,7 +62,8 @@ generated dispatch-table class is `NativeObjectVtbl`.
 
 Identifiers consumed by the processor must not end in the reserved `$F` or
 `$f` suffix. Generated infrastructure and additional public helpers use `$F`;
-synthetic implementation details use `$f`.
+synthetic implementation details use `$f` only where they can share a scope
+with user-named parameters.
 
 Annotated types must currently be top-level declarations; nested annotated
 types are rejected with a compile-time diagnostic.

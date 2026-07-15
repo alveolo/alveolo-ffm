@@ -11,15 +11,15 @@ public final class XyzVtblFD implements XyzVtbl {
           java.lang.foreign.ValueLayout.ADDRESS);
 
   public static XyzVtblFD reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return new XyzVtblFD(memorySegment$f.reinterpret(
+      java.lang.foreign.MemorySegment memorySegment) {
+    return new XyzVtblFD(memorySegment.reinterpret(
         MemoryLayout$F.byteSize()));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public XyzVtblFD(java.lang.foreign.MemorySegment memorySegment$f) {
-    this.MemorySegment$F = memorySegment$f;
+  public XyzVtblFD(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
     this.MethodHandle$0$F = DowncallHandle$0$F.bindTo(
         MemorySegment$F.getAtIndex(
             java.lang.foreign.ValueLayout.ADDRESS, 1L));
@@ -113,7 +113,8 @@ public final class XyzVtblFD implements XyzVtbl {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values.length;
       if (values$size$f != 3) {
-        throw new IllegalArgumentException("values length must be 3");
+        throw new IllegalArgumentException(
+            "values length must be 3");
       }
       var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       java.lang.foreign.MemorySegment.copy(

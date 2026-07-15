@@ -307,7 +307,7 @@ final class ForeignMemoryAnalyzer {
     }
     if (!valid) return null;
 
-    var dimension = new IndexedField.Dimension("index$f", "long", size);
+    var dimension = new IndexedField.Dimension("index", "long", size);
 
     return new IndexedField(element, component.asType(),
         List.of(dimension), component, true);

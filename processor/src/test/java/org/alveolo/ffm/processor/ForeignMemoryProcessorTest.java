@@ -4,6 +4,8 @@ import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.JavaFileObjects.forSourceString;
 
 import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryLayout;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -160,6 +162,16 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void printLinkerCaptureStateNames() {
+    var capturedNames = Linker.Option.captureStateLayout()
+        .memberLayouts().stream()
+        .map(MemoryLayout::name)
+        .flatMap(Optional::stream)
+        .toList();
+    IO.println("Capture names: " + capturedNames);
+  }
+
+  @Test
   void generatesStructClass() {
     var c = compile("memory/struct/timeval.java");
     assertThat(c).succeeded();
@@ -301,6 +313,21 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
           @org.alveolo.ffm.Address
           Point pointers(
               @org.alveolo.ffm.Sequence(2) long allocator);
+
+          @org.alveolo.ffm.Address
+          Point pointerValues(
+              @org.alveolo.ffm.Sequence(2) long value);
+
+          @org.alveolo.ffm.Address
+          Point pointerAddresses(
+              @org.alveolo.ffm.Sequence(2) long address);
+
+          int packageNames(
+              @org.alveolo.ffm.Sequence(2) long java);
+
+          @org.alveolo.ffm.Address
+          Point pointerPackages(
+              @org.alveolo.ffm.Sequence(2) long java);
         }
         """);
     var use = forSourceString("test.NamedIndicesUse", """
@@ -314,8 +341,20 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
           }
         }
         """);
+    var packageRoot = forSourceString("index0.PackageRoot", """
+        package index0;
 
-    var c = compile(fields, use);
+        @org.alveolo.ffm.Struct
+        record Point(int x) {}
+
+        @org.alveolo.ffm.Struct
+        interface PackageRoot {
+          Point points(
+              @org.alveolo.ffm.Sequence(2) long ignored);
+        }
+        """);
+
+    var c = compile(fields, use, packageRoot);
 
     assertThat(c).succeeded();
   }

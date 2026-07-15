@@ -49,7 +49,8 @@ public final class ArrayParametersFFM implements ArrayParameters {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values.length;
       if (values$size$f != 3) {
-        throw new IllegalArgumentException("values length must be 3");
+        throw new IllegalArgumentException(
+            "values length must be 3");
       }
       var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       java.lang.foreign.MemorySegment.copy(
@@ -74,7 +75,8 @@ public final class ArrayParametersFFM implements ArrayParameters {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values.length;
       if (values$size$f != 2) {
-        throw new IllegalArgumentException("values length must be 2");
+        throw new IllegalArgumentException(
+            "values length must be 2");
       }
       var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       MethodHandle$2$F.invokeExact(
@@ -141,7 +143,8 @@ public final class ArrayParametersFFM implements ArrayParameters {
       var values$position$f = values.position();
       var values$size$f = values.remaining();
       if (values$size$f != 2) {
-        throw new IllegalArgumentException("values remaining must be 2");
+        throw new IllegalArgumentException(
+            "values remaining must be 2");
       }
       if (values.isReadOnly()) {
         throw new IllegalArgumentException(
@@ -319,7 +322,8 @@ public final class ArrayParametersFFM implements ArrayParameters {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var points$size$f = points.length;
       if (points$size$f != 2) {
-        throw new IllegalArgumentException("points length must be 2");
+        throw new IllegalArgumentException(
+            "points length must be 2");
       }
       var points$MemorySegment$f = arena$f.allocate(
           pkg.CallPointFM.MemoryLayout$F, points$size$f);

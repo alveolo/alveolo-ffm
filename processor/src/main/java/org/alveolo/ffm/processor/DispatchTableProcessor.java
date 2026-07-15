@@ -110,8 +110,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
                     java.lang.foreign.ValueLayout.ADDRESS);
 
             public static <name> reinterpret$F(
-                java.lang.foreign.MemorySegment memorySegment$f) {
-              return new <name>(memorySegment$f.reinterpret(
+                java.lang.foreign.MemorySegment memorySegment) {
+              return new <name>(memorySegment.reinterpret(
                   MemoryLayout$F.byteSize()));
             }
 
@@ -212,8 +212,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
   private void writeConstructor(Writer out, String className,
       List<ExecutableGenerator> generators) throws IOException {
     out.write("""
-          public <class>(java.lang.foreign.MemorySegment memorySegment$f) {
-            this.MemorySegment$F = memorySegment$f;
+          public <class>(java.lang.foreign.MemorySegment memorySegment) {
+            this.MemorySegment$F = memorySegment;
         <initializers>
           }
         """

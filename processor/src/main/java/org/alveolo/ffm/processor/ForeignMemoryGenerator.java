@@ -149,17 +149,17 @@ final class ForeignMemoryGenerator {
     out.write("""
 
           public static java.lang.foreign.MemorySegment allocate$F(
-              java.lang.foreign.SegmentAllocator allocator$f) {
-            return allocator$f.allocate(
+              java.lang.foreign.SegmentAllocator allocator) {
+            return allocator.allocate(
               MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
           }
 
           public static java.lang.foreign.MemorySegment allocate$F(
-              java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
-            if (count$f < 0) {
+              java.lang.foreign.SegmentAllocator allocator, long count) {
+            if (count < 0) {
               throw new IllegalArgumentException("count must be non-negative");
             }
-            return allocator$f.allocate(MemoryLayout$F, count$f);
+            return allocator.allocate(MemoryLayout$F, count);
           }
         """);
   }
@@ -171,25 +171,25 @@ final class ForeignMemoryGenerator {
     var returnType = isRecord
         ? source.getSimpleName().toString() : simpleClassName;
     var expression = isRecord
-        ? "fromMemorySegment$F(memorySegment$f.reinterpret("
+        ? "fromMemorySegment$F(memorySegment.reinterpret("
             + "MemoryLayout$F.byteSize()))"
-        : "new " + simpleClassName + "(memorySegment$f.reinterpret("
+        : "new " + simpleClassName + "(memorySegment.reinterpret("
             + "MemoryLayout$F.byteSize()))";
 
     out.write("""
 
           public static <type> reinterpret$F(
-              java.lang.foreign.MemorySegment memorySegment$f) {
+              java.lang.foreign.MemorySegment memorySegment) {
             return <expression>;
           }
 
           public static java.lang.foreign.MemorySegment reinterpret$F(
-              java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
-            if (count$f < 0) {
+              java.lang.foreign.MemorySegment memorySegment, long count) {
+            if (count < 0) {
               throw new IllegalArgumentException("count must be non-negative");
             }
-            return memorySegment$f.reinterpret(Math.multiplyExact(
-                MemoryLayout$F.byteSize(), count$f));
+            return memorySegment.reinterpret(Math.multiplyExact(
+                MemoryLayout$F.byteSize(), count));
           }
         """
         .replace("<type>", returnType)
@@ -202,12 +202,12 @@ final class ForeignMemoryGenerator {
     out.write("""
 
           private static java.lang.foreign.MemorySegment elementAt$F(
-              java.lang.foreign.MemorySegment array$f, long index$f) {
-            if (index$f < 0) {
-              throw new IndexOutOfBoundsException(index$f);
+              java.lang.foreign.MemorySegment array, long index) {
+            if (index < 0) {
+              throw new IndexOutOfBoundsException(index);
             }
-            return array$f.asSlice(Math.multiplyExact(
-                index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+            return array.asSlice(Math.multiplyExact(
+                index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
           }
         """);
 
@@ -215,8 +215,8 @@ final class ForeignMemoryGenerator {
       out.write("""
 
             public static <source> at$F(
-                java.lang.foreign.MemorySegment array$f, long index$f) {
-              return fromMemorySegment$F(elementAt$F(array$f, index$f));
+                java.lang.foreign.MemorySegment array, long index) {
+              return fromMemorySegment$F(elementAt$F(array, index));
             }
           """
           .replace("<source>", source.getSimpleName().toString()));
@@ -226,8 +226,8 @@ final class ForeignMemoryGenerator {
     out.write("""
 
           public static <class> at$F(
-              java.lang.foreign.MemorySegment array$f, long index$f) {
-            return new <class>(elementAt$F(array$f, index$f));
+              java.lang.foreign.MemorySegment array, long index) {
+            return new <class>(elementAt$F(array, index));
           }
         """
         .replace("<class>", simpleClassName));
@@ -256,12 +256,12 @@ final class ForeignMemoryGenerator {
         : "";
     out.write("""
 
-          public <class>(java.lang.foreign.SegmentAllocator allocator$f) {
-            this(allocate$F(allocator$f));
+          public <class>(java.lang.foreign.SegmentAllocator allocator) {
+            this(allocate$F(allocator));
           }
 
-          public <class>(java.lang.foreign.MemorySegment memorySegment$f) {
-            this.MemorySegment$F = memorySegment$f;
+          public <class>(java.lang.foreign.MemorySegment memorySegment) {
+            this.MemorySegment$F = memorySegment;
             <vtableInitializer>
           }
         """

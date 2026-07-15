@@ -12,66 +12,66 @@ public final class AllocatingArraySnapshotFM {
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    return allocator$f.allocate(
+      java.lang.foreign.SegmentAllocator allocator) {
+    return allocator.allocate(
       MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.SegmentAllocator allocator, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator$f.allocate(MemoryLayout$F, count$f);
+    return allocator.allocate(MemoryLayout$F, count);
   }
 
   public static AllocatingArraySnapshot reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return fromMemorySegment$F(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+      java.lang.foreign.MemorySegment memorySegment) {
+    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.MemorySegment memorySegment, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return memorySegment$f.reinterpret(Math.multiplyExact(
-        MemoryLayout$F.byteSize(), count$f));
+    return memorySegment.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count));
   }
 
   private static java.lang.foreign.MemorySegment elementAt$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    if (index$f < 0) {
-      throw new IndexOutOfBoundsException(index$f);
+      java.lang.foreign.MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
     }
-    return array$f.asSlice(Math.multiplyExact(
-        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+    return array.asSlice(Math.multiplyExact(
+        index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
   public static AllocatingArraySnapshot at$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    return fromMemorySegment$F(elementAt$F(array$f, index$f));
+      java.lang.foreign.MemorySegment array, long index) {
+    return fromMemorySegment$F(elementAt$F(array, index));
   }
 
   public static void toMemorySegment$F(
-      AllocatingArraySnapshot source$f,
-      java.lang.foreign.MemorySegment memorySegment$f,
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    values(memorySegment$f, allocator$f, source$f.values());
+      AllocatingArraySnapshot source,
+      java.lang.foreign.MemorySegment memorySegment,
+      java.lang.foreign.SegmentAllocator allocator) {
+    values(memorySegment, allocator, source.values());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
-      java.lang.foreign.SegmentAllocator allocator$f,
-      AllocatingArraySnapshot source$f) {
-    var memorySegment$f = allocate$F(allocator$f);
-    toMemorySegment$F(source$f, memorySegment$f, allocator$f);
-    return memorySegment$f;
+      java.lang.foreign.SegmentAllocator allocator,
+      AllocatingArraySnapshot source) {
+    var memorySegment = allocate$F(allocator);
+    toMemorySegment$F(source, memorySegment, allocator);
+    return memorySegment;
   }
 
   public static AllocatingArraySnapshot fromMemorySegment$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
+      java.lang.foreign.MemorySegment memorySegment) {
     return new AllocatingArraySnapshot(
-        values(memorySegment$f));
+        values(memorySegment));
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -91,69 +91,71 @@ public final class AllocatingArraySnapshotFM {
       values$ElementMemoryLayout$F =
       pkg.ArrayAddressValueFM.MemoryLayout$F;
 
-  public static final long values$Sequence0Dimension$F = 2L;
+  public static final long values$Sequence0Dimension$F =
+      2L;
 
   public static java.lang.foreign.MemorySegment
       valuesAsMemorySegment$F(
-          java.lang.foreign.MemorySegment memorySegment$f) {
-    return memorySegment$f.asSlice(
+          java.lang.foreign.MemorySegment memorySegment) {
+    return memorySegment.asSlice(
         MemoryLayout$F.byteOffset(values$PathElement$F),
         values$MemoryLayout$F.byteSize());
   }
 
   public static java.lang.foreign.MemorySegment
       valuesAsMemorySegment$F(
-      java.lang.foreign.MemorySegment memorySegment$f, long index$f) {
-    return memorySegment$f.asSlice(
+      java.lang.foreign.MemorySegment memorySegment, long index0) {
+    return memorySegment.asSlice(
         MemoryLayout$F.byteOffset(
             values$PathElement$F,
-            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index$f)),
+            java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index0)),
         values$ElementMemoryLayout$F.byteSize());
   }
 
   public static pkg.ArrayAddressValue values(
-      java.lang.foreign.MemorySegment memorySegment$f, long index$f) {
+      java.lang.foreign.MemorySegment memorySegment, long index0$f) {
     return pkg.ArrayAddressValueFM.fromMemorySegment$F(
-        valuesAsMemorySegment$F(memorySegment$f, index$f));
+        valuesAsMemorySegment$F(memorySegment, index0$f));
   }
 
   public static void values(
-      java.lang.foreign.MemorySegment memorySegment$f,
-      java.lang.foreign.SegmentAllocator allocator$f, long index$f,
-      pkg.ArrayAddressValue value$f) {
+      java.lang.foreign.MemorySegment memorySegment,
+      java.lang.foreign.SegmentAllocator allocator, long index0$f,
+      pkg.ArrayAddressValue value) {
     pkg.ArrayAddressValueFM.toMemorySegment$F(
-        value$f, valuesAsMemorySegment$F(memorySegment$f, index$f), allocator$f);
+        value, valuesAsMemorySegment$F(memorySegment, index0$f), allocator);
   }
 
   public static pkg.ArrayAddressValue[] valuesToArray$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    var result$f =
+      java.lang.foreign.MemorySegment memorySegment) {
+    var result =
         new pkg.ArrayAddressValue[(int) values$Sequence0Dimension$F];
-    for (long index$f = 0;
-        index$f < result$f.length; index$f++) {
-      result$f[(int) index$f] =
-          values(memorySegment$f, index$f);
+    for (long index = 0;
+        index < result.length; index++) {
+      result[(int) index] =
+          values(memorySegment, index);
     }
-    return result$f;
+    return result;
   }
 
   public static pkg.ArrayAddressValue[] values(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return valuesToArray$F(memorySegment$f);
+      java.lang.foreign.MemorySegment memorySegment) {
+    return valuesToArray$F(memorySegment);
   }
 
   public static void values(
-      java.lang.foreign.MemorySegment memorySegment$f,
-      java.lang.foreign.SegmentAllocator allocator$f, pkg.ArrayAddressValue[] value$f) {
-    java.util.Objects.requireNonNull(value$f, "value");
-    if (value$f.length != values$Sequence0Dimension$F) {
+      java.lang.foreign.MemorySegment memorySegment,
+      java.lang.foreign.SegmentAllocator allocator, pkg.ArrayAddressValue[] value) {
+    java.util.Objects.requireNonNull(value, "value");
+    if (value.length != values$Sequence0Dimension$F) {
       throw new IllegalArgumentException(
-          "values length must be " + values$Sequence0Dimension$F);
+          "values length must be "
+              + values$Sequence0Dimension$F);
     }
-    for (long index$f = 0;
-        index$f < value$f.length; index$f++) {
-      values(memorySegment$f, allocator$f, index$f,
-          value$f[(int) index$f]);
+    for (long index = 0;
+        index < value.length; index++) {
+      values(memorySegment, allocator, index,
+          value[(int) index]);
     }
   }
 }

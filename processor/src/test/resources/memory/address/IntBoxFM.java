@@ -11,66 +11,66 @@ public final class IntBoxFM {
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    return allocator$f.allocate(
+      java.lang.foreign.SegmentAllocator allocator) {
+    return allocator.allocate(
       MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
   public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.SegmentAllocator allocator, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return allocator$f.allocate(MemoryLayout$F, count$f);
+    return allocator.allocate(MemoryLayout$F, count);
   }
 
   public static IntBox reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
-    return fromMemorySegment$F(memorySegment$f.reinterpret(MemoryLayout$F.byteSize()));
+      java.lang.foreign.MemorySegment memorySegment) {
+    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment$f, long count$f) {
-    if (count$f < 0) {
+      java.lang.foreign.MemorySegment memorySegment, long count) {
+    if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
     }
-    return memorySegment$f.reinterpret(Math.multiplyExact(
-        MemoryLayout$F.byteSize(), count$f));
+    return memorySegment.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count));
   }
 
   private static java.lang.foreign.MemorySegment elementAt$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    if (index$f < 0) {
-      throw new IndexOutOfBoundsException(index$f);
+      java.lang.foreign.MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
     }
-    return array$f.asSlice(Math.multiplyExact(
-        index$f, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+    return array.asSlice(Math.multiplyExact(
+        index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
   public static IntBox at$F(
-      java.lang.foreign.MemorySegment array$f, long index$f) {
-    return fromMemorySegment$F(elementAt$F(array$f, index$f));
+      java.lang.foreign.MemorySegment array, long index) {
+    return fromMemorySegment$F(elementAt$F(array, index));
   }
 
   public static void toMemorySegment$F(
-      IntBox source$f,
-      java.lang.foreign.MemorySegment memorySegment$f,
-      java.lang.foreign.SegmentAllocator allocator$f) {
-    value(memorySegment$f, allocator$f, source$f.value());
+      IntBox source,
+      java.lang.foreign.MemorySegment memorySegment,
+      java.lang.foreign.SegmentAllocator allocator) {
+    value(memorySegment, allocator, source.value());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
-      java.lang.foreign.SegmentAllocator allocator$f,
-      IntBox source$f) {
-    var memorySegment$f = allocate$F(allocator$f);
-    toMemorySegment$F(source$f, memorySegment$f, allocator$f);
-    return memorySegment$f;
+      java.lang.foreign.SegmentAllocator allocator,
+      IntBox source) {
+    var memorySegment = allocate$F(allocator);
+    toMemorySegment$F(source, memorySegment, allocator);
+    return memorySegment;
   }
 
   public static IntBox fromMemorySegment$F(
-      java.lang.foreign.MemorySegment memorySegment$f) {
+      java.lang.foreign.MemorySegment memorySegment) {
     return new IntBox(
-        value(memorySegment$f));
+        value(memorySegment));
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -81,15 +81,15 @@ public final class IntBoxFM {
       java.lang.invoke.MethodHandles.insertCoordinates(
           MemoryLayout$F.varHandle(value$PathElement$F), 1, 0L);
 
-  public static int value(java.lang.foreign.MemorySegment memorySegment$f) {
-    return ((java.lang.foreign.MemorySegment) value$VarHandle$F.get(memorySegment$f)).reinterpret(java.lang.foreign.ValueLayout.JAVA_INT.byteSize())
+  public static int value(java.lang.foreign.MemorySegment memorySegment) {
+    return ((java.lang.foreign.MemorySegment) value$VarHandle$F.get(memorySegment)).reinterpret(java.lang.foreign.ValueLayout.JAVA_INT.byteSize())
         .get(java.lang.foreign.ValueLayout.JAVA_INT, 0L);
   }
 
   public static void value(
-      java.lang.foreign.MemorySegment memorySegment$f, java.lang.foreign.SegmentAllocator allocator$f, int value$f) {
-    var address$f = allocator$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
-    address$f.set(java.lang.foreign.ValueLayout.JAVA_INT, 0L, value$f);
-    value$VarHandle$F.set(memorySegment$f, address$f);
+      java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, int value) {
+    var address = allocator.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+    address.set(java.lang.foreign.ValueLayout.JAVA_INT, 0L, value);
+    value$VarHandle$F.set(memorySegment, address);
   }
 }
