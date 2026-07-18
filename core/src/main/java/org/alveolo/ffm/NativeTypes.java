@@ -202,4 +202,25 @@ public final class NativeTypes {
       throw new ExceptionInInitializerError(e);
     }
   }
+
+  private static int longToIntExact(long value) {
+    return Math.toIntExact(value);
+  }
+
+  private static long intToSignedLong(int value) {
+    return value;
+  }
+
+  private static char intToCharExact(int value) {
+    if ((value & 0xffff_0000) != 0) {
+      throw new ArithmeticException(
+          "wchar_t value does not fit 16 bits: " + value);
+    }
+    return (char) value;
+  }
+
+  private static int charToInt(char value) {
+    return value;
+  }
+
 }
