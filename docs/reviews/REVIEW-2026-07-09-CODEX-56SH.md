@@ -204,8 +204,10 @@ In priority order:
 2. Nullable pointer and ownership semantics, including bounded or owned
    returned strings and explicit borrowed or owned native objects.
 3. Upcalls and callbacks, including callback lifetime management.
-4. `Linker.Option` support: variadic calls, captured call state or `errno`, and
-   critical-call options.
+4. `Linker.Option` support
+  * variadic calls
+  * ✅ captured call state or `errno`
+  * critical-call options
 5. ✅ Fixed arrays of nested structs and multidimensional sequences.
 6. Fixed arrays of Enum and bitfield support remain open.
 7. Lazy or optional symbol resolution so one unavailable symbol does not

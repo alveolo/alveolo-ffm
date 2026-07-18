@@ -206,7 +206,7 @@ Relevant code:
   structs.
 - Nullable and ownership controls for returned C strings and pointer values,
   including custom releasers.
-- `errno` and `GetLastError` capture support.
+- ✅ `errno` and `GetLastError` capture support.
 - Upcalls, callbacks, and function pointer fields.
 - Better library lookup controls: lazy symbol resolution, optional libraries,
   always-include default lookup, and user-supplied `SymbolLookup`.

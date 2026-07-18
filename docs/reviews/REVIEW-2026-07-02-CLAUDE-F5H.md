@@ -175,7 +175,7 @@ reading the vtable lazily.
    comparators, callbacks, event handlers). A `@Callback` functional-interface
    annotation generating the `upcallStub` glue would fit the project's style
    perfectly.
-2. **`errno`/`GetLastError` capture** —
+2. ✅ **`errno`/`GetLastError` capture** —
    `Linker.Option.captureCallState("errno")` behind something like
    `@CaptureErrno`, exposing the value via a thread-local or an out-record.
    Without it, most libc bindings can't report errors.
@@ -185,7 +185,7 @@ reading the vtable lazily.
 4. **`Linker.Option.critical()`** — an opt-in `@Critical` for hot, short calls;
    the benchmark module can prove the win, and heap-buffer/array params could
    then use `critical(true)` to pass heap memory without copying.
-5. **Global variable bindings** — exported data symbols (`environ`, `stdout`)
+5. ✅ **Global variable bindings** — exported data symbols (`environ`, `stdout`)
    as generated static accessors.
 6. ✅ **Nested struct/union arrays** — TODO'd in `TypeGenerator`; needed for
    real-world C structs (`char name[32]` inside a struct is bug 4's use case).

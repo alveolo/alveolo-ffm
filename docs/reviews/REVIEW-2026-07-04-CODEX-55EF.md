@@ -119,7 +119,7 @@ Details:
 
 - `size_t`, `ssize_t`, and C `long` canonical-layout support.
 - Explicit C string return ownership, probably through a dedicated annotation.
-- `errno` or call-state capture.
+- ✅ `errno` or call-state capture.
 - Pointer-to-pointer out parameters.
 - Upcall/callback generation.
 - Packed/aligned struct options.
