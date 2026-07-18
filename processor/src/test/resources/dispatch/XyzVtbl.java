@@ -18,4 +18,7 @@ public interface XyzVtbl {
 
   @Slot(0)
   int sum(@In @Sequence(3L) int[] values);
+
+  @Slot(4)
+  int capturedCall(NativeErrorSpec capture, int parameter);
 }

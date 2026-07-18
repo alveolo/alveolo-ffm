@@ -48,7 +48,8 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
 
   @Test
   void generatesDispatchTableFD() {
-    var c = compile("dispatch/XyzVtbl.java");
+    var c = compile("dispatch/XyzVtbl.java",
+        "memory/callstate/NativeErrorSpec.java");
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.XyzVtblFD", "dispatch/XyzVtblFD.java");
   }

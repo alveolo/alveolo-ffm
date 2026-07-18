@@ -16,6 +16,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 
+import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Struct;
@@ -85,6 +86,10 @@ public class ProcessorUtils {
   }
 
   static String foreignMemorySimpleClassName(TypeElement element) {
+    var callState = element.getAnnotation(CallState.class);
+    if (callState != null)
+      return generatedSimpleClassName(element, callState.name(), "FM");
+
     var struct = element.getAnnotation(Struct.class);
     if (struct != null)
       return generatedSimpleClassName(element, struct.name(), "FM");

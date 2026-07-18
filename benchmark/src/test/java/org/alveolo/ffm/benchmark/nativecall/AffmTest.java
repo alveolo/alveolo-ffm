@@ -21,8 +21,20 @@ public interface AffmTest {
 
   long utf8_bytes(String value);
 
+  int set_errno_and_return(ErrnoSpec capture, int value, int error);
+
+  default int checked_errno_return(
+      ErrnoSpec capture, int value, int error) {
+    int result = set_errno_and_return(capture, value, error);
+    capture.throwIf(() -> result == -1);
+    return result;
+  }
+
   @Symbol("make_pair")
   PairR make_pair_record(int left, int right);
+
+  PairR make_pair_and_set_errno(
+      ErrnoSpec capture, int left, int right, int error);
 
   int pair_sum(PairR value);
 

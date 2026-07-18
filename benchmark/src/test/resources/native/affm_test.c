@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <errno.h>
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -33,6 +34,11 @@ EXPORT int add_ints(int left, int right) {
   return left + right;
 }
 
+EXPORT int set_errno_and_return(int value, int error) {
+  errno = error;
+  return value;
+}
+
 EXPORT int64_t utf8_bytes(const char* value) {
   int64_t count = 0;
   while (value[count] != '\0') {
@@ -42,6 +48,12 @@ EXPORT int64_t utf8_bytes(const char* value) {
 }
 
 EXPORT pair make_pair(int left, int right) {
+  pair result = {left, right};
+  return result;
+}
+
+EXPORT pair make_pair_and_set_errno(int left, int right, int error) {
+  errno = error;
   pair result = {left, right};
   return result;
 }

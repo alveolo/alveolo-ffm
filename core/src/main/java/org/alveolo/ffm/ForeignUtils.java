@@ -28,6 +28,19 @@ public class ForeignUtils {
       Library.OS[] os, Library.Kind kind, String value
   ) {}
 
+  public record CallStateOverride(Library.OS[] os, String value) {}
+
+  public static String callStateName(
+      String value, CallStateOverride... overrides) {
+    var os = os();
+
+    return Stream.of(overrides)
+        .filter(override -> matches(os, override.os()))
+        .map(CallStateOverride::value)
+        .findFirst()
+        .orElse(value);
+  }
+
   public static SymbolLookup libraryLookup(Class<?> sourceClass,
       SymbolLookup defaultLookup, LibrarySpec... libraries) {
     return Stream.of(libraries)

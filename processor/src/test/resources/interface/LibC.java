@@ -7,6 +7,19 @@ import java.lang.foreign.*;
 public interface LibC {
   int abs(int number);
 
+  @Symbol("native_call")
+  int capturedCall(NativeErrorSpec capture, int parameter);
+
+  @Symbol("captured_div")
+  div_t capturedDiv(
+      NativeError capture, int numerator, int denominator);
+
+  default int checkedCall(NativeErrorSpec capture, int parameter) {
+    int result = capturedCall(capture, parameter);
+    capture.throwIf(() -> result == -1);
+    return result;
+  }
+
   default int skip() { return abs(0); }
   static int ignore() { return 0; }
   private int helper() { return 0; }

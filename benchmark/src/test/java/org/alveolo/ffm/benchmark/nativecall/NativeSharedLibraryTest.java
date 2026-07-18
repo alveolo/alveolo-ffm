@@ -64,6 +64,35 @@ class NativeSharedLibraryTest {
   }
 
   @Test
+  void capturesErrnoAndAppliesApiSpecificFailureCondition() {
+    try (var arena = Arena.ofConfined()) {
+      var capture = new Errno(arena);
+
+      assertEquals(23, AffmTestFFM.INSTANCE$F
+          .checked_errno_return(capture, 23, 1234));
+      assertEquals(1234, capture.errno());
+
+      var exception = assertThrows(IllegalStateException.class,
+          () -> AffmTestFFM.INSTANCE$F
+              .checked_errno_return(capture, -1, 4321));
+      assertEquals("native error: 4321", exception.getMessage());
+    }
+  }
+
+  @Test
+  void capturesErrnoForStructReturn() {
+    try (var arena = Arena.ofConfined()) {
+      var capture = new Errno(arena);
+
+      var pair = AffmTestFFM.INSTANCE$F
+          .make_pair_and_set_errno(capture, 7, 11, 2468);
+
+      assertEquals(new PairR(7, 11), pair);
+      assertEquals(2468, capture.errno());
+    }
+  }
+
+  @Test
   void returnsRecordStructByValue() {
     var pair = AffmTestFFM.INSTANCE$F.make_pair_record(7, 11);
     assertEquals(7, pair.left());

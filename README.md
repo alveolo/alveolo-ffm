@@ -35,6 +35,7 @@ NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
 
 - `@ForeignInterface` bindings for native functions.
 - `@Struct` and `@Union` memory wrappers.
+- Reusable native error-state capture with `@CallState`.
 - `@DispatchTable` wrappers and `@Struct(vtable = true)` virtual calls.
 - C name mapping with `@Symbol`.
 - Native library lookup with `@Library`.
@@ -164,6 +165,69 @@ var length = LibCFFM.INSTANCE$F.stringLength("hello");
 Default and static methods are ignored by the processor, so the interface can
 still contain ordinary Java helpers. Native methods must currently be declared
 directly on the annotated interface; inherited abstract methods are not scanned.
+
+## Captured Call State
+
+Use `@CallState` for native thread-local state such as `errno`, Windows
+`GetLastError`, or `WSAGetLastError`. The annotated interface declares one
+zero-argument `int` accessor. Its generated implementation owns the reusable
+capture segment:
+
+```java
+@CallState(
+    value = "errno",
+    overrides = @CallState.Override(
+        os = Library.OS.WINDOWS,
+        value = "GetLastError"))
+public interface NativeErrorSpec {
+  int error();
+
+  default void throwIf(BooleanSupplier failure) {
+    int error = error();
+    if (failure.getAsBoolean()) {
+      throw new IllegalStateException("native error: " + error);
+    }
+  }
+}
+```
+
+A `@CallState` type is a Java-only foreign-method parameter. The processor
+omits it from the native `FunctionDescriptor`, adds the corresponding
+`Linker.Option.captureCallState(...)`, and supplies its segment in the position
+required by the downcall handle:
+
+```java
+@ForeignInterface
+public interface NativeApi {
+  int closeRaw(NativeErrorSpec capture, int descriptor);
+
+  default int close(NativeErrorSpec capture, int descriptor) {
+    int result = closeRaw(capture, descriptor);
+    capture.throwIf(() -> result == -1);
+    return result;
+  }
+}
+
+try (var arena = Arena.ofConfined()) {
+  var capture = new NativeError(arena);
+  NativeApiFFM.INSTANCE$F.close(capture, descriptor);
+}
+```
+
+The failure condition stays in ordinary Java because it is specific to the
+native API: it may inspect the return value, an out parameter, or any other
+result. Capturing state does not itself imply that the call failed.
+
+`Linker.Option.captureStateLayout()` is the platform-defined layout containing
+all capturable state fields. The generated wrapper allocates that complete
+layout because the linker requires it, but exposes and reads only the field
+selected by `value` or the first matching platform override. Define separate
+`@CallState` types for APIs with distinct error domains, such as
+`GetLastError` and `WSAGetLastError`.
+
+One call-state parameter is allowed per native method. A wrapper instance may
+be reused sequentially, but every call overwrites its previous value. Inspect
+it before the next call and do not share one instance between concurrent calls.
 
 ## Library Loading
 

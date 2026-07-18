@@ -58,7 +58,8 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   @Test
   void generatesBasicFFM() {
     var c = compile("interface/LibC.java",
-        "value/div_t.java", "value/ldiv_t.java");
+        "value/div_t.java", "value/ldiv_t.java",
+        "memory/callstate/NativeErrorSpec.java");
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.LibCFFM", "interface/LibCFFM.java");
     assertGenerated(c, "pkg.div_tFM", "value/div_tFM.java");

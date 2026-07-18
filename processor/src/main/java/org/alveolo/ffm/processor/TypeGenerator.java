@@ -1,5 +1,6 @@
 package org.alveolo.ffm.processor;
 
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Address;
+import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Union;
@@ -36,6 +38,9 @@ sealed class TypeGenerator permits VariableGenerator {
 
   public static final String SEGMENT_ALLOCATOR =
       SegmentAllocator.class.getCanonicalName();
+
+  public static final String LINKER_OPTION =
+      Linker.Option.class.getCanonicalName();
 
   public static final String STRING =
       String.class.getCanonicalName();
@@ -385,7 +390,16 @@ sealed class TypeGenerator permits VariableGenerator {
     return isForeignMemoryImplementation()
         || (typeElement != null
             && (typeElement.getAnnotation(Struct.class) != null
-                || typeElement.getAnnotation(Union.class) != null));
+                || typeElement.getAnnotation(Union.class) != null
+                || typeElement.getAnnotation(CallState.class) != null));
+  }
+
+  boolean isCallState() {
+    if (hasCallStateLinkerOption(typeElement)) return true;
+
+    var annotationSource = typeAnnotationSource();
+    return annotationSource != null
+        && annotationSource.getAnnotation(CallState.class) != null;
   }
 
   String foreignMemoryClassName() {
@@ -443,7 +457,8 @@ sealed class TypeGenerator permits VariableGenerator {
     for (var iface : typeElement.getInterfaces()) {
       if (types.asElement(iface) instanceof TypeElement spec
           && (spec.getAnnotation(Struct.class) != null
-              || spec.getAnnotation(Union.class) != null))
+              || spec.getAnnotation(Union.class) != null
+              || spec.getAnnotation(CallState.class) != null))
         return spec;
     }
 
@@ -456,5 +471,13 @@ sealed class TypeGenerator permits VariableGenerator {
             .anyMatch(field -> field.getKind() == ElementKind.FIELD
                 && field.getSimpleName().contentEquals("MemorySegment$F")
                 && field.asType().toString().equals(MEMORY_SEGMENT));
+  }
+
+  private boolean hasCallStateLinkerOption(TypeElement type) {
+    return type != null && type.getKind() == ElementKind.CLASS
+        && type.getEnclosedElements().stream()
+            .anyMatch(field -> field.getKind() == ElementKind.FIELD
+                && field.getSimpleName().contentEquals("LinkerOption$F")
+                && field.asType().toString().equals(LINKER_OPTION));
   }
 }

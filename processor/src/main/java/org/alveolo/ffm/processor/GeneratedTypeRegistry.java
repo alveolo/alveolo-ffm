@@ -15,6 +15,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
+import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Union;
 
@@ -49,7 +50,8 @@ final class GeneratedTypeRegistry {
       if (!(root instanceof TypeElement specification)
           || specification.getKind() != ElementKind.INTERFACE
           || specification.getAnnotation(Struct.class) == null
-              && specification.getAnnotation(Union.class) == null) {
+              && specification.getAnnotation(Union.class) == null
+              && specification.getAnnotation(CallState.class) == null) {
         continue;
       }
 

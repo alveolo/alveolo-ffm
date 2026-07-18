@@ -124,13 +124,14 @@ class ExecutableGenerator {
           private static final java.lang.invoke.MethodHandle <mh> =
               <linker>.downcallHandle(
               <lookup>.findOrThrow("<name>"),
-              <descriptor>);
+              <descriptor><options>);
         """
         .replace("<mh>", methodHandleName)
         .replace("<linker>", linkerExpression)
         .replace("<lookup>", lookupExpression)
         .replace("<name>", name(element))
-        .replace("<descriptor>", descriptor());
+        .replace("<descriptor>", descriptor())
+        .replace("<options>", linkerOptions());
   }
 
   private String methodBody(String methodHandleExpression) {
@@ -156,6 +157,7 @@ class ExecutableGenerator {
         leadingNativeArguments.stream().map(NativeArgument::layout),
         parameterGenerators.stream()
             .filter(not(TypeGenerator::isSegmentAllocator))
+            .filter(not(TypeGenerator::isCallState))
             .map(VariableGenerator::argumentLayout))
         .flatMap(identity());
 
@@ -195,6 +197,15 @@ class ExecutableGenerator {
 
   String bridgeReturnTypeName() {
     return returnGenerator.bridgeTypeName();
+  }
+
+  String linkerOptions() {
+    return parameterGenerators.stream()
+        .filter(TypeGenerator::isCallState)
+        .findFirst()
+        .map(parameter -> ",\n          "
+            + parameter.foreignMemoryClassName() + ".LinkerOption$F")
+        .orElse("");
   }
 
   private String confinedArena() {
@@ -248,8 +259,17 @@ class ExecutableGenerator {
     var paramsList = Stream.of(
         Stream.ofNullable(needsLocalAllocator
             ? "(java.lang.foreign.SegmentAllocator) arena$f" : null),
+        parameterGenerators.stream()
+            .filter(TypeGenerator::isSegmentAllocator)
+            .map(VariableGenerator::invoke),
+        parameterGenerators.stream()
+            .filter(TypeGenerator::isCallState)
+            .map(VariableGenerator::invoke),
         leadingNativeArguments.stream().map(NativeArgument::expression),
-        parameterGenerators.stream().map(VariableGenerator::invoke))
+        parameterGenerators.stream()
+            .filter(not(TypeGenerator::isSegmentAllocator))
+            .filter(not(TypeGenerator::isCallState))
+            .map(VariableGenerator::invoke))
         .flatMap(identity());
 
     return paramsList.collect(joining("," + newLine, newLine, ""));
@@ -420,6 +440,23 @@ class ExecutableGenerator {
   /// @return true if any method parameter has an unsupported type.
   boolean checkParameterTypes() {
     boolean hasUnsupported = false;
+
+    if (returnGenerator.isCallState()) {
+      messager.printError(
+          "@CallState types are only supported as parameters", element);
+      hasUnsupported = true;
+    }
+
+    var callStates = parameterGenerators.stream()
+        .filter(TypeGenerator::isCallState)
+        .toList();
+    if (callStates.size() > 1) {
+      for (var callState : callStates) {
+        messager.printError(
+            "Only one @CallState parameter is allowed", callState.element);
+      }
+      hasUnsupported = true;
+    }
 
     boolean needsExternalAllocator = (returnGenerator.isForeignMemory()
         || returnGenerator.isForeignMemoryImplementation())

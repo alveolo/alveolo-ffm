@@ -203,10 +203,11 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
           private static final java.lang.invoke.MethodHandle <mh> =
               Linker$F.downcallHandle(
-              <descriptor>);
+              <descriptor><options>);
         """
         .replace("<mh>", "DowncallHandle$" + index + "$F")
-        .replace("<descriptor>", generator.descriptor()));
+        .replace("<descriptor>", generator.descriptor())
+        .replace("<options>", generator.linkerOptions()));
   }
 
   private void writeConstructor(Writer out, String className,

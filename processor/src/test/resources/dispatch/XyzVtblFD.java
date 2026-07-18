@@ -7,7 +7,7 @@ public final class XyzVtblFD implements XyzVtbl {
       java.lang.foreign.Linker.nativeLinker();
 
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
-      java.lang.foreign.MemoryLayout.sequenceLayout(4L,
+      java.lang.foreign.MemoryLayout.sequenceLayout(5L,
           java.lang.foreign.ValueLayout.ADDRESS);
 
   public static XyzVtblFD reinterpret$F(
@@ -32,6 +32,9 @@ public final class XyzVtblFD implements XyzVtbl {
     this.MethodHandle$3$F = DowncallHandle$3$F.bindTo(
         MemorySegment$F.getAtIndex(
             java.lang.foreign.ValueLayout.ADDRESS, 0L));
+    this.MethodHandle$4$F = DowncallHandle$4$F.bindTo(
+        MemorySegment$F.getAtIndex(
+            java.lang.foreign.ValueLayout.ADDRESS, 4L));
   }
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
@@ -121,6 +124,29 @@ public final class XyzVtblFD implements XyzVtbl {
           values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
       return (int) MethodHandle$3$F.invokeExact(
           values$MemorySegment$f);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  private static final java.lang.invoke.MethodHandle DowncallHandle$4$F =
+      Linker$F.downcallHandle(
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT),
+          pkg.NativeError.LinkerOption$F);
+
+  private final java.lang.invoke.MethodHandle MethodHandle$4$F;
+
+  public int capturedCall(
+      pkg.NativeErrorSpec capture,
+      int parameter) {
+    try {
+      return (int) MethodHandle$4$F.invokeExact(
+          ((pkg.NativeError) capture).MemorySegment$F,
+          parameter);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
