@@ -5,6 +5,7 @@ package pkg;
 @org.alveolo.ffm.DispatchTable
 interface VirtualObjVtbl {
 
+  @org.alveolo.ffm.FirstVariadicArg(2)
   @org.alveolo.ffm.Slot(2)
   int method(
       VirtualObj self$f,

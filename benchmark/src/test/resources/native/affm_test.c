@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -32,6 +33,19 @@ typedef struct int3_value {
 
 EXPORT int add_ints(int left, int right) {
   return left + right;
+}
+
+EXPORT int variadic_sum(int count, ...) {
+  va_list arguments;
+  va_start(arguments, count);
+
+  int result = 0;
+  for (int i = 0; i < count; i++) {
+    result += va_arg(arguments, int);
+  }
+
+  va_end(arguments);
+  return result;
 }
 
 EXPORT int set_errno_and_return(int value, int error) {

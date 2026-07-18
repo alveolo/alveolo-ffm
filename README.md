@@ -34,6 +34,7 @@ NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
 ## What It Generates
 
 - `@ForeignInterface` bindings for native functions.
+- Specialized C variadic downcalls with `@FirstVariadicArg`.
 - `@Struct` and `@Union` memory wrappers.
 - Reusable native error-state capture with `@CallState`.
 - `@DispatchTable` wrappers and `@Struct(vtable = true)` virtual calls.
@@ -166,6 +167,40 @@ Default and static methods are ignored by the processor, so the interface can
 still contain ordinary Java helpers. Native methods must currently be declared
 directly on the annotated interface; inherited abstract methods are not scanned.
 
+## Variadic Native Functions
+
+Use `@FirstVariadicArg(N)` to bind one concrete specialization of a C variadic
+function. `N` is the zero-based index of the first variadic argument among the
+method's declared native parameters:
+
+```java
+@ForeignInterface
+public interface LibC {
+  @FirstVariadicArg(2)
+  int fcntl(int descriptor, int operation);
+
+  @FirstVariadicArg(2)
+  int fcntl(int descriptor, int operation, int argument);
+
+  @FirstVariadicArg(2)
+  int fcntl(
+      int descriptor, int operation, MemorySegment argument);
+}
+```
+
+The generated downcall for each method has a fixed descriptor and includes a
+corresponding `Linker.Option.firstVariadicArg(...)`. A specialization with no
+variadic values,
+such as the two-argument `fcntl` above, must still carry the annotation because
+the native variadic calling convention can differ on some platforms.
+
+Declare variadic scalar parameters after C default argument promotion. Use
+`int` instead of `boolean`, `byte`, `char`, or `short`, and use `double` instead
+of `float`; the processor rejects the unpromoted forms. Java-only
+`SegmentAllocator` and `@CallState` parameters do not count toward `N`. If an
+object symbol or virtual call inserts a native receiver before the declared
+parameters, the processor passes `N + 1` to the linker.
+
 ## Captured Call State
 
 Use `@CallState` for native thread-local state such as `errno`, Windows
@@ -199,6 +234,7 @@ required by the downcall handle:
 ```java
 @ForeignInterface
 public interface NativeApi {
+  @Symbol("close")
   int closeRaw(NativeErrorSpec capture, int descriptor);
 
   default int close(NativeErrorSpec capture, int descriptor) {

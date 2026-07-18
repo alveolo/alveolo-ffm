@@ -1,6 +1,7 @@
 package pkg;
 
 import org.alveolo.ffm.DispatchTable;
+import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.Slot;
@@ -20,5 +21,9 @@ public interface XyzVtbl {
   int sum(@In @Sequence(3L) int[] values);
 
   @Slot(4)
+  @FirstVariadicArg(1)
   int capturedCall(NativeErrorSpec capture, int parameter);
+
+  @Slot(5)
+  int concreteCapturedCall(NativeError capture, int parameter);
 }

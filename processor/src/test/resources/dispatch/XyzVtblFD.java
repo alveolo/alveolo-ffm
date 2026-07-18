@@ -7,7 +7,7 @@ public final class XyzVtblFD implements XyzVtbl {
       java.lang.foreign.Linker.nativeLinker();
 
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
-      java.lang.foreign.MemoryLayout.sequenceLayout(5L,
+      java.lang.foreign.MemoryLayout.sequenceLayout(6L,
           java.lang.foreign.ValueLayout.ADDRESS);
 
   public static XyzVtblFD reinterpret$F(
@@ -35,6 +35,9 @@ public final class XyzVtblFD implements XyzVtbl {
     this.MethodHandle$4$F = DowncallHandle$4$F.bindTo(
         MemorySegment$F.getAtIndex(
             java.lang.foreign.ValueLayout.ADDRESS, 4L));
+    this.MethodHandle$5$F = DowncallHandle$5$F.bindTo(
+        MemorySegment$F.getAtIndex(
+            java.lang.foreign.ValueLayout.ADDRESS, 5L));
   }
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
@@ -136,6 +139,7 @@ public final class XyzVtblFD implements XyzVtbl {
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.JAVA_INT),
+          java.lang.foreign.Linker.Option.firstVariadicArg(1),
           pkg.NativeError.LinkerOption$F);
 
   private final java.lang.invoke.MethodHandle MethodHandle$4$F;
@@ -146,6 +150,29 @@ public final class XyzVtblFD implements XyzVtbl {
     try {
       return (int) MethodHandle$4$F.invokeExact(
           ((pkg.NativeError) capture).MemorySegment$F,
+          parameter);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  private static final java.lang.invoke.MethodHandle DowncallHandle$5$F =
+      Linker$F.downcallHandle(
+      java.lang.foreign.FunctionDescriptor.of(
+          java.lang.foreign.ValueLayout.JAVA_INT,
+          java.lang.foreign.ValueLayout.JAVA_INT),
+          pkg.NativeError.LinkerOption$F);
+
+  private final java.lang.invoke.MethodHandle MethodHandle$5$F;
+
+  public int concreteCapturedCall(
+      pkg.NativeError capture,
+      int parameter) {
+    try {
+      return (int) MethodHandle$5$F.invokeExact(
+          capture.MemorySegment$F,
           parameter);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;

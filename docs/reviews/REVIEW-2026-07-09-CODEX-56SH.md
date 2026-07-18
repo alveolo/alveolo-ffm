@@ -205,7 +205,7 @@ In priority order:
    returned strings and explicit borrowed or owned native objects.
 3. Upcalls and callbacks, including callback lifetime management.
 4. `Linker.Option` support
-  * variadic calls
+  * ✅ variadic calls
   * ✅ captured call state or `errno`
   * critical-call options
 5. ✅ Fixed arrays of nested structs and multidimensional sequences.

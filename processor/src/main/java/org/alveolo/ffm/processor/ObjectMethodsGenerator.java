@@ -22,6 +22,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
+import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Symbol;
@@ -233,9 +234,12 @@ final class ObjectMethodsGenerator {
         var method = generator.element;
         out.write("""
 
+              <firstVariadicArg>
               @org.alveolo.ffm.Slot(<slot>)
               <signature>;
             """
+            .replace("<firstVariadicArg>",
+                firstVariadicArgAnnotation(method))
             .replace("<slot>", Integer.toString(virtualSlot(method)))
             .replace("<signature>",
                 dispatchTableMethodSignature(iface, generator)));
@@ -347,7 +351,10 @@ final class ObjectMethodsGenerator {
     return methods.stream()
         .map(method -> new ExecutableGenerator(
             processingEnv, generatedTypes, method,
-            "UnusedMethodHandle$F", true))
+            "UnusedMethodHandle$F", true,
+            List.of(new ExecutableGenerator.NativeArgument(
+                "java.lang.foreign.ValueLayout.ADDRESS", "this")),
+            "", ""))
         .toList();
   }
 
@@ -410,5 +417,13 @@ final class ObjectMethodsGenerator {
 
   private int virtualSlot(ExecutableElement method) {
     return method.getAnnotation(Virtual.class).value();
+  }
+
+  private String firstVariadicArgAnnotation(ExecutableElement method) {
+    var annotation = method.getAnnotation(FirstVariadicArg.class);
+    if (annotation == null) return "";
+
+    return "@org.alveolo.ffm.FirstVariadicArg("
+        + (annotation.value() + 1) + ")";
   }
 }

@@ -57,6 +57,12 @@ class NativeSharedLibraryTest {
   }
 
   @Test
+  void callsSpecializedVariadicFunctionWithAndWithoutTailArguments() {
+    assertEquals(0, AffmTestFFM.INSTANCE$F.variadic_sum(0));
+    assertEquals(42, AffmTestFFM.INSTANCE$F.variadic_sum(3, 10, 12, 20));
+  }
+
+  @Test
   void passesUtf8String() {
     assertEquals(0L, AffmTestFFM.INSTANCE$F.utf8_bytes(""));
     assertEquals(6L, AffmTestFFM.INSTANCE$F.utf8_bytes("ASCII!"));

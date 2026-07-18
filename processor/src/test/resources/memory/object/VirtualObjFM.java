@@ -103,7 +103,8 @@ public final class VirtualObjFM implements VirtualObj {
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+          java.lang.foreign.ValueLayout.JAVA_INT),
+          java.lang.foreign.Linker.Option.firstVariadicArg(2));
 
   public int method(
       int arg) {

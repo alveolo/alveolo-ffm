@@ -17,6 +17,7 @@ import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.DispatchTable;
+import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Libraries;
@@ -42,6 +43,7 @@ abstract class AbstractProcessorTest {
     CFString.class,
     CFStringSupport.class,
     DispatchTable.class,
+    FirstVariadicArg.class,
     ForeignInterface.class,
     Libraries.class,
     Library.class,

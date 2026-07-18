@@ -6,6 +6,7 @@ import java.nio.IntBuffer;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CountedBy;
+import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Library;
@@ -18,6 +19,12 @@ import org.alveolo.ffm.Value;
 @ForeignInterface
 public interface AffmTest {
   int add_ints(int left, int right);
+
+  @FirstVariadicArg(1)
+  int variadic_sum(int count);
+
+  @FirstVariadicArg(1)
+  int variadic_sum(int count, int first, int second, int third);
 
   long utf8_bytes(String value);
 

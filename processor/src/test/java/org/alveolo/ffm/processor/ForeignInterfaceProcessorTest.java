@@ -58,12 +58,58 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   @Test
   void generatesBasicFFM() {
     var c = compile("interface/LibC.java",
-        "value/div_t.java", "value/ldiv_t.java",
-        "memory/callstate/NativeErrorSpec.java");
+        "value/div_t.java", "value/ldiv_t.java");
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.LibCFFM", "interface/LibCFFM.java");
     assertGenerated(c, "pkg.div_tFM", "value/div_tFM.java");
     assertGenerated(c, "pkg.ldiv_tFM", "value/ldiv_tFM.java");
+  }
+
+  @Test
+  void rejectsFirstVariadicArgOutsideNativeParameterRange() {
+    var lib = forSourceString("test.BadVariadic", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        interface BadVariadic {
+          @org.alveolo.ffm.FirstVariadicArg(-1)
+          void negative();
+
+          @org.alveolo.ffm.FirstVariadicArg(2)
+          void tooHigh(int value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@FirstVariadicArg value must be between 0 and 0");
+    assertThat(c).hadErrorContaining(
+        "@FirstVariadicArg value must be between 0 and 1");
+    assertThat(c).hadErrorCount(2);
+  }
+
+  @Test
+  void rejectsUnpromotedVariadicParameterTypes() {
+    var lib = forSourceString("test.BadVariadic", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        interface BadVariadic {
+          @org.alveolo.ffm.FirstVariadicArg(1)
+          void bad(short fixed, short integer, float decimal);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "Variadic parameter 'integer' must use its C-promoted type: "
+            + "use int instead of short");
+    assertThat(c).hadErrorContaining(
+        "Variadic parameter 'decimal' must use its C-promoted type: "
+            + "use double instead of float");
+    assertThat(c).hadErrorCount(2);
   }
 
   @Test

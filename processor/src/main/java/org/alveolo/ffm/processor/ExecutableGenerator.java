@@ -13,6 +13,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
+import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.Symbol;
 
 class ExecutableGenerator {
@@ -200,12 +201,22 @@ class ExecutableGenerator {
   }
 
   String linkerOptions() {
-    return parameterGenerators.stream()
+    var variadic = Stream.ofNullable(
+        element.getAnnotation(FirstVariadicArg.class))
+        .map(annotation -> "java.lang.foreign.Linker.Option"
+            + ".firstVariadicArg("
+            + (annotation.value() + leadingNativeArguments.size()) + ")");
+
+    var callState = parameterGenerators.stream()
         .filter(TypeGenerator::isCallState)
         .findFirst()
-        .map(parameter -> ",\n          "
-            + parameter.foreignMemoryClassName() + ".LinkerOption$F")
-        .orElse("");
+        .stream()
+        .map(parameter -> parameter.foreignMemoryClassName()
+            + ".LinkerOption$F");
+
+    return Stream.concat(variadic, callState)
+        .map(option -> ",\n          " + option)
+        .collect(joining());
   }
 
   private String confinedArena() {
@@ -441,6 +452,43 @@ class ExecutableGenerator {
   boolean checkParameterTypes() {
     boolean hasUnsupported = false;
 
+    var firstVariadicArg = element.getAnnotation(FirstVariadicArg.class);
+    if (firstVariadicArg != null) {
+      var index = firstVariadicArg.value();
+      var nativeParameterCount = (int) parameterGenerators.stream()
+          .filter(not(TypeGenerator::isSegmentAllocator))
+          .filter(not(TypeGenerator::isCallState))
+          .count();
+
+      if (index < 0 || index > nativeParameterCount) {
+        messager.printError(
+            "@FirstVariadicArg value must be between 0 and "
+                + nativeParameterCount
+                + " (the native parameter count)",
+            element);
+        hasUnsupported = true;
+      } else {
+        var nativeIndex = 0;
+        for (var parameter : parameterGenerators) {
+          if (parameter.isSegmentAllocator() || parameter.isCallState()) {
+            continue;
+          }
+
+          if (nativeIndex >= index
+              && isUnpromotedVariadicType(parameter)) {
+            messager.printError(
+                "Variadic parameter '" + parameter.name()
+                    + "' must use its C-promoted type: use "
+                    + promotedVariadicType(parameter) + " instead of "
+                    + parameter.typeName(),
+                parameter.element);
+            hasUnsupported = true;
+          }
+          nativeIndex++;
+        }
+      }
+    }
+
     if (returnGenerator.isCallState()) {
       messager.printError(
           "@CallState types are only supported as parameters", element);
@@ -640,5 +688,19 @@ class ExecutableGenerator {
     }
 
     return hasUnsupported;
+  }
+
+  private boolean isUnpromotedVariadicType(VariableGenerator parameter) {
+    if (parameter.isPrimitiveAddress()) return false;
+
+    return switch (parameter.typeMirror.getKind()) {
+      case BOOLEAN, BYTE, CHAR, SHORT, FLOAT -> true;
+      default -> false;
+    };
+  }
+
+  private String promotedVariadicType(VariableGenerator parameter) {
+    return parameter.typeMirror.getKind() == TypeKind.FLOAT
+        ? "double" : "int";
   }
 }
