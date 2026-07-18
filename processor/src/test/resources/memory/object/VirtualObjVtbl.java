@@ -9,7 +9,7 @@ interface VirtualObjVtbl {
   @org.alveolo.ffm.Slot(2)
   int method(
       VirtualObj self$f,
-      int arg);
+      @org.alveolo.ffm.CLong long arg);
 
   @org.alveolo.ffm.Slot(4)
   int sum(

@@ -97,7 +97,8 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         @org.alveolo.ffm.ForeignInterface
         interface BadVariadic {
           @org.alveolo.ffm.FirstVariadicArg(1)
-          void bad(short fixed, short integer, float decimal);
+          void bad(short fixed, short integer, float decimal,
+              @org.alveolo.ffm.WCharT int wide);
         }
         """);
 
@@ -109,7 +110,38 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
     assertThat(c).hadErrorContaining(
         "Variadic parameter 'decimal' must use its C-promoted type: "
             + "use double instead of float");
-    assertThat(c).hadErrorCount(2);
+    assertThat(c).hadErrorContaining(
+        "Variadic parameter 'wide' must use its C-promoted type: "
+            + "remove @WCharT and use plain int");
+    assertThat(c).hadErrorCount(3);
+  }
+
+  @Test
+  void rejectsInvalidCanonicalScalarTypes() {
+    var lib = forSourceString("test.BadCanonicalScalars", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        interface BadCanonicalScalars {
+          void cLong(@org.alveolo.ffm.CLong int value);
+          void sizeT(@org.alveolo.ffm.SizeT int value);
+          void wchar(@org.alveolo.ffm.WCharT long value);
+          void conflicting(
+              @org.alveolo.ffm.CLong @org.alveolo.ffm.SizeT long value);
+          void array(@org.alveolo.ffm.CLong long[] values);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining("@CLong requires Java long");
+    assertThat(c).hadErrorContaining("@SizeT requires Java long");
+    assertThat(c).hadErrorContaining("@WCharT requires Java int");
+    assertThat(c).hadErrorContaining(
+        "Only one of @CLong, @SizeT, and @WCharT may be used on a type");
+    assertThat(c).hadErrorContaining(
+        "@CLong is only supported on scalar values");
+    assertThat(c).hadErrorCount(5);
   }
 
   @Test

@@ -137,7 +137,8 @@ final class ForeignMemoryGenerator {
           var indexed = fields.indexedFields().get(field.name());
           return new MemoryLayoutGenerator.LayoutField(field.name(),
               indexed == null ? field.layout() : indexed.layout(),
-              field.unsupported(), field.typeName(), field.element);
+              field.unsupported() && field.canonicalScalarError() == null,
+              field.typeName(), field.element);
         })
         .toList();
 

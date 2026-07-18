@@ -41,6 +41,7 @@ NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
 - C name mapping with `@Symbol`.
 - Native library lookup with `@Library`.
 - Pass-by-value and pass-by-address control with `@Value` and `@Address`.
+- Platform C scalars with `@CLong`, `@SizeT`, and `@WCharT`.
 - Primitive-array, record-array, and `java.nio.*Buffer` pointer parameters.
 - Fixed, indexed inline arrays on memory-backed struct interfaces.
 - Input/output transfer control with `@In` and `@Out`.
@@ -152,7 +153,7 @@ public interface LibC {
   int abs(int number);
 
   @Symbol("strlen")
-  long stringLength(String utf8z);
+  @SizeT long stringLength(String utf8z);
 }
 ```
 
@@ -166,6 +167,52 @@ var length = LibCFFM.INSTANCE$F.stringLength("hello");
 Default and static methods are ignored by the processor, so the interface can
 still contain ordinary Java helpers. Native methods must currently be declared
 directly on the annotated interface; inherited abstract methods are not scanned.
+
+## Platform C Scalar Types
+
+Ordinary Java primitives keep their fixed Java FFM layouts. Use a type-use
+annotation when a declaration refers to a C scalar whose width depends on the
+native ABI:
+
+```java
+@ForeignInterface
+public interface LibC {
+  MemorySegment l64a(@CLong long value);
+
+  @SizeT long strlen(String utf8z);
+
+  MemorySegment wmemchr(
+      MemorySegment values, @WCharT int value, @SizeT long count);
+}
+
+@Struct
+public record LDiv(@CLong long quot, @CLong long rem) {}
+```
+
+`@CLong` and `@SizeT` use Java `long`; `@WCharT` uses Java `int`. Generated
+descriptors use the corresponding layout from
+`Linker.nativeLinker().canonicalLayouts()`. For C `long` and `wchar_t`, the
+generated class adapts a differing raw carrier once during class initialization
+and the call site still uses `invokeExact` with the stable Java carrier.
+Matching ABIs retain the raw downcall handle unchanged. `size_t` uses its native
+layout directly with the 64-bit Java `long` carrier supported by current JDK
+runtimes.
+
+`@CLong` performs checked narrowing on an ABI with a 32-bit C `long`. `@SizeT`
+preserves every Java `long` bit pattern. A 16-bit `wchar_t` accepts values from
+`0` through `0xffff`; the annotation describes one scalar and does not choose a
+wide-string encoding.
+
+`@Address` remains a separate pass-mode annotation and composes with these
+annotations. For example, `@Address @CLong long` passes a pointer to a native C
+`long`, while the Java value remains a `long`.
+
+Canonical scalar parameters, returns, and ordinary struct or union fields are
+supported. Canonical scalar array and indexed-field elements are currently
+rejected because a native element-width change requires explicit bulk
+conversion rather than Java's fixed-width copy path. Generated field accessors
+use the stable Java carrier. When adaptation is needed, `$get$F` and `$set$F`
+method handles are derived once from the field's public raw `$VarHandle$F`.
 
 ## Variadic Native Functions
 
@@ -196,7 +243,9 @@ the native variadic calling convention can differ on some platforms.
 
 Declare variadic scalar parameters after C default argument promotion. Use
 `int` instead of `boolean`, `byte`, `char`, or `short`, and use `double` instead
-of `float`; the processor rejects the unpromoted forms. Java-only
+of `float`. Remove `@WCharT` and use plain `int` for a variadic wide-character
+value because a narrow `wchar_t` is also promoted. The processor rejects the
+unpromoted forms. Java-only
 `SegmentAllocator` and `@CallState` parameters do not count toward `N`. If an
 object symbol or virtual call inserts a native receiver before the declared
 parameters, the processor passes `N + 1` to the linker.

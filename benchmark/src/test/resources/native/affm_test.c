@@ -1,6 +1,8 @@
 #include <stdint.h>
+#include <stddef.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <wchar.h>
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -33,6 +35,27 @@ typedef struct int3_value {
 
 EXPORT int add_ints(int left, int right) {
   return left + right;
+}
+
+EXPORT long echo_c_long(long value) {
+  return value;
+}
+
+EXPORT size_t echo_size_t(size_t value) {
+  return value;
+}
+
+EXPORT wchar_t echo_wchar(wchar_t value) {
+  return value;
+}
+
+EXPORT long read_c_long(const long* value) {
+  return *value;
+}
+
+EXPORT long* c_long_address(void) {
+  static long value = 123;
+  return &value;
 }
 
 EXPORT int variadic_sum(int count, ...) {

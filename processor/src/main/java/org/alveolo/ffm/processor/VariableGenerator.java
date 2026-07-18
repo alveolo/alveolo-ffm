@@ -192,6 +192,17 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String primitiveAddressInitializer() {
+    if (hasCanonicalScalar()) {
+      return """
+          var <segment> = arena$f.allocate(<layout>);
+          <set>
+          """
+          .replace("<segment>", segmentName())
+          .replace("<layout>", valueLayout())
+          .replace("<set>", canonicalSet(segmentName(), "0L", name))
+          .stripTrailing();
+    }
+
     return """
         var <segment> = arena$f.allocate(<layout>);
         <segment>.set(<layout>, 0L, <name>);

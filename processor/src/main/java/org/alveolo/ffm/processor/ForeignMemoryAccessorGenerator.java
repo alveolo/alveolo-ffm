@@ -140,6 +140,7 @@ final class ForeignMemoryAccessorGenerator {
                   .groupElement("<name>");
         """
         .replace("<name>", field.name()));
+
   }
 
   private void writeVarHandle(Writer out, VariableGenerator field)
@@ -163,6 +164,21 @@ final class ForeignMemoryAccessorGenerator {
         """
         .replace("<initializer>", initializer.replace("\n", "\n      "))
         .replace("<name>", field.name()));
+
+    if (field.needsDowncallAdaptation()) {
+      out.write("""
+
+            public static final java.lang.invoke.MethodHandle <name>$get$F =
+                org.alveolo.ffm.NativeTypes.adaptGetter(
+                    <name>$VarHandle$F, <nativeType>);
+
+            public static final java.lang.invoke.MethodHandle <name>$set$F =
+                org.alveolo.ffm.NativeTypes.adaptSetter(
+                    <name>$VarHandle$F, <nativeType>);
+          """
+          .replace("<nativeType>", field.canonicalRuntimeType())
+          .replace("<name>", field.name()));
+    }
   }
 
   private String recordFieldWrites(
@@ -263,14 +279,19 @@ final class ForeignMemoryAccessorGenerator {
     }
 
     if (field.isPrimitiveAddress()) {
+      var initialize = field.hasCanonicalScalar()
+          ? field.canonicalSet("address", "0L", "value")
+          : "address.set(<layout>, 0L, value);"
+              .replace("<layout>", field.valueLayout());
       writeGetter(out, target, field, primitiveAddressGetter(field, segment));
       writeSetter(out, target, field, true, """
           var address = allocator.allocate(<layout>);
-          address.set(<layout>, 0L, value);
+          <initialize>
           <name>$VarHandle$F.set(<segment>, address);
           """
           .stripTrailing()
           .replace("<layout>", field.valueLayout())
+          .replace("<initialize>", initialize)
           .replace("<segment>", segment)
           .replace("<name>", name));
       return;
@@ -366,6 +387,11 @@ final class ForeignMemoryAccessorGenerator {
       return;
     }
 
+    if (field.needsDowncallAdaptation()) {
+      writeAdaptedAccessors(out, target, field, segment);
+      return;
+    }
+
     writeGetter(out, target, field,
         "(<type>) <name>$VarHandle$F.get(<segment>)"
             .replace("<type>", field.typeName())
@@ -387,6 +413,41 @@ final class ForeignMemoryAccessorGenerator {
         """
         .replace("<head>", target.getterHead(field))
         .replace("<expression>", expression.replace("\n", "\n    ")));
+  }
+
+  private void writeAdaptedAccessors(Writer out, AccessorTarget target,
+      VariableGenerator field, String segment) throws IOException {
+    var name = field.name();
+    var setterResult = target.isStatic() ? "" : "\n      return this;";
+
+    out.write("""
+
+          <getterHead> {
+            try {
+              return (<type>) <name>$get$F.invokeExact(<segment>);
+            } catch (RuntimeException|Error exception$f) {
+              throw exception$f;
+            } catch (Throwable throwable$f) {
+              throw new AssertionError(throwable$f);
+            }
+          }
+
+          <setterHead> {
+            try {
+              <name>$set$F.invokeExact(<segment>, value);<setterResult>
+            } catch (RuntimeException|Error exception$f) {
+              throw exception$f;
+            } catch (Throwable throwable$f) {
+              throw new AssertionError(throwable$f);
+            }
+          }
+        """
+        .replace("<getterHead>", target.getterHead(field))
+        .replace("<setterHead>", target.setterHead(field, false))
+        .replace("<setterResult>", setterResult)
+        .replace("<segment>", segment)
+        .replace("<type>", field.typeName())
+        .replace("<name>", name));
   }
 
   private void writeSetter(Writer out, AccessorTarget target,
@@ -515,6 +576,10 @@ final class ForeignMemoryAccessorGenerator {
     var address = "((java.lang.foreign.MemorySegment) " + field.name()
         + "$VarHandle$F"
         + ".get(" + segment + "))";
+
+    if (field.hasCanonicalScalar())
+      return field.canonicalGet(
+          address + ".reinterpret(" + layout + ".byteSize())", "0L");
 
     return address + ".reinterpret(" + layout + ".byteSize())\n"
         + "    .get(" + layout + ", 0L)";

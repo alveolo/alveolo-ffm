@@ -120,19 +120,71 @@ class ExecutableGenerator {
           """
           .replace("<mh>", methodHandleName);
 
-    return """
-
-          private static final java.lang.invoke.MethodHandle <mh> =
-              <linker>.downcallHandle(
-              <lookup>.findOrThrow("<name>"),
-              <descriptor><options>);
+    var rawHandle = """
+        <linker>.downcallHandle(
+            <lookup>.findOrThrow("<name>"),
+            <descriptor><options>)
         """
-        .replace("<mh>", methodHandleName)
         .replace("<linker>", linkerExpression)
         .replace("<lookup>", lookupExpression)
         .replace("<name>", name(element))
-        .replace("<descriptor>", descriptor())
-        .replace("<options>", linkerOptions());
+        .replace("<descriptor>", downcallDescriptor())
+        .replace("<options>", downcallOptions())
+        .stripTrailing();
+
+    return """
+
+          private static final java.lang.invoke.MethodHandle <mh> =
+              <initializer>;
+        """
+        .replace("<mh>", methodHandleName)
+        .replace("<initializer>", adaptDowncall(rawHandle, false)
+            .replace("\n", "\n      "));
+  }
+
+  String adaptDowncall(String rawHandle, boolean unbound) {
+    if (!needsDowncallAdaptation()) return rawHandle;
+
+    var arguments = Stream.of(
+        Stream.ofNullable(unbound ? "null" : null),
+        Stream.ofNullable(returnGenerator.isRecord()
+            && returnGenerator.isValue() ? "null" : null),
+        parameterGenerators.stream()
+            .filter(TypeGenerator::isSegmentAllocator)
+            .map(_ -> "null"),
+        parameterGenerators.stream()
+            .filter(TypeGenerator::isCallState)
+            .map(_ -> "null"),
+        leadingNativeArguments.stream().map(_ -> "null"),
+        parameterGenerators.stream()
+            .filter(not(TypeGenerator::isSegmentAllocator))
+            .filter(not(TypeGenerator::isCallState))
+            .map(parameter -> parameter.needsDowncallAdaptation()
+                ? parameter.canonicalRuntimeType() : "null"))
+        .flatMap(identity())
+        .toList();
+
+    var suffix = arguments.isEmpty() ? ""
+        : ",\n    new org.alveolo.ffm.NativeTypes.Type[] {\n"
+            + "        " + String.join(",\n        ", arguments) + "\n"
+            + "    }";
+
+    return """
+        org.alveolo.ffm.NativeTypes.adaptDowncall(
+            <raw>,
+            <return><arguments>)
+        """
+        .replace("<raw>", rawHandle.replace("\n", "\n    "))
+        .replace("<return>", returnGenerator.needsDowncallAdaptation()
+            ? returnGenerator.canonicalRuntimeType() : "null")
+        .replace("<arguments>", suffix)
+        .stripTrailing();
+  }
+
+  private boolean needsDowncallAdaptation() {
+    return returnGenerator.needsDowncallAdaptation()
+        || parameterGenerators.stream()
+            .anyMatch(TypeGenerator::needsDowncallAdaptation);
   }
 
   private String methodBody(String methodHandleExpression) {
@@ -170,6 +222,14 @@ class ExecutableGenerator {
 
     return layouts
         .collect(joining("," + newLine, prefix + newLine, ")"));
+  }
+
+  String downcallDescriptor() {
+    return descriptor().replace("\n          ", "\n        ");
+  }
+
+  String downcallOptions() {
+    return linkerOptions().replace("\n          ", "\n    ");
   }
 
   String signature() {
@@ -233,7 +293,8 @@ class ExecutableGenerator {
       return primitiveAddressInvoke(call, copyOut);
 
     if (returnGenerator.isPrimitive())
-      return returnWithCopyOut("(" + returnType + ") " + call, copyOut);
+      return returnWithCopyOut(
+          "(" + returnGenerator.typeName() + ") " + call, copyOut);
 
     if (returnGenerator.isMemorySegment())
       return returnWithCopyOut(
@@ -366,16 +427,22 @@ class ExecutableGenerator {
   private Stream<String> primitiveAddressInvoke(
       String call, List<String> copyOut) {
     var layout = returnGenerator.valueLayout();
+    var result = returnGenerator.hasCanonicalScalar()
+        ? returnGenerator.canonicalGet(
+            "addressResult$f.reinterpret(" + layout + ".byteSize())", "0L")
+        : """
+            addressResult$f.reinterpret(<layout>.byteSize())
+                .get(<layout>, 0L)
+            """
+            .replace("<layout>", layout)
+            .stripTrailing();
     var all = Stream.of(
         ("var addressResult$f = (java.lang.foreign.MemorySegment) "
             + call + ";").lines(),
         copyOut.stream(),
-        """
-            return addressResult$f.reinterpret(<layout>.byteSize())
-                .get(<layout>, 0L);
-            """
+        "return <result>;"
             .stripTrailing()
-            .replace("<layout>", layout)
+            .replace("<result>", result)
             .lines());
 
     return all.flatMap(identity());
@@ -452,6 +519,12 @@ class ExecutableGenerator {
   boolean checkParameterTypes() {
     boolean hasUnsupported = false;
 
+    var returnCanonicalError = returnGenerator.canonicalScalarError();
+    if (returnCanonicalError != null) {
+      messager.printError(returnCanonicalError, element);
+      hasUnsupported = true;
+    }
+
     var firstVariadicArg = element.getAnnotation(FirstVariadicArg.class);
     if (firstVariadicArg != null) {
       var index = firstVariadicArg.value();
@@ -476,11 +549,13 @@ class ExecutableGenerator {
 
           if (nativeIndex >= index
               && isUnpromotedVariadicType(parameter)) {
+            var correction = parameter.isWCharT()
+                ? "remove @WCharT and use plain int"
+                : "use " + promotedVariadicType(parameter) + " instead of "
+                    + parameter.typeName();
             messager.printError(
                 "Variadic parameter '" + parameter.name()
-                    + "' must use its C-promoted type: use "
-                    + promotedVariadicType(parameter) + " instead of "
-                    + parameter.typeName(),
+                    + "' must use its C-promoted type: " + correction,
                 parameter.element);
             hasUnsupported = true;
           }
@@ -531,6 +606,13 @@ class ExecutableGenerator {
 
         messager.printError(
             "SegmentAllocator is not expected", paramGen.element);
+        continue;
+      }
+
+      var canonicalError = paramGen.canonicalScalarError();
+      if (canonicalError != null) {
+        hasUnsupported = true;
+        messager.printError(canonicalError, paramGen.element);
         continue;
       }
 
@@ -672,7 +754,8 @@ class ExecutableGenerator {
           "Array and Buffer return types are not supported; "
               + "use MemorySegment for native pointer returns",
           element);
-    } else if (element.getReturnType().getKind() != TypeKind.VOID
+    } else if (returnCanonicalError == null
+        && element.getReturnType().getKind() != TypeKind.VOID
         && returnGenerator.unsupported()) {
       hasUnsupported = true;
 
@@ -692,6 +775,7 @@ class ExecutableGenerator {
 
   private boolean isUnpromotedVariadicType(VariableGenerator parameter) {
     if (parameter.isPrimitiveAddress()) return false;
+    if (parameter.isWCharT()) return true;
 
     return switch (parameter.typeMirror.getKind()) {
       case BOOLEAN, BYTE, CHAR, SHORT, FLOAT -> true;

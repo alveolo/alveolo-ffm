@@ -315,6 +315,14 @@ final class ForeignMemoryAnalyzer {
 
   private boolean validIndexedElement(
       VariableGenerator element, boolean recordSnapshot) {
+    if (element.hasCanonicalScalar()) {
+      messager.printError(
+          "Canonical C scalar array and indexed-field elements are not yet "
+              + "supported",
+          element.element);
+      return false;
+    }
+
     if (element.isPrimitiveAddress()) {
       messager.printError(
           "@Address primitive array elements are not supported",
@@ -385,6 +393,12 @@ final class ForeignMemoryAnalyzer {
 
   void validateFields(Fields fields) {
     for (var field : fields.fields()) {
+      var canonicalError = field.canonicalScalarError();
+      if (canonicalError != null) {
+        messager.printError(canonicalError, field.element);
+        continue;
+      }
+
       if (fields.indexedFields().containsKey(field.name())) {
         if (field.isString()) {
           messager.printError(

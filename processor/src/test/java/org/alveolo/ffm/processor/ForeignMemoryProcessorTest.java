@@ -2,11 +2,20 @@ package org.alveolo.ffm.processor;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.JavaFileObjects.forSourceString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.lang.foreign.Arena;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Optional;
 
+import org.alveolo.ffm.NativeTypes;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -151,7 +160,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  @Disabled
+  // @Disabled
   void printNativeLinkerCanonicalLayouts() {
     Linker.nativeLinker().canonicalLayouts()
         .forEach((name, value) -> IO.println("type: " + name
@@ -162,6 +171,74 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void adaptsNativeScalarHandleCarriers() throws Throwable {
+    var cLongRaw = identity(NativeTypes.C_LONG_LAYOUT.carrier());
+    var cLong = NativeTypes.adaptDowncall(
+        cLongRaw, NativeTypes.Type.C_LONG,
+        NativeTypes.Type.C_LONG);
+    assertEquals(MethodType.methodType(long.class, long.class), cLong.type());
+    assertEquals(-123L, (long) cLong.invokeExact(-123L));
+    if (NativeTypes.C_LONG_LAYOUT.carrier() == long.class) {
+      assertSame(cLongRaw, cLong);
+    } else {
+      assertThrows(ArithmeticException.class, () -> {
+        var ignored = (long) cLong.invokeExact(0x8000_0000L);
+      });
+    }
+
+    assertSame(long.class, NativeTypes.SIZE_T_LAYOUT.carrier());
+
+    var wcharRaw = identity(NativeTypes.WCHAR_T_LAYOUT.carrier());
+    var wchar = NativeTypes.adaptDowncall(
+        wcharRaw, NativeTypes.Type.WCHAR_T,
+        NativeTypes.Type.WCHAR_T);
+    assertEquals(MethodType.methodType(int.class, int.class), wchar.type());
+    assertEquals(0xffff, (int) wchar.invokeExact(0xffff));
+    if (NativeTypes.WCHAR_T_LAYOUT.carrier() == int.class) {
+      assertSame(wcharRaw, wchar);
+    } else {
+      assertThrows(ArithmeticException.class, () -> {
+        var ignored = (int) wchar.invokeExact(0x1_0000);
+      });
+    }
+
+    try (var arena = Arena.ofConfined()) {
+      var cLongSegment = arena.allocate(NativeTypes.C_LONG_LAYOUT);
+      var cLongVarHandle = NativeTypes.C_LONG_LAYOUT.varHandle();
+      var cLongGetter = NativeTypes.adaptGetter(
+          cLongVarHandle, NativeTypes.Type.C_LONG);
+      var cLongSetter = NativeTypes.adaptSetter(
+          cLongVarHandle, NativeTypes.Type.C_LONG);
+      assertEquals(MethodType.methodType(long.class,
+          MemorySegment.class, long.class), cLongGetter.type());
+      assertEquals(MethodType.methodType(void.class,
+          MemorySegment.class, long.class, long.class), cLongSetter.type());
+      cLongSetter.invokeExact(cLongSegment, 0L, -321L);
+      assertEquals(-321L,
+          (long) cLongGetter.invokeExact(cLongSegment, 0L));
+
+      var wcharSegment = arena.allocate(NativeTypes.WCHAR_T_LAYOUT);
+      var wcharVarHandle = NativeTypes.WCHAR_T_LAYOUT.varHandle();
+      var wcharGetter = NativeTypes.adaptGetter(
+          wcharVarHandle, NativeTypes.Type.WCHAR_T);
+      var wcharSetter = NativeTypes.adaptSetter(
+          wcharVarHandle, NativeTypes.Type.WCHAR_T);
+      assertEquals(MethodType.methodType(int.class,
+          MemorySegment.class, long.class), wcharGetter.type());
+      assertEquals(MethodType.methodType(void.class,
+          MemorySegment.class, long.class, int.class), wcharSetter.type());
+      wcharSetter.invokeExact(wcharSegment, 0L, 1234);
+      assertEquals(1234,
+          (int) wcharGetter.invokeExact(wcharSegment, 0L));
+    }
+  }
+
+  private MethodHandle identity(Class<?> type) {
+    return MethodHandles.identity(type);
+  }
+
+  @Test
+  @Disabled
   void printLinkerCaptureStateNames() {
     var capturedNames = Linker.Option.captureStateLayout()
         .memberLayouts().stream()

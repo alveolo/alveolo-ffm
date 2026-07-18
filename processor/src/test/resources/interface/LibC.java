@@ -16,12 +16,12 @@ public interface LibC {
 
   div_t div(int numerator, int denominator);
   @Value
-  ldiv_t ldiv(SegmentAllocator allocator, long numerator, long denominator);
+  ldiv_t ldiv(SegmentAllocator allocator,
+      @CLong long numerator, @CLong long denominator);
 
-  // TODO support use of size_t
-  long strlen(String utf8z);
+  @SizeT long strlen(String utf8z);
 
-  String l64a(long n);
+  String l64a(@CLong long n);
 
   @FirstVariadicArg(2)
   int fcntl(int descriptor, int operation);

@@ -82,14 +82,13 @@ public final class IntBoxFM {
           MemoryLayout$F.varHandle(value$PathElement$F), 1, 0L);
 
   public static int value(java.lang.foreign.MemorySegment memorySegment) {
-    return ((java.lang.foreign.MemorySegment) value$VarHandle$F.get(memorySegment)).reinterpret(java.lang.foreign.ValueLayout.JAVA_INT.byteSize())
-        .get(java.lang.foreign.ValueLayout.JAVA_INT, 0L);
+    return org.alveolo.ffm.NativeTypes.getWCharT(((java.lang.foreign.MemorySegment) value$VarHandle$F.get(memorySegment)).reinterpret(org.alveolo.ffm.NativeTypes.WCHAR_T_LAYOUT.byteSize()), 0L);
   }
 
   public static void value(
       java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, int value) {
-    var address = allocator.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
-    address.set(java.lang.foreign.ValueLayout.JAVA_INT, 0L, value);
+    var address = allocator.allocate(org.alveolo.ffm.NativeTypes.WCHAR_T_LAYOUT);
+    org.alveolo.ffm.NativeTypes.setWCharT(address, 0L, value);
     value$VarHandle$F.set(memorySegment, address);
   }
 }

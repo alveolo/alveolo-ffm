@@ -29,18 +29,25 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
   }
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
-      Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.JAVA_INT),
-          java.lang.foreign.Linker.Option.firstVariadicArg(2));
+      org.alveolo.ffm.NativeTypes.adaptDowncall(
+          Linker$F.downcallHandle(
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT),
+              java.lang.foreign.Linker.Option.firstVariadicArg(2)),
+          null,
+          new org.alveolo.ffm.NativeTypes.Type[] {
+              null,
+              null,
+              org.alveolo.ffm.NativeTypes.Type.C_LONG
+          });
 
   private final java.lang.invoke.MethodHandle MethodHandle$0$F;
 
   public int method(
       pkg.VirtualObj self$f,
-      int arg) {
+      long arg) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
           ((pkg.VirtualObjFM) self$f).MemorySegment$F,

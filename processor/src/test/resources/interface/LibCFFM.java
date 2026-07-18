@@ -75,12 +75,19 @@ public final class LibCFFM implements LibC {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$3$F =
-      Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("ldiv"),
-      java.lang.foreign.FunctionDescriptor.of(
-          pkg.ldiv_tFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.JAVA_LONG,
-          java.lang.foreign.ValueLayout.JAVA_LONG));
+      org.alveolo.ffm.NativeTypes.adaptDowncall(
+          Linker$F.downcallHandle(
+          SymbolLookup$F.findOrThrow("ldiv"),
+          java.lang.foreign.FunctionDescriptor.of(
+              pkg.ldiv_tFM.MemoryLayout$F,
+              org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT,
+              org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT)),
+          null,
+          new org.alveolo.ffm.NativeTypes.Type[] {
+              null,
+              org.alveolo.ffm.NativeTypes.Type.C_LONG,
+              org.alveolo.ffm.NativeTypes.Type.C_LONG
+          });
 
   public pkg.@org.alveolo.ffm.Value ldiv_t ldiv(
       java.lang.foreign.SegmentAllocator allocator,
@@ -100,10 +107,10 @@ public final class LibCFFM implements LibC {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$4$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("strlen"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_LONG,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("strlen"),
+          java.lang.foreign.FunctionDescriptor.of(
+              org.alveolo.ffm.NativeTypes.SIZE_T_LAYOUT,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public long strlen(
       java.lang.String utf8z) {
@@ -118,11 +125,16 @@ public final class LibCFFM implements LibC {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$5$F =
-      Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("l64a"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.JAVA_LONG));
+      org.alveolo.ffm.NativeTypes.adaptDowncall(
+          Linker$F.downcallHandle(
+          SymbolLookup$F.findOrThrow("l64a"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.ADDRESS,
+              org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT)),
+          null,
+          new org.alveolo.ffm.NativeTypes.Type[] {
+              org.alveolo.ffm.NativeTypes.Type.C_LONG
+          });
 
   public java.lang.String l64a(
       long n) {

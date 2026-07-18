@@ -57,6 +57,20 @@ class NativeSharedLibraryTest {
   }
 
   @Test
+  void adaptsCanonicalCScalarsWithoutChangingJavaCarriers() {
+    assertEquals(-123L, AffmTestFFM.INSTANCE$F.echo_c_long(-123L));
+    assertEquals(0xffff_ffffL,
+        AffmTestFFM.INSTANCE$F.echo_size_t(0xffff_ffffL));
+    assertEquals(0xffff, AffmTestFFM.INSTANCE$F.echo_wchar(0xffff));
+  }
+
+  @Test
+  void combinesAddressWithCanonicalScalarPointees() {
+    assertEquals(321L, AffmTestFFM.INSTANCE$F.read_c_long(321L));
+    assertEquals(123L, AffmTestFFM.INSTANCE$F.c_long_address());
+  }
+
+  @Test
   void callsSpecializedVariadicFunctionWithAndWithoutTailArguments() {
     assertEquals(0, AffmTestFFM.INSTANCE$F.variadic_sum(0));
     assertEquals(42, AffmTestFFM.INSTANCE$F.variadic_sum(3, 10, 12, 20));

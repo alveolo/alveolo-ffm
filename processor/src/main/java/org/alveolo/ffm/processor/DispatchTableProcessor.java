@@ -199,15 +199,22 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
   private void writeMethodDescriptor(Writer out,
       ExecutableGenerator generator, int index) throws IOException {
+    var rawHandle = """
+        Linker$F.downcallHandle(
+            <descriptor><options>)
+        """
+        .replace("<descriptor>", generator.downcallDescriptor())
+        .replace("<options>", generator.downcallOptions())
+        .stripTrailing();
+
     out.write("""
 
           private static final java.lang.invoke.MethodHandle <mh> =
-              Linker$F.downcallHandle(
-              <descriptor><options>);
+              <initializer>;
         """
         .replace("<mh>", "DowncallHandle$" + index + "$F")
-        .replace("<descriptor>", generator.descriptor())
-        .replace("<options>", generator.linkerOptions()));
+        .replace("<initializer>", generator.adaptDowncall(rawHandle, true)
+            .replace("\n", "\n      ")));
   }
 
   private void writeConstructor(Writer out, String className,

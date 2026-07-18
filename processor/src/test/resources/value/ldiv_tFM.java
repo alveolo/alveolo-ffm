@@ -7,8 +7,8 @@ public final class ldiv_tFM implements ldiv_t {
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        java.lang.foreign.ValueLayout.JAVA_INT.withName("quot"),
-        java.lang.foreign.ValueLayout.JAVA_INT.withName("rem"),
+        org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT.withName("quot"),
+        org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT.withName("rem"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -71,13 +71,33 @@ public final class ldiv_tFM implements ldiv_t {
       java.lang.invoke.MethodHandles.insertCoordinates(
           MemoryLayout$F.varHandle(quot$PathElement$F), 1, 0L);
 
-  public int quot() {
-    return (int) quot$VarHandle$F.get(MemorySegment$F);
+  public static final java.lang.invoke.MethodHandle quot$get$F =
+      org.alveolo.ffm.NativeTypes.adaptGetter(
+          quot$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+
+  public static final java.lang.invoke.MethodHandle quot$set$F =
+      org.alveolo.ffm.NativeTypes.adaptSetter(
+          quot$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+
+  public long quot() {
+    try {
+      return (long) quot$get$F.invokeExact(MemorySegment$F);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
   }
 
-  public ldiv_tFM quot(int value) {
-    quot$VarHandle$F.set(MemorySegment$F, value);
-    return this;
+  public ldiv_tFM quot(long value) {
+    try {
+      quot$set$F.invokeExact(MemorySegment$F, value);
+      return this;
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -88,12 +108,32 @@ public final class ldiv_tFM implements ldiv_t {
       java.lang.invoke.MethodHandles.insertCoordinates(
           MemoryLayout$F.varHandle(rem$PathElement$F), 1, 0L);
 
-  public int rem() {
-    return (int) rem$VarHandle$F.get(MemorySegment$F);
+  public static final java.lang.invoke.MethodHandle rem$get$F =
+      org.alveolo.ffm.NativeTypes.adaptGetter(
+          rem$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+
+  public static final java.lang.invoke.MethodHandle rem$set$F =
+      org.alveolo.ffm.NativeTypes.adaptSetter(
+          rem$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+
+  public long rem() {
+    try {
+      return (long) rem$get$F.invokeExact(MemorySegment$F);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
   }
 
-  public ldiv_tFM rem(int value) {
-    rem$VarHandle$F.set(MemorySegment$F, value);
-    return this;
+  public ldiv_tFM rem(long value) {
+    try {
+      rem$set$F.invokeExact(MemorySegment$F, value);
+      return this;
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
   }
 }

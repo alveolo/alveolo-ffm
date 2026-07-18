@@ -4,6 +4,6 @@ import org.alveolo.ffm.*;
 
 @Struct
 public interface ldiv_t {
-  int quot();
-  int rem();
+  @CLong long quot();
+  @CLong long rem();
 }

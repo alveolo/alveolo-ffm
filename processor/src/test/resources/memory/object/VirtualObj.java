@@ -1,6 +1,7 @@
 package pkg;
 
 import org.alveolo.ffm.FirstVariadicArg;
+import org.alveolo.ffm.CLong;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.Struct;
@@ -13,7 +14,7 @@ public interface VirtualObj {
 
   @Virtual(2)
   @FirstVariadicArg(1)
-  int method(int arg);
+  int method(@CLong long arg);
 
   @Virtual(4)
   int sum(@In @Sequence(3L) int[] values);

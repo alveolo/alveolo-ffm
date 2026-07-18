@@ -89,11 +89,11 @@ public final class ObjFM implements Obj {
 
   private static final java.lang.invoke.MethodHandle SymbolMethodHandle$1$F =
       pkg.NativeApiFFM.Linker$F.downcallHandle(
-      pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_strlen"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_LONG,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_strlen"),
+          java.lang.foreign.FunctionDescriptor.of(
+              org.alveolo.ffm.NativeTypes.SIZE_T_LAYOUT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int call(
       int arg) {
