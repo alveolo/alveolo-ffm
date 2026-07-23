@@ -39,7 +39,12 @@ class NativeSharedLibraryTest {
 
     for (var compiler : compilers()) {
       var command = command(compiler, source, output, outputDir);
-      var result = run(command, outputDir);
+      CompileResult result;
+      try {
+        result = run(command, outputDir);
+      } catch (IOException e) {
+        result = new CompileResult(1, e.getMessage());
+      }
       if (result.exitCode() == 0) return;
 
       failures.add(String.join(" ", command) + System.lineSeparator()
@@ -432,6 +437,7 @@ class NativeSharedLibraryTest {
     if (isCl(compiler.getFirst())) {
       command.add("/nologo");
       command.add("/LD");
+      command.add("/MD");
       command.add(source.toString());
       command.add("/Fe:" + output);
       return command;

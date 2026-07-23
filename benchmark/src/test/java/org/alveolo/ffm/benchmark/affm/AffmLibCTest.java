@@ -12,7 +12,30 @@ class AffmLibCTest {
   @Test
   void primitives() {
     assertEquals(1, affm.abs(-1));
-    assertEquals(1, affm.abs(new IntWrapper(-1)).value());
+    assertEquals(43L, affm.labs(-43L));
+    assertEquals((1L << 40) + 43, affm.llabs(-(1L << 40) - 43));
+  }
+
+  @Test
+  void singleValueRecords() {
+    assertEquals(1, affm.abs(new IntR(-1)).value());
+    assertEquals(43L, affm.labs(new CLongR(-43L)).value());
+    assertEquals((1L << 40) + 43,
+        affm.llabs(new LongR(-(1L << 40) - 43)).value());
+  }
+
+  @Test
+  void singleValueInterfaces() {
+    try (var arena = Arena.ofConfined()) {
+      var i = new IntSFM(arena).value(-1);
+      var cLong = new CLongSFM(arena).value(-43L);
+      var longLong = new LongSFM(arena).value(-(1L << 40) - 43);
+
+      assertEquals(1, affm.abs(arena, i).value());
+      assertEquals(43L, affm.labs(arena, cLong).value());
+      assertEquals((1L << 40) + 43,
+          affm.llabs(arena, longLong).value());
+    }
   }
 
   @Test
@@ -24,6 +47,11 @@ class AffmLibCTest {
     var ldiv = affm.ldiv_r(7L, 3L);
     assertEquals(2L, ldiv.quot());
     assertEquals(1L, ldiv.rem());
+
+    var numerator = -(1L << 40) - 43;
+    var lldiv = affm.lldiv_r(numerator, 5L);
+    assertEquals(numerator / 5L, lldiv.quot());
+    assertEquals(numerator % 5L, lldiv.rem());
   }
 
   @Test
@@ -32,11 +60,16 @@ class AffmLibCTest {
       var div = affm.div_s(arena, 7, 3);
       assertEquals(2, div.quot());
       assertEquals(1, div.rem());
-    }
 
-    // var ldiv = affm.ldiv_s(7L, 3L);
-    // assertEquals(2L, ldiv.quot());
-    // assertEquals(1L, ldiv.rem());
+      var ldiv = affm.ldiv_s(arena, 7L, 3L);
+      assertEquals(2L, ldiv.quot());
+      assertEquals(1L, ldiv.rem());
+
+      var numerator = -(1L << 40) - 43;
+      var lldiv = affm.lldiv_s(arena, numerator, 5L);
+      assertEquals(numerator / 5L, lldiv.quot());
+      assertEquals(numerator % 5L, lldiv.rem());
+    }
   }
 
   @Test

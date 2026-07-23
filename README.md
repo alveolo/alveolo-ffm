@@ -563,6 +563,10 @@ must declare a `SegmentAllocator` parameter, as shown by `make_pair(...)`, and
 the processor reports a compile error if it is missing. This requirement is
 about returned values, not ordinary `@Address` arguments.
 
+See [Efficient Arena Allocation](docs/ARENA-ALLOCATION.md) for the call-scoped
+allocation strategy, including shared backing segments, aligned slicing, and
+preallocated struct-return storage.
+
 `@Address` on a primitive or record stores a native pointer instead of inline
 data. For foreign-call arguments, the generated wrapper uses call-scoped
 temporary storage when it has to materialize pointed-to data; the Java method

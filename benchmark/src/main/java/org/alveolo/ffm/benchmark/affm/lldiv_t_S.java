@@ -3,4 +3,8 @@ package org.alveolo.ffm.benchmark.affm;
 import org.alveolo.ffm.Struct;
 
 @Struct
-public record IntWrapper(int value) {}
+public interface lldiv_t_S {
+  long quot();
+
+  long rem();
+}
