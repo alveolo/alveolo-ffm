@@ -86,7 +86,7 @@ Validate getter/setter pairs explicitly: getter return type, setter parameter
 type, fluent return type, and presence of at least one getter for every inferred
 field.
 
-### P3: Cleanup and build hygiene issues
+### P3: ✅ Cleanup and build hygiene issues
 
 Several smaller issues add friction without currently breaking the build.
 
@@ -102,7 +102,7 @@ Details:
 - ✅ `@Library` validation mentioned a non-existent `DEFAULT_LOOKUP` kind.
 - ✅ One processor test prints native canonical layouts during every build.
 - ✅ Benchmark compilation used deprecated `forceJavacCompilerUse`.
-- Benchmark shading emits module-info warnings.
+- ✅ Benchmark shading emits module-info warnings.
 
 ## Improvement Targets
 
@@ -117,7 +117,7 @@ Details:
 
 ## Useful Next Features
 
-- `size_t`, `ssize_t`, and C `long` canonical-layout support.
+- ✅ `size_t`, `ssize_t`, and C `long` canonical-layout support.
 - Explicit C string return ownership, probably through a dedicated annotation.
 - ✅ `errno` or call-state capture.
 - Pointer-to-pointer out parameters.

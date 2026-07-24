@@ -9,6 +9,8 @@ public final class StructAFM implements StructA {
               new java.lang.foreign.MemoryLayout [] {
         java.lang.foreign.ValueLayout.JAVA_INT.withName("x"),
         java.lang.foreign.ValueLayout.JAVA_INT.withName("y"),
+        org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT.withName("signed"),
+        org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT.withName("unsigned"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -95,5 +97,79 @@ public final class StructAFM implements StructA {
   public StructAFM y(int value) {
     y$VarHandle$F.set(MemorySegment$F, value);
     return this;
+  }
+
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      signed$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("signed");
+
+  public static final java.lang.invoke.VarHandle signed$VarHandle$F =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          MemoryLayout$F.varHandle(signed$PathElement$F), 1, 0L);
+
+  public static final java.lang.invoke.MethodHandle signed$get$F =
+      org.alveolo.ffm.NativeTypes.adaptGetter(
+          signed$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
+
+  public static final java.lang.invoke.MethodHandle signed$set$F =
+      org.alveolo.ffm.NativeTypes.adaptSetter(
+          signed$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
+
+  public long signed() {
+    try {
+      return (long) signed$get$F.invokeExact(MemorySegment$F);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  public StructAFM signed(long value) {
+    try {
+      signed$set$F.invokeExact(MemorySegment$F, value);
+      return this;
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      unsigned$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("unsigned");
+
+  public static final java.lang.invoke.VarHandle unsigned$VarHandle$F =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          MemoryLayout$F.varHandle(unsigned$PathElement$F), 1, 0L);
+
+  public static final java.lang.invoke.MethodHandle unsigned$get$F =
+      org.alveolo.ffm.NativeTypes.adaptGetter(
+          unsigned$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.ULONG);
+
+  public static final java.lang.invoke.MethodHandle unsigned$set$F =
+      org.alveolo.ffm.NativeTypes.adaptSetter(
+          unsigned$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.ULONG);
+
+  public long unsigned() {
+    try {
+      return (long) unsigned$get$F.invokeExact(MemorySegment$F);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  public StructAFM unsigned(long value) {
+    try {
+      unsigned$set$F.invokeExact(MemorySegment$F, value);
+      return this;
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
   }
 }

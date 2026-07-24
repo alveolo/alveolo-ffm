@@ -85,8 +85,8 @@ public final class LibCFFM implements LibC {
           null,
           new org.alveolo.ffm.NativeTypes.Type[] {
               null,
-              org.alveolo.ffm.NativeTypes.Type.C_LONG,
-              org.alveolo.ffm.NativeTypes.Type.C_LONG
+              org.alveolo.ffm.NativeTypes.Type.SLONG,
+              org.alveolo.ffm.NativeTypes.Type.SLONG
           });
 
   public pkg.@org.alveolo.ffm.Value ldiv_t ldiv(
@@ -133,7 +133,7 @@ public final class LibCFFM implements LibC {
               org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT)),
           null,
           new org.alveolo.ffm.NativeTypes.Type[] {
-              org.alveolo.ffm.NativeTypes.Type.C_LONG
+              org.alveolo.ffm.NativeTypes.Type.SLONG
           });
 
   public java.lang.String l64a(

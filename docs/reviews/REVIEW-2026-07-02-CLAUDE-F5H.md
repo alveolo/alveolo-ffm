@@ -179,7 +179,7 @@ reading the vtable lazily.
    `Linker.Option.captureCallState("errno")` behind something like
    `@CaptureErrno`, exposing the value via a thread-local or an out-record.
    Without it, most libc bindings can't report errors.
-3. **String returns and `size_t`** — both already TODO'd in the code
+3. ✅ **String returns and `size_t`** — both already TODO'd in the code
    (`Linker.canonicalLayouts().get("size_t")` is referenced in a fixture
    comment). These unblock a large share of POSIX APIs.
 4. **`Linker.Option.critical()`** — an opt-in `@Critical` for hot, short calls;

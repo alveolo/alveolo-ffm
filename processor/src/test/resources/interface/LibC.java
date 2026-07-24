@@ -17,11 +17,11 @@ public interface LibC {
   div_t div(int numerator, int denominator);
   @Value
   ldiv_t ldiv(SegmentAllocator allocator,
-      @CLong long numerator, @CLong long denominator);
+      @SLong long numerator, @SLong long denominator);
 
   @SizeT long strlen(String utf8z);
 
-  String l64a(@CLong long n);
+  String l64a(@SLong long n);
 
   @FirstVariadicArg(2)
   int fcntl(int descriptor, int operation);

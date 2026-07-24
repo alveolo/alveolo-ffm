@@ -63,7 +63,9 @@ class NativeSharedLibraryTest {
 
   @Test
   void adaptsCanonicalCScalarsWithoutChangingJavaCarriers() {
-    assertEquals(-123L, AffmTestFFM.INSTANCE$F.echo_c_long(-123L));
+    assertEquals(-123L, AffmTestFFM.INSTANCE$F.echo_slong(-123L));
+    assertEquals(0xffff_ffffL,
+        AffmTestFFM.INSTANCE$F.echo_ulong(0xffff_ffffL));
     assertEquals(0xffff_ffffL,
         AffmTestFFM.INSTANCE$F.echo_size_t(0xffff_ffffL));
     assertEquals(0xffff, AffmTestFFM.INSTANCE$F.echo_wchar(0xffff));

@@ -1,10 +1,10 @@
 package pkg;
 
 import org.alveolo.ffm.DispatchTable;
-import org.alveolo.ffm.CLong;
 import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.SLong;
 import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Slot;
 
@@ -24,7 +24,7 @@ public interface XyzVtbl {
 
   @Slot(4)
   @FirstVariadicArg(1)
-  int capturedCall(NativeErrorSpec capture, @CLong long parameter);
+  int capturedCall(NativeErrorSpec capture, @SLong long parameter);
 
   @Slot(5)
   int concreteCapturedCall(NativeError capture, int parameter);

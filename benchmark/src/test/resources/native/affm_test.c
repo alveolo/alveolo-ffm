@@ -37,7 +37,11 @@ EXPORT int add_ints(int left, int right) {
   return left + right;
 }
 
-EXPORT long echo_c_long(long value) {
+EXPORT long echo_slong(long value) {
+  return value;
+}
+
+EXPORT unsigned long echo_ulong(unsigned long value) {
   return value;
 }
 

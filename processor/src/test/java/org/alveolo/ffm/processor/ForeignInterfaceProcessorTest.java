@@ -123,25 +123,28 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
 
         @org.alveolo.ffm.ForeignInterface
         interface BadCanonicalScalars {
-          void cLong(@org.alveolo.ffm.CLong int value);
+          void sLong(@org.alveolo.ffm.SLong int value);
+          void uLong(@org.alveolo.ffm.ULong int value);
           void sizeT(@org.alveolo.ffm.SizeT int value);
           void wchar(@org.alveolo.ffm.WCharT long value);
           void conflicting(
-              @org.alveolo.ffm.CLong @org.alveolo.ffm.SizeT long value);
-          void array(@org.alveolo.ffm.CLong long[] values);
+              @org.alveolo.ffm.SLong @org.alveolo.ffm.ULong long value);
+          void array(@org.alveolo.ffm.SLong long[] values);
         }
         """);
 
     var c = compile(lib);
 
-    assertThat(c).hadErrorContaining("@CLong requires Java long");
+    assertThat(c).hadErrorContaining("@SLong requires Java long");
+    assertThat(c).hadErrorContaining("@ULong requires Java long");
     assertThat(c).hadErrorContaining("@SizeT requires Java long");
     assertThat(c).hadErrorContaining("@WCharT requires Java int");
     assertThat(c).hadErrorContaining(
-        "Only one of @CLong, @SizeT, and @WCharT may be used on a type");
+        "Only one of @SLong, @ULong, @SizeT, and @WCharT "
+            + "may be used on a type");
     assertThat(c).hadErrorContaining(
-        "@CLong is only supported on scalar values");
-    assertThat(c).hadErrorCount(5);
+        "@SLong is only supported on scalar values");
+    assertThat(c).hadErrorCount(6);
   }
 
   @Test

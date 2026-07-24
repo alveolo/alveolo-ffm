@@ -7,4 +7,8 @@ public interface StructA {
   int x();
 
   int y();
+
+  @SLong long signed();
+
+  @ULong long unsigned();
 }

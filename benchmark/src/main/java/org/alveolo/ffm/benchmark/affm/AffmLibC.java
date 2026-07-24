@@ -2,8 +2,8 @@ package org.alveolo.ffm.benchmark.affm;
 
 import java.lang.foreign.SegmentAllocator;
 
-import org.alveolo.ffm.CLong;
 import org.alveolo.ffm.ForeignInterface;
+import org.alveolo.ffm.SLong;
 import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.Value;
@@ -17,8 +17,8 @@ public interface AffmLibC {
   @Value
   IntS abs(SegmentAllocator allocator, @Value IntS number);
 
-  @CLong
-  long labs(@CLong long number);
+  @SLong
+  long labs(@SLong long number);
 
   CLongR labs(CLongR number);
 
@@ -37,7 +37,7 @@ public interface AffmLibC {
 
   @Symbol("ldiv")
   ldiv_t_R ldiv_r(
-      @CLong long numerator, @CLong long denominator);
+      @SLong long numerator, @SLong long denominator);
 
   @Symbol("lldiv")
   lldiv_t_R lldiv_r(long numerator, long denominator);
@@ -50,7 +50,7 @@ public interface AffmLibC {
   @Value
   ldiv_t_S ldiv_s(
       SegmentAllocator allocator,
-      @CLong long numerator, @CLong long denominator);
+      @SLong long numerator, @SLong long denominator);
 
   @Symbol("lldiv")
   @Value

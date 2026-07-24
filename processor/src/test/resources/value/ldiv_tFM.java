@@ -73,11 +73,11 @@ public final class ldiv_tFM implements ldiv_t {
 
   public static final java.lang.invoke.MethodHandle quot$get$F =
       org.alveolo.ffm.NativeTypes.adaptGetter(
-          quot$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+          quot$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
 
   public static final java.lang.invoke.MethodHandle quot$set$F =
       org.alveolo.ffm.NativeTypes.adaptSetter(
-          quot$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+          quot$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
 
   public long quot() {
     try {
@@ -110,11 +110,11 @@ public final class ldiv_tFM implements ldiv_t {
 
   public static final java.lang.invoke.MethodHandle rem$get$F =
       org.alveolo.ffm.NativeTypes.adaptGetter(
-          rem$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+          rem$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
 
   public static final java.lang.invoke.MethodHandle rem$set$F =
       org.alveolo.ffm.NativeTypes.adaptSetter(
-          rem$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.C_LONG);
+          rem$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
 
   public long rem() {
     try {

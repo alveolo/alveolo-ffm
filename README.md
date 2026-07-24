@@ -41,7 +41,7 @@ NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
 - C name mapping with `@Symbol`.
 - Native library lookup with `@Library`.
 - Pass-by-value and pass-by-address control with `@Value` and `@Address`.
-- Platform C scalars with `@CLong`, `@SizeT`, and `@WCharT`.
+- Platform C scalars with `@SLong`, `@ULong`, `@SizeT`, and `@WCharT`.
 - Primitive-array, record-array, and `java.nio.*Buffer` pointer parameters.
 - Fixed, indexed inline arrays on memory-backed struct interfaces.
 - Input/output transfer control with `@In` and `@Out`.
@@ -177,7 +177,9 @@ native ABI:
 ```java
 @ForeignInterface
 public interface LibC {
-  MemorySegment l64a(@CLong long value);
+  MemorySegment l64a(@SLong long value);
+
+  @ULong long nativeFlags();
 
   @SizeT long strlen(String utf8z);
 
@@ -186,26 +188,31 @@ public interface LibC {
 }
 
 @Struct
-public record LDiv(@CLong long quot, @CLong long rem) {}
+public record LDiv(@SLong long quot, @SLong long rem) {}
 ```
 
-`@CLong` and `@SizeT` use Java `long`; `@WCharT` uses Java `int`. Generated
-descriptors use the corresponding layout from
-`Linker.nativeLinker().canonicalLayouts()`. For C `long` and `wchar_t`, the
-generated class adapts a differing raw carrier once during class initialization
-and the call site still uses `invokeExact` with the stable Java carrier.
-Matching ABIs retain the raw downcall handle unchanged. `size_t` uses its native
-layout directly with the 64-bit Java `long` carrier supported by current JDK
-runtimes.
+`@SLong`, `@ULong`, and `@SizeT` use Java `long`; `@WCharT` uses Java `int`.
+Generated descriptors use the corresponding layout from
+`Linker.nativeLinker().canonicalLayouts()`. For signed and unsigned C `long`
+and `wchar_t`, the generated class adapts a differing raw carrier once during
+class initialization and the call site still uses `invokeExact` with the
+stable Java carrier. Matching ABIs retain the raw downcall handle unchanged.
+`size_t` uses its native layout directly with the 64-bit Java `long` carrier
+supported by current JDK runtimes.
 
-`@CLong` performs checked narrowing on an ABI with a 32-bit C `long`. `@SizeT`
-preserves every Java `long` bit pattern. A 16-bit `wchar_t` accepts values from
-`0` through `0xffff`; the annotation describes one scalar and does not choose a
-wide-string encoding.
+`@SLong` performs checked signed narrowing on an ABI with a 32-bit C `long`.
+On the same ABI, `@ULong` accepts Java values from `0` through
+`0xffff_ffffL` and zero-extends native results. With a 64-bit C
+`unsigned long`, Java `long` carries the raw bits, so its negative values
+represent the upper half of the unsigned range. `@SizeT` preserves every Java
+`long` bit pattern. A 16-bit `wchar_t` accepts values from `0` through
+`0xffff`; the annotation describes one scalar and does not choose a wide-string
+encoding.
 
 `@Address` remains a separate pass-mode annotation and composes with these
-annotations. For example, `@Address @CLong long` passes a pointer to a native C
-`long`, while the Java value remains a `long`.
+annotations. For example, `@Address @SLong long` passes a pointer to a native
+signed C `long`, while `@Address @ULong long` points to an unsigned C `long`.
+The Java carrier remains `long` in both cases.
 
 Canonical scalar parameters, returns, and ordinary struct or union fields are
 supported. Canonical scalar array and indexed-field elements are currently

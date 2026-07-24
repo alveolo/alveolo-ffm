@@ -19,10 +19,11 @@ import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CallState;
-import org.alveolo.ffm.CLong;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.SLong;
 import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.ULong;
 import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Value;
 import org.alveolo.ffm.WCharT;
@@ -30,9 +31,12 @@ import org.alveolo.ffm.macos.CFString;
 
 sealed class TypeGenerator permits VariableGenerator {
   enum CanonicalScalar {
-    C_LONG(CLong.class.getCanonicalName(), TypeKind.LONG,
+    SLONG(SLong.class.getCanonicalName(), TypeKind.LONG,
         "org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT",
-        "org.alveolo.ffm.NativeTypes.Type.C_LONG"),
+        "org.alveolo.ffm.NativeTypes.Type.SLONG"),
+    ULONG(ULong.class.getCanonicalName(), TypeKind.LONG,
+        "org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT",
+        "org.alveolo.ffm.NativeTypes.Type.ULONG"),
     SIZE_T(SizeT.class.getCanonicalName(), TypeKind.LONG,
         "org.alveolo.ffm.NativeTypes.SIZE_T_LAYOUT",
         null),
@@ -475,7 +479,9 @@ sealed class TypeGenerator permits VariableGenerator {
           "Type has no canonical scalar: " + typeMirror);
 
     return switch (canonical) {
-      case C_LONG -> "org.alveolo.ffm.NativeTypes.getCLong("
+      case SLONG -> "org.alveolo.ffm.NativeTypes.getSLong("
+          + segment + ", " + offset + ")";
+      case ULONG -> "org.alveolo.ffm.NativeTypes.getULong("
           + segment + ", " + offset + ")";
       case SIZE_T -> segment + ".get(" + canonical.layout
           + ", " + offset + ")";
@@ -491,7 +497,9 @@ sealed class TypeGenerator permits VariableGenerator {
           "Type has no canonical scalar: " + typeMirror);
 
     return switch (canonical) {
-      case C_LONG -> "org.alveolo.ffm.NativeTypes.setCLong("
+      case SLONG -> "org.alveolo.ffm.NativeTypes.setSLong("
+          + segment + ", " + offset + ", " + value + ");";
+      case ULONG -> "org.alveolo.ffm.NativeTypes.setULong("
           + segment + ", " + offset + ", " + value + ");";
       case SIZE_T -> segment + ".set(" + canonical.layout
           + ", " + offset + ", " + value + ");";
@@ -505,7 +513,8 @@ sealed class TypeGenerator permits VariableGenerator {
     if (canonical.isEmpty()) return null;
 
     if (canonical.size() > 1)
-      return "Only one of @CLong, @SizeT, and @WCharT may be used on a type";
+      return "Only one of @SLong, @ULong, @SizeT, and @WCharT "
+          + "may be used on a type";
 
     var scalar = canonical.getFirst();
     if (!isPrimitive()) {

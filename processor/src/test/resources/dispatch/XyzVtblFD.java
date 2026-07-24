@@ -146,7 +146,7 @@ public final class XyzVtblFD implements XyzVtbl {
           new org.alveolo.ffm.NativeTypes.Type[] {
               null,
               null,
-              org.alveolo.ffm.NativeTypes.Type.C_LONG
+              org.alveolo.ffm.NativeTypes.Type.SLONG
           });
 
   private final java.lang.invoke.MethodHandle MethodHandle$4$F;

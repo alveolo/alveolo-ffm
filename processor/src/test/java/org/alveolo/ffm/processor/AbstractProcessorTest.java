@@ -15,7 +15,6 @@ import javax.tools.JavaFileObject;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CallState;
-import org.alveolo.ffm.CLong;
 import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.FirstVariadicArg;
@@ -25,10 +24,12 @@ import org.alveolo.ffm.Libraries;
 import org.alveolo.ffm.Library;
 import org.alveolo.ffm.Out;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.SLong;
 import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Slot;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Symbol;
+import org.alveolo.ffm.ULong;
 import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Value;
 import org.alveolo.ffm.Virtual;
@@ -42,7 +43,6 @@ abstract class AbstractProcessorTest {
   private static final Class<?>[] CORE_CLASSES = {
     Address.class,
     CallState.class,
-    CLong.class,
     CountedBy.class,
     CFString.class,
     CFStringSupport.class,
@@ -54,10 +54,12 @@ abstract class AbstractProcessorTest {
     In.class,
     Out.class,
     Sequence.class,
+    SLong.class,
     SizeT.class,
     Slot.class,
     Struct.class,
     Symbol.class,
+    ULong.class,
     Union.class,
     Value.class,
     Virtual.class,

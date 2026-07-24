@@ -2,6 +2,10 @@ package org.alveolo.ffm.processor;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.JavaFileObjects.forSourceString;
+import static java.lang.invoke.MethodHandles.identity;
+import static org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT;
+import static org.alveolo.ffm.NativeTypes.Type.SLONG;
+import static org.alveolo.ffm.NativeTypes.Type.ULONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,8 +14,6 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Optional;
 
@@ -172,19 +174,39 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
 
   @Test
   void adaptsNativeScalarHandleCarriers() throws Throwable {
-    var cLongRaw = identity(NativeTypes.C_LONG_LAYOUT.carrier());
-    var cLong = NativeTypes.adaptDowncall(
-        cLongRaw, NativeTypes.Type.C_LONG,
-        NativeTypes.Type.C_LONG);
-    assertEquals(MethodType.methodType(long.class, long.class), cLong.type());
-    assertEquals(-123L, (long) cLong.invokeExact(-123L));
-    if (NativeTypes.C_LONG_LAYOUT.carrier() == long.class) {
-      assertSame(cLongRaw, cLong);
+    var sLongRaw = identity(C_LONG_LAYOUT.carrier());
+    var sLong = NativeTypes.adaptDowncall(sLongRaw, SLONG, SLONG);
+    assertEquals(MethodType.methodType(long.class, long.class), sLong.type());
+    assertEquals(-123L, (long) sLong.invokeExact(-123L));
+    if (C_LONG_LAYOUT.carrier() == long.class) {
+      assertSame(sLongRaw, sLong);
     } else {
       assertThrows(ArithmeticException.class, () -> {
-        var ignored = (long) cLong.invokeExact(0x8000_0000L);
+        var ignored = (long) sLong.invokeExact(0x8000_0000L);
       });
     }
+
+    var uLongRaw = identity(C_LONG_LAYOUT.carrier());
+    var uLong = NativeTypes.adaptDowncall(uLongRaw, ULONG, ULONG);
+    assertEquals(MethodType.methodType(long.class, long.class), uLong.type());
+    assertEquals(0xffff_ffffL, (long) uLong.invokeExact(0xffff_ffffL));
+    if (C_LONG_LAYOUT.carrier() == long.class) {
+      assertSame(uLongRaw, uLong);
+    } else {
+      assertThrows(ArithmeticException.class, () -> {
+        var ignored = (long) uLong.invokeExact(-1L);
+      });
+      assertThrows(ArithmeticException.class, () -> {
+        var ignored = (long) uLong.invokeExact(0x1_0000_0000L);
+      });
+    }
+
+    assertEquals(-1,
+        NativeTypes.longToUnsignedIntExact(0xffff_ffffL));
+    assertThrows(ArithmeticException.class,
+        () -> NativeTypes.longToUnsignedIntExact(-1L));
+    assertThrows(ArithmeticException.class,
+        () -> NativeTypes.longToUnsignedIntExact(0x1_0000_0000L));
 
     assertSame(long.class, NativeTypes.SIZE_T_LAYOUT.carrier());
 
@@ -203,19 +225,33 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     }
 
     try (var arena = Arena.ofConfined()) {
-      var cLongSegment = arena.allocate(NativeTypes.C_LONG_LAYOUT);
-      var cLongVarHandle = NativeTypes.C_LONG_LAYOUT.varHandle();
-      var cLongGetter = NativeTypes.adaptGetter(
-          cLongVarHandle, NativeTypes.Type.C_LONG);
-      var cLongSetter = NativeTypes.adaptSetter(
-          cLongVarHandle, NativeTypes.Type.C_LONG);
+      var sLongSegment = arena.allocate(C_LONG_LAYOUT);
+      var sLongVarHandle = C_LONG_LAYOUT.varHandle();
+      var sLongGetter = NativeTypes.adaptGetter(
+          sLongVarHandle, SLONG);
+      var sLongSetter = NativeTypes.adaptSetter(
+          sLongVarHandle, SLONG);
       assertEquals(MethodType.methodType(long.class,
-          MemorySegment.class, long.class), cLongGetter.type());
+          MemorySegment.class, long.class), sLongGetter.type());
       assertEquals(MethodType.methodType(void.class,
-          MemorySegment.class, long.class, long.class), cLongSetter.type());
-      cLongSetter.invokeExact(cLongSegment, 0L, -321L);
+          MemorySegment.class, long.class, long.class), sLongSetter.type());
+      sLongSetter.invokeExact(sLongSegment, 0L, -321L);
       assertEquals(-321L,
-          (long) cLongGetter.invokeExact(cLongSegment, 0L));
+          (long) sLongGetter.invokeExact(sLongSegment, 0L));
+
+      var uLongSegment = arena.allocate(C_LONG_LAYOUT);
+      var uLongVarHandle = C_LONG_LAYOUT.varHandle();
+      var uLongGetter = NativeTypes.adaptGetter(
+          uLongVarHandle, ULONG);
+      var uLongSetter = NativeTypes.adaptSetter(
+          uLongVarHandle, ULONG);
+      assertEquals(MethodType.methodType(long.class,
+          MemorySegment.class, long.class), uLongGetter.type());
+      assertEquals(MethodType.methodType(void.class,
+          MemorySegment.class, long.class, long.class), uLongSetter.type());
+      uLongSetter.invokeExact(uLongSegment, 0L, 0xffff_ffffL);
+      assertEquals(0xffff_ffffL,
+          (long) uLongGetter.invokeExact(uLongSegment, 0L));
 
       var wcharSegment = arena.allocate(NativeTypes.WCHAR_T_LAYOUT);
       var wcharVarHandle = NativeTypes.WCHAR_T_LAYOUT.varHandle();
@@ -228,13 +264,8 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
       assertEquals(MethodType.methodType(void.class,
           MemorySegment.class, long.class, int.class), wcharSetter.type());
       wcharSetter.invokeExact(wcharSegment, 0L, 1234);
-      assertEquals(1234,
-          (int) wcharGetter.invokeExact(wcharSegment, 0L));
+      assertEquals(1234, (int) wcharGetter.invokeExact(wcharSegment, 0L));
     }
-  }
-
-  private MethodHandle identity(Class<?> type) {
-    return MethodHandles.identity(type);
   }
 
   @Test
