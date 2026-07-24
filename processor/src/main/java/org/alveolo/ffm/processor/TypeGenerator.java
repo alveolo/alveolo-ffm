@@ -4,6 +4,8 @@ import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -19,8 +21,8 @@ import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CallState;
-import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.SLong;
+import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.ULong;
@@ -517,15 +519,12 @@ sealed class TypeGenerator permits VariableGenerator {
           + "may be used on a type";
 
     var scalar = canonical.getFirst();
-    if (!isPrimitive()) {
-      return scalar.simpleAnnotationName()
-          + " is only supported on scalar values and @Address scalar pointees";
-    }
+    if (!isPrimitive()) return scalar.simpleAnnotationName()
+        + " is only supported on scalar values and @Address scalar pointees";
 
-    if (typeMirror.getKind() != scalar.javaKind) {
+    if (typeMirror.getKind() != scalar.javaKind)
       return scalar.simpleAnnotationName() + " requires Java "
           + scalar.javaKind.name().toLowerCase();
-    }
 
     return null;
   }
@@ -535,20 +534,18 @@ sealed class TypeGenerator permits VariableGenerator {
     return canonical.isEmpty() ? null : canonical.getFirst();
   }
 
-  private java.util.List<CanonicalScalar> canonicalScalars() {
-    return java.util.Arrays.stream(CanonicalScalar.values())
+  private List<CanonicalScalar> canonicalScalars() {
+    return Arrays.stream(CanonicalScalar.values())
         .filter(scalar -> hasTypeUseAnnotation(typeMirror, scalar.annotation))
         .toList();
   }
 
   private boolean hasTypeUseAddress() {
-    return hasTypeUseAnnotation(
-        typeMirror, Address.class.getCanonicalName());
+    return hasTypeUseAnnotation(typeMirror, Address.class.getCanonicalName());
   }
 
   private boolean hasTypeUseValue() {
-    return hasTypeUseAnnotation(
-        typeMirror, Value.class.getCanonicalName());
+    return hasTypeUseAnnotation(typeMirror, Value.class.getCanonicalName());
   }
 
   private static boolean hasTypeUseAnnotation(
