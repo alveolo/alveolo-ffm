@@ -145,7 +145,7 @@ Relevant code:
 
 Either support declared setters or correct the example.
 
-### 10. C ABI Portability Is Underspecified
+### 10. ✅ C ABI Portability Is Underspecified
 
 Java primitives map directly to `ValueLayout.JAVA_*`. This works for
 fixed-width assumptions but not general C types: notably, C `long` is 64-bit on
@@ -199,7 +199,7 @@ code.
 
 In priority order:
 
-1. Explicit C ABI types and layout overrides: `CLong`, `SizeT`, unsigned types,
+1. ✅ Explicit C ABI types and layout overrides: `SLong`, `ULong`, `SizeT`,
    platform canonical layouts, packing, and alignment.
 2. Nullable pointer and ownership semantics, including bounded or owned
    returned strings and explicit borrowed or owned native objects.

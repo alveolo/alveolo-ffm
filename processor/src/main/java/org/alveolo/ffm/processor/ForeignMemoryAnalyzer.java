@@ -3,6 +3,7 @@ package org.alveolo.ffm.processor;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.STATIC;
+import static org.alveolo.ffm.processor.ObjectMethodsGenerator.isObjectMethod;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,9 +20,6 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
-
-import org.alveolo.ffm.Symbol;
-import org.alveolo.ffm.Virtual;
 
 /// Analyzes the fields and conversion requirements of a generated foreign
 /// memory type.
@@ -315,6 +313,14 @@ final class ForeignMemoryAnalyzer {
 
   private boolean validIndexedElement(
       VariableGenerator element, boolean recordSnapshot) {
+    if (element.hasCanonicalScalar()) {
+      messager.printError(
+          "Canonical C scalar array and indexed-field elements are not yet "
+              + "supported",
+          element.element);
+      return false;
+    }
+
     if (element.isPrimitiveAddress()) {
       messager.printError(
           "@Address primitive array elements are not supported",
@@ -358,11 +364,6 @@ final class ForeignMemoryAnalyzer {
     }
   }
 
-  private boolean isObjectMethod(ExecutableElement method) {
-    return method.getAnnotation(Virtual.class) != null
-        || method.getAnnotation(Symbol.class) != null;
-  }
-
   /// Buffer snapshots are intentionally not part of the record model. Array
   /// snapshots are validated while inferring their element and dimensions.
   void validateRecordComponents(TypeElement type) {
@@ -385,6 +386,12 @@ final class ForeignMemoryAnalyzer {
 
   void validateFields(Fields fields) {
     for (var field : fields.fields()) {
+      var canonicalError = field.canonicalScalarError();
+      if (canonicalError != null) {
+        messager.printError(canonicalError, field.element);
+        continue;
+      }
+
       if (fields.indexedFields().containsKey(field.name())) {
         if (field.isString()) {
           messager.printError(
@@ -460,10 +467,6 @@ final class ForeignMemoryAnalyzer {
     return (indexed.addressElement() && element.isRecord())
         || (indexed.structuredValueElement() && element.isRecord()
             && recordConverterNeedsAllocator(element.typeElement));
-  }
-
-  boolean indexedArrayNeedsAllocator(IndexedField indexed) {
-    return indexedElementNeedsAllocator(indexed);
   }
 
   private boolean isRecordAddress(VariableGenerator variable) {

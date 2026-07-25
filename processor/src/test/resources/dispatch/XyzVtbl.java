@@ -4,6 +4,8 @@ import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.SLong;
+import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Slot;
 
 @DispatchTable
@@ -15,14 +17,14 @@ public interface XyzVtbl {
   int sub(int a, int b);
 
   @Slot(2)
-  long strlen(String utf8z);
+  @SizeT long strlen(String utf8z);
 
   @Slot(0)
   int sum(@In @Sequence(3L) int[] values);
 
   @Slot(4)
   @FirstVariadicArg(1)
-  int capturedCall(NativeErrorSpec capture, int parameter);
+  int capturedCall(NativeErrorSpec capture, @SLong long parameter);
 
   @Slot(5)
   int concreteCapturedCall(NativeError capture, int parameter);

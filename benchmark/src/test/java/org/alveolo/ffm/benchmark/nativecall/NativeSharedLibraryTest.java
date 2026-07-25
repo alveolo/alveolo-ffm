@@ -39,7 +39,12 @@ class NativeSharedLibraryTest {
 
     for (var compiler : compilers()) {
       var command = command(compiler, source, output, outputDir);
-      var result = run(command, outputDir);
+      CompileResult result;
+      try {
+        result = run(command, outputDir);
+      } catch (IOException e) {
+        result = new CompileResult(1, e.getMessage());
+      }
       if (result.exitCode() == 0) return;
 
       failures.add(String.join(" ", command) + System.lineSeparator()
@@ -54,6 +59,22 @@ class NativeSharedLibraryTest {
   @Test
   void callsPrimitiveFunction() {
     assertEquals(42, AffmTestFFM.INSTANCE$F.add_ints(19, 23));
+  }
+
+  @Test
+  void adaptsCanonicalCScalarsWithoutChangingJavaCarriers() {
+    assertEquals(-123L, AffmTestFFM.INSTANCE$F.echo_slong(-123L));
+    assertEquals(0xffff_ffffL,
+        AffmTestFFM.INSTANCE$F.echo_ulong(0xffff_ffffL));
+    assertEquals(0xffff_ffffL,
+        AffmTestFFM.INSTANCE$F.echo_size_t(0xffff_ffffL));
+    assertEquals(0xffff, AffmTestFFM.INSTANCE$F.echo_wchar(0xffff));
+  }
+
+  @Test
+  void combinesAddressWithCanonicalScalarPointees() {
+    assertEquals(321L, AffmTestFFM.INSTANCE$F.read_c_long(321L));
+    assertEquals(123L, AffmTestFFM.INSTANCE$F.c_long_address());
   }
 
   @Test
@@ -418,6 +439,7 @@ class NativeSharedLibraryTest {
     if (isCl(compiler.getFirst())) {
       command.add("/nologo");
       command.add("/LD");
+      command.add("/MD");
       command.add(source.toString());
       command.add("/Fe:" + output);
       return command;

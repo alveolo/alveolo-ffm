@@ -200,7 +200,7 @@ Relevant code:
 
 ## Useful Next Features
 
-- ABI-native layouts for `size_t`, `ssize_t`, C `long`, unsigned integers,
+- ✅ ABI-native layouts for `size_t`, `ssize_t`, C `long`, unsigned integers,
   pointer-sized integers, and platform-specific canonical layouts.
 - ✅ Fixed-size array fields in structs/unions, including arrays of nested
   structs.

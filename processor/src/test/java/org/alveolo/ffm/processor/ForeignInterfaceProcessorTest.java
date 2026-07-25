@@ -97,7 +97,8 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         @org.alveolo.ffm.ForeignInterface
         interface BadVariadic {
           @org.alveolo.ffm.FirstVariadicArg(1)
-          void bad(short fixed, short integer, float decimal);
+          void bad(short fixed, short integer, float decimal,
+              @org.alveolo.ffm.WCharT int wide);
         }
         """);
 
@@ -109,7 +110,41 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
     assertThat(c).hadErrorContaining(
         "Variadic parameter 'decimal' must use its C-promoted type: "
             + "use double instead of float");
-    assertThat(c).hadErrorCount(2);
+    assertThat(c).hadErrorContaining(
+        "Variadic parameter 'wide' must use its C-promoted type: "
+            + "remove @WCharT and use plain int");
+    assertThat(c).hadErrorCount(3);
+  }
+
+  @Test
+  void rejectsInvalidCanonicalScalarTypes() {
+    var lib = forSourceString("test.BadCanonicalScalars", """
+        package test;
+
+        @org.alveolo.ffm.ForeignInterface
+        interface BadCanonicalScalars {
+          void sLong(@org.alveolo.ffm.SLong int value);
+          void uLong(@org.alveolo.ffm.ULong int value);
+          void sizeT(@org.alveolo.ffm.SizeT int value);
+          void wchar(@org.alveolo.ffm.WCharT long value);
+          void conflicting(
+              @org.alveolo.ffm.SLong @org.alveolo.ffm.ULong long value);
+          void array(@org.alveolo.ffm.SLong long[] values);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining("@SLong requires Java long");
+    assertThat(c).hadErrorContaining("@ULong requires Java long");
+    assertThat(c).hadErrorContaining("@SizeT requires Java long");
+    assertThat(c).hadErrorContaining("@WCharT requires Java int");
+    assertThat(c).hadErrorContaining(
+        "Only one of @SLong, @ULong, @SizeT, and @WCharT "
+            + "may be used on a type");
+    assertThat(c).hadErrorContaining(
+        "@SLong is only supported on scalar values");
+    assertThat(c).hadErrorCount(6);
   }
 
   @Test

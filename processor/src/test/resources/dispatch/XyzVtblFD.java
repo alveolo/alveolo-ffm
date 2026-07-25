@@ -88,9 +88,9 @@ public final class XyzVtblFD implements XyzVtbl {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$2$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_LONG,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          java.lang.foreign.FunctionDescriptor.of(
+              org.alveolo.ffm.CanonicalLayout.SIZE_T,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$2$F;
 
@@ -135,18 +135,25 @@ public final class XyzVtblFD implements XyzVtbl {
   }
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$4$F =
-      Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT),
-          java.lang.foreign.Linker.Option.firstVariadicArg(1),
-          pkg.NativeError.LinkerOption$F);
+      org.alveolo.ffm.NativeType.adaptDowncall(
+          Linker$F.downcallHandle(
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              org.alveolo.ffm.CanonicalLayout.LONG),
+              java.lang.foreign.Linker.Option.firstVariadicArg(1),
+              pkg.NativeError.LinkerOption$F),
+          null,
+          new org.alveolo.ffm.NativeType[] {
+              null,
+              null,
+              org.alveolo.ffm.NativeType.SLONG
+          });
 
   private final java.lang.invoke.MethodHandle MethodHandle$4$F;
 
   public int capturedCall(
       pkg.NativeErrorSpec capture,
-      int parameter) {
+      long parameter) {
     try {
       return (int) MethodHandle$4$F.invokeExact(
           ((pkg.NativeError) capture).MemorySegment$F,

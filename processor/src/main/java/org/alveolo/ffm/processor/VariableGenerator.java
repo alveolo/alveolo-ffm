@@ -192,6 +192,15 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String primitiveAddressInitializer() {
+    if (hasCanonicalScalar()) return """
+        var <segment> = arena$f.allocate(<layout>);
+        <set>
+        """
+        .replace("<segment>", segmentName())
+        .replace("<layout>", valueLayout())
+        .replace("<set>", canonicalSet(segmentName(), "0L", name))
+        .stripTrailing();
+
     return """
         var <segment> = arena$f.allocate(<layout>);
         <segment>.set(<layout>, 0L, <name>);
@@ -242,7 +251,7 @@ final class VariableGenerator extends TypeGenerator {
         <sequenceCheck>
         <readOnlyCheck>
         <directOrderCheck>
-        var <direct> = <directExpression>;
+        var <direct> = <name>.isDirect();
         var <segment> = <direct>
             ? java.lang.foreign.MemorySegment.ofBuffer(<name>).asSlice(
                 0L, Math.multiplyExact(<layout>.byteSize(), (long) <size>))
@@ -257,7 +266,6 @@ final class VariableGenerator extends TypeGenerator {
         .replace("<readOnlyCheck>\n", readOnlyCheck())
         .replace("<directOrderCheck>\n", directOrderCheck())
         .replace("<direct>", directName())
-        .replace("<directExpression>", directExpression())
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())
         .replace("<size>", sizeName())
@@ -320,10 +328,6 @@ final class VariableGenerator extends TypeGenerator {
         .replace("<sequence>", Long.toString(sequence))
         .replace("<name>", name)
         .replace("<sizeWord>", sizeWord);
-  }
-
-  private String directExpression() {
-    return name + ".isDirect()";
   }
 
   private String readOnlyCheck() {

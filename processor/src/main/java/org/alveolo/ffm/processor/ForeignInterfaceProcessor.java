@@ -1,9 +1,12 @@
 package org.alveolo.ffm.processor;
 
+import static java.util.stream.Collectors.joining;
 import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.quote;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
@@ -13,6 +16,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -37,35 +41,39 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     if (roundEnv.processingOver()) return true;
 
-    var messager = processingEnv.getMessager();
     var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
 
-    for (var annotation : annotations) {
-      for (var element : roundEnv.getElementsAnnotatedWith(annotation)) {
-        if (element instanceof TypeElement type) {
-          try {
-            var fi = type.getAnnotation(ForeignInterface.class);
-            if (fi != null) {
-              validateSimpleClassName(type, fi, fi.name());
-              validateGeneratedClassName(type, fi,
-                  foreignInterfaceSimpleClassName(type));
-              validateUserIdentifiers(type);
-              validateTopLevelType(type, fi);
-              writeFile(type, generatedTypes);
-            }
-          } catch (ProcessorError e) {
-            messager.printMessage(Diagnostic.Kind.ERROR,
-                e.getMessage(), e.getElement());
-          } catch (Throwable e) {
-            var sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            messager.printError(sw.toString(), type);
+    roundEnv.getElementsAnnotatedWith(ForeignInterface.class)
+        .forEach(element -> {
+          if (element instanceof TypeElement type) {
+            processType(type, generatedTypes);
           }
-        }
-      }
-    }
+        });
 
     return true;
+  }
+
+  private void processType(
+      TypeElement type, GeneratedTypeRegistry generatedTypes) {
+    var messager = processingEnv.getMessager();
+
+    try {
+      var annotation = type.getAnnotation(ForeignInterface.class);
+      if (annotation == null) return;
+
+      validateSimpleClassName(type, annotation, annotation.name());
+      validateGeneratedClassName(type, annotation,
+          foreignInterfaceSimpleClassName(type));
+      validateUserIdentifiers(type);
+      validateTopLevelType(type, annotation);
+      writeFile(type, generatedTypes);
+    } catch (ProcessorError e) {
+      messager.printMessage(Diagnostic.Kind.ERROR, e.getMessage(), e.element);
+    } catch (Throwable e) {
+      var sw = new StringWriter();
+      e.printStackTrace(new PrintWriter(sw));
+      messager.printError(sw.toString(), type);
+    }
   }
 
   private void writeFile(TypeElement iface,
@@ -84,7 +92,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     String className = foreignInterfaceClassName(iface, elements);
     String simpleClassName = foreignInterfaceSimpleClassName(iface);
 
-    var libraries = libraries(iface);
+    var libraries = List.of(iface.getAnnotationsByType(Library.class));
     if (!validateLibraries(iface, libraries)) return;
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
@@ -135,9 +143,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
             continue;
           }
 
-          var generator = new ExecutableGenerator(
-              processingEnv, generatedTypes, method,
-              "MethodHandle$" + index++ + "$F");
+          var generator = new ExecutableGenerator(processingEnv,
+              generatedTypes, method, "MethodHandle$" + index++ + "$F");
 
           out.write(generator.methodWithHandle());
         }
@@ -145,10 +152,6 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
 
       out.write("}\n");
     }
-  }
-
-  private List<Library> libraries(TypeElement type) {
-    return List.of(type.getAnnotationsByType(Library.class));
   }
 
   private boolean validateLibraries(TypeElement type, List<Library> libraries) {
@@ -159,8 +162,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           library.version(), "@Library");
 
       for (var override : library.overrides()) {
-        valid &= validateLibrary(type, override.kind(), override.value(), "",
-            "@Library.Override");
+        valid &= validateLibrary(type, override.kind(), override.value(),
+            "", "@Library.Override");
       }
     }
 
@@ -207,16 +210,9 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
   }
 
   private String librarySpecs(List<Library> libraries) {
-    var result = new StringBuilder();
-
-    for (var i = 0; i < libraries.size(); i++) {
-      if (i > 0) {
-        result.append(",\n");
-      }
-      result.append(librarySpec(libraries.get(i)));
-    }
-
-    return result.toString();
+    return libraries.stream()
+        .map(this::librarySpec)
+        .collect(joining(",\n"));
   }
 
   private String librarySpec(Library library) {
@@ -238,15 +234,10 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     var overrides = library.overrides();
     if (overrides.length == 0) return "";
 
-    var result = new StringBuilder();
-    for (var override : overrides) {
-      result.append(",\n")
-          .append(libraryOverride(override)
-              .indent(4)
-              .stripTrailing());
-    }
-
-    return result.toString();
+    return Arrays.stream(overrides)
+        .map(this::libraryOverride)
+        .map(override -> override.indent(4).stripTrailing())
+        .collect(joining(",\n", ",\n", ""));
   }
 
   private String libraryOverride(Library.Override override) {
@@ -261,21 +252,5 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
         .replace("<kind>", override.kind().name())
         .replace("<value>", quote(override.value()))
         .stripTrailing();
-  }
-
-  private String osArray(Library.OS[] oses) {
-    var result = new StringBuilder("new org.alveolo.ffm.Library.OS[] {");
-    for (var i = 0; i < oses.length; i++) {
-      if (i > 0) {
-        result.append(", ");
-      }
-      result.append("org.alveolo.ffm.Library.OS.")
-          .append(oses[i].name());
-    }
-    return result.append("}").toString();
-  }
-
-  private static String quote(String value) {
-    return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
   }
 }

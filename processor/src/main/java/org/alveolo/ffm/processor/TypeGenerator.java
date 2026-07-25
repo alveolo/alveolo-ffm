@@ -4,6 +4,8 @@ import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -19,13 +21,49 @@ import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CallState;
+import org.alveolo.ffm.SLong;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.ULong;
 import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Value;
+import org.alveolo.ffm.WCharT;
 import org.alveolo.ffm.macos.CFString;
 
 sealed class TypeGenerator permits VariableGenerator {
+  enum CanonicalScalar {
+    SLONG(SLong.class.getCanonicalName(), TypeKind.LONG,
+        "org.alveolo.ffm.CanonicalLayout.LONG",
+        "org.alveolo.ffm.NativeType.SLONG"),
+    ULONG(ULong.class.getCanonicalName(), TypeKind.LONG,
+        "org.alveolo.ffm.CanonicalLayout.LONG",
+        "org.alveolo.ffm.NativeType.ULONG"),
+    SIZE_T(SizeT.class.getCanonicalName(), TypeKind.LONG,
+        "org.alveolo.ffm.CanonicalLayout.SIZE_T",
+        null),
+    WCHAR_T(WCharT.class.getCanonicalName(), TypeKind.INT,
+        "org.alveolo.ffm.CanonicalLayout.WCHAR_T",
+        "org.alveolo.ffm.NativeType.WCHAR");
+
+    final String annotation;
+    final TypeKind javaKind;
+    final String layout;
+    final String runtimeType;
+
+    CanonicalScalar(String annotation, TypeKind javaKind, String layout,
+        String runtimeType) {
+      this.annotation = annotation;
+      this.javaKind = javaKind;
+      this.layout = layout;
+      this.runtimeType = runtimeType;
+    }
+
+    String simpleAnnotationName() {
+      return "@" + annotation.substring(annotation.lastIndexOf('.') + 1);
+    }
+  }
+
   /// Dedicated #layout() value representing invalid type.
   ///
   /// Intentionally spoiling runtime to throw on use but keeping the generated
@@ -141,7 +179,8 @@ sealed class TypeGenerator permits VariableGenerator {
   ///   arrays and NIO buffers
   // TODO support nested struct/union and reference arrays
   String layout() {
-    if (hasConflictingPassModeAnnotations())
+    if (hasConflictingPassModeAnnotations()
+        || canonicalScalarError() != null)
       return VALUE_LAYOUT_NOT_SUPPORTED;
 
     if (isPrimitiveAddress())
@@ -261,6 +300,9 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   String valueLayout() {
+    var canonical = canonicalScalar();
+    if (canonical != null) return canonical.layout;
+
     return switch (typeMirror.getKind()) {
       case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
       case BYTE -> "java.lang.foreign.ValueLayout.JAVA_BYTE";
@@ -413,14 +455,97 @@ sealed class TypeGenerator permits VariableGenerator {
             && hasTypeAddress() && hasTypeValue());
   }
 
+  boolean hasCanonicalScalar() {
+    return canonicalScalar() != null;
+  }
+
+  boolean needsDowncallAdaptation() {
+    var canonical = canonicalScalar();
+    return isPrimitive() && !isPrimitiveAddress()
+        && canonical != null && canonical.runtimeType != null;
+  }
+
+  boolean isWCharT() {
+    return canonicalScalar() == CanonicalScalar.WCHAR_T;
+  }
+
+  String canonicalRuntimeType() {
+    var canonical = canonicalScalar();
+    return canonical == null ? "null" : canonical.runtimeType;
+  }
+
+  String canonicalGet(String segment, String offset) {
+    var canonical = canonicalScalar();
+    if (canonical == null)
+      throw new IllegalStateException(
+          "Type has no canonical scalar: " + typeMirror);
+
+    return switch (canonical) {
+      case SLONG -> "org.alveolo.ffm.NativeType.getSLong("
+          + segment + ", " + offset + ")";
+      case ULONG -> "org.alveolo.ffm.NativeType.getULong("
+          + segment + ", " + offset + ")";
+      case SIZE_T -> segment + ".get(" + canonical.layout
+          + ", " + offset + ")";
+      case WCHAR_T -> "org.alveolo.ffm.NativeType.getWCharT("
+          + segment + ", " + offset + ")";
+    };
+  }
+
+  String canonicalSet(String segment, String offset, String value) {
+    var canonical = canonicalScalar();
+    if (canonical == null)
+      throw new IllegalStateException(
+          "Type has no canonical scalar: " + typeMirror);
+
+    return switch (canonical) {
+      case SLONG -> "org.alveolo.ffm.NativeType.setSLong("
+          + segment + ", " + offset + ", " + value + ");";
+      case ULONG -> "org.alveolo.ffm.NativeType.setULong("
+          + segment + ", " + offset + ", " + value + ");";
+      case SIZE_T -> segment + ".set(" + canonical.layout
+          + ", " + offset + ", " + value + ");";
+      case WCHAR_T -> "org.alveolo.ffm.NativeType.setWCharT("
+          + segment + ", " + offset + ", " + value + ");";
+    };
+  }
+
+  String canonicalScalarError() {
+    var canonical = canonicalScalars();
+    if (canonical.isEmpty()) return null;
+
+    if (canonical.size() > 1)
+      return "Only one of @SLong, @ULong, @SizeT, and @WCharT "
+          + "may be used on a type";
+
+    var scalar = canonical.getFirst();
+    if (!isPrimitive()) return scalar.simpleAnnotationName()
+        + " is only supported on scalar values and @Address scalar pointees";
+
+    if (typeMirror.getKind() != scalar.javaKind)
+      return scalar.simpleAnnotationName() + " requires Java "
+          + scalar.javaKind.name().toLowerCase();
+
+    return null;
+  }
+
+  private CanonicalScalar canonicalScalar() {
+    var canonical = canonicalScalars();
+    return canonical.isEmpty() ? null : canonical.getFirst();
+  }
+
+  private List<CanonicalScalar> canonicalScalars() {
+    return Arrays.stream(CanonicalScalar.values())
+        .filter(scalar -> hasTypeUseAnnotation(typeMirror, scalar.annotation))
+        .toList();
+  }
+
   private boolean hasTypeUseAddress() {
-    return hasTypeUseAnnotation(
-        typeMirror, Address.class.getCanonicalName());
+    return hasTypeUseAnnotation(typeMirror, Address.class.getCanonicalName());
   }
 
   private boolean hasTypeUseValue() {
-    return hasTypeUseAnnotation(
-        typeMirror, Value.class.getCanonicalName());
+    return hasTypeUseAnnotation(typeMirror, Value.class.getCanonicalName());
   }
 
   private static boolean hasTypeUseAnnotation(

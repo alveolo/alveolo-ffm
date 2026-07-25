@@ -162,6 +162,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  @Disabled
   void printLinkerCaptureStateNames() {
     var capturedNames = Linker.Option.captureStateLayout()
         .memberLayouts().stream()

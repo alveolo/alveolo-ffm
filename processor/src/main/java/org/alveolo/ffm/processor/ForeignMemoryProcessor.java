@@ -40,7 +40,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     if (roundEnv.processingOver()) return true;
 
-    var messager = processingEnv.getMessager();
     var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
     var generator = new ForeignMemoryGenerator(processingEnv, generatedTypes);
 
@@ -53,62 +52,67 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       }
 
       for (var element : roundEnv.getElementsAnnotatedWith(annotation)) {
-        if (element instanceof TypeElement type) {
-          switch (type.getKind()) {
-            case INTERFACE:
-            case RECORD:
-              try {
-                var struct = type.getAnnotation(Struct.class);
-                if (struct != null) {
-                  validateSimpleClassName(type, struct, struct.name());
-                  validateGeneratedClassName(type, struct,
-                      foreignMemorySimpleClassName(type));
-                  validateUserIdentifiers(type);
-                  validateTopLevelType(type, struct);
-                  if (struct.vtable()
-                      && type.getKind() == ElementKind.RECORD) {
-                    messager.printError(
-                        "@Struct(vtable = true) can only be applied to an "
-                            + "interface, not RECORD",
-                        type);
-                  } else {
-                    generator.write(type, "struct", struct.vtable());
-                  }
-                }
-
-                var union = type.getAnnotation(Union.class);
-                if (union != null) {
-                  validateSimpleClassName(type, union, union.name());
-                  validateGeneratedClassName(type, union,
-                      foreignMemorySimpleClassName(type));
-                  validateUserIdentifiers(type);
-                  validateTopLevelType(type, union);
-                  if (type.getKind() == ElementKind.RECORD) {
-                    messager.printError("@" + annotation.getSimpleName()
-                        + " can only be applied to an interface, not "
-                        + ElementKind.RECORD, type);
-                  } else {
-                    generator.write(type, "union", false);
-                  }
-                }
-              } catch (ProcessorError e) {
-                messager.printMessage(Diagnostic.Kind.ERROR,
-                    e.getMessage(), e.getElement());
-              } catch (Throwable e) {
-                var sw = new StringWriter();
-                e.printStackTrace(new PrintWriter(sw));
-                messager.printError(sw.toString(), type);
-              }
-              break;
-            case ElementKind kind:
-              messager.printError("@" + annotation.getSimpleName()
-                  + " can only be applied to an interface, not " + kind, type);
-          }
-        }
+        if (element instanceof TypeElement type)
+          processType(annotation, type, generator);
       }
     }
 
     return true;
+  }
+
+  private void processType(TypeElement annotation, TypeElement type,
+      ForeignMemoryGenerator generator) {
+    var messager = processingEnv.getMessager();
+
+    switch (type.getKind()) {
+      case INTERFACE, RECORD -> {
+        try {
+          var struct = type.getAnnotation(Struct.class);
+          if (struct != null) {
+            validateSimpleClassName(type, struct, struct.name());
+            validateGeneratedClassName(type, struct,
+                foreignMemorySimpleClassName(type));
+            validateUserIdentifiers(type);
+            validateTopLevelType(type, struct);
+            if (struct.vtable()
+                && type.getKind() == ElementKind.RECORD) {
+              messager.printError(
+                  "@Struct(vtable = true) can only be applied to an "
+                      + "interface, not RECORD",
+                  type);
+            } else {
+              generator.write(type, "struct", struct.vtable());
+            }
+          }
+
+          var union = type.getAnnotation(Union.class);
+          if (union != null) {
+            validateSimpleClassName(type, union, union.name());
+            validateGeneratedClassName(type, union,
+                foreignMemorySimpleClassName(type));
+            validateUserIdentifiers(type);
+            validateTopLevelType(type, union);
+            if (type.getKind() == ElementKind.RECORD) {
+              messager.printError("@" + annotation.getSimpleName()
+                  + " can only be applied to an interface, not "
+                  + ElementKind.RECORD, type);
+            } else {
+              generator.write(type, "union", false);
+            }
+          }
+        } catch (ProcessorError e) {
+          messager.printMessage(Diagnostic.Kind.ERROR,
+              e.getMessage(), e.element);
+        } catch (Throwable e) {
+          var sw = new StringWriter();
+          e.printStackTrace(new PrintWriter(sw));
+          messager.printError(sw.toString(), type);
+        }
+      }
+      default -> messager.printError("@" + annotation.getSimpleName()
+          + " can only be applied to an interface, not " + type.getKind(),
+          type);
+    }
   }
 
   private void validateVirtualAnnotations(Set<? extends Element> elements) {

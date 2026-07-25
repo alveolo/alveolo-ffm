@@ -12,13 +12,30 @@ import org.alveolo.ffm.In;
 import org.alveolo.ffm.Library;
 import org.alveolo.ffm.Out;
 import org.alveolo.ffm.Sequence;
+import org.alveolo.ffm.SLong;
+import org.alveolo.ffm.SizeT;
 import org.alveolo.ffm.Symbol;
+import org.alveolo.ffm.ULong;
 import org.alveolo.ffm.Value;
+import org.alveolo.ffm.WCharT;
 
 @Library("affm_test")
 @ForeignInterface
 public interface AffmTest {
   int add_ints(int left, int right);
+
+  @SLong long echo_slong(@SLong long value);
+
+  @ULong long echo_ulong(@ULong long value);
+
+  @SizeT long echo_size_t(@SizeT long value);
+
+  @WCharT int echo_wchar(@WCharT int value);
+
+  @Symbol("read_c_long")
+  @SLong long read_c_long(@Address @SLong long value);
+
+  @Address @SLong long c_long_address();
 
   @FirstVariadicArg(1)
   int variadic_sum(int count);

@@ -9,6 +9,7 @@ import org.alveolo.ffm.Slot;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Value;
 import org.alveolo.ffm.Virtual;
+import org.alveolo.ffm.WCharT;
 
 @Struct
 interface DefaultStruct {
@@ -146,8 +147,8 @@ public interface PassMode {
       SegmentAllocator allocator,
       @Value DefaultStruct value);
 
-  int primitiveAddress(@Address int value);
+  int primitiveAddress(@Address @WCharT int value);
 
-  @Address
+  @Address @WCharT
   int primitiveAddressReturn();
 }

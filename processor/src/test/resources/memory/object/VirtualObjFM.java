@@ -107,7 +107,7 @@ public final class VirtualObjFM implements VirtualObj {
           java.lang.foreign.Linker.Option.firstVariadicArg(2));
 
   public int method(
-      int arg) {
+      long arg) {
     return Vtable$F().method(this, arg);
   }
 

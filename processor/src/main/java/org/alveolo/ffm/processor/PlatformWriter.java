@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.io.Writer;
 
 /// Converts line endings from '\n' to System.lineSeparator()
-public class PlatformWriter extends FilterWriter {
+final class PlatformWriter extends FilterWriter {
   private final String lineSeparator = System.lineSeparator();
 
-  public PlatformWriter(Writer out) {
+  PlatformWriter(Writer out) {
     super(out);
   }
 
