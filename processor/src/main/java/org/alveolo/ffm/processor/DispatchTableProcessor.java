@@ -37,48 +37,49 @@ public class DispatchTableProcessor extends AbstractProcessor {
   @Override
   public boolean process(
       Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    var messager = processingEnv.getMessager();
-
     if (roundEnv.processingOver()) return true;
 
     var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
-    for (var annotation : annotations) {
-      var elements = roundEnv.getElementsAnnotatedWith(annotation);
 
-      for (var element : elements) {
-        if (element instanceof TypeElement type) {
-          try {
-            var dt = type.getAnnotation(DispatchTable.class);
-            if (dt != null) {
-              validateSimpleClassName(type, dt, dt.name());
-              validateGeneratedClassName(type, dt,
-                  dispatchTableSimpleClassName(type));
-              validateUserIdentifiers(type);
-              validateTopLevelType(type, dt);
-              writeFile(type, generatedTypes);
-            }
-          } catch (ProcessorError e) {
-            messager.printMessage(Diagnostic.Kind.ERROR,
-                e.getMessage(), e.getElement());
-          } catch (Throwable e) {
-            var sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            messager.printError(sw.toString(), type);
+    roundEnv.getElementsAnnotatedWith(DispatchTable.class)
+        .forEach(element -> {
+          if (element instanceof TypeElement type) {
+            processType(type, generatedTypes);
           }
-        }
-      }
-    }
+        });
 
     return true;
   }
 
-  private void writeFile(TypeElement iface,
-      GeneratedTypeRegistry generatedTypes) throws ProcessorError, IOException {
+  private void processType(
+      TypeElement type, GeneratedTypeRegistry generatedTypes) {
     var messager = processingEnv.getMessager();
 
+    try {
+      var annotation = type.getAnnotation(DispatchTable.class);
+      if (annotation == null) return;
+
+      validateSimpleClassName(type, annotation, annotation.name());
+      validateGeneratedClassName(type, annotation,
+          dispatchTableSimpleClassName(type));
+      validateUserIdentifiers(type);
+      validateTopLevelType(type, annotation);
+      writeFile(type, generatedTypes);
+    } catch (ProcessorError e) {
+      messager.printMessage(Diagnostic.Kind.ERROR,
+          e.getMessage(), e.element);
+    } catch (Throwable e) {
+      var sw = new StringWriter();
+      e.printStackTrace(new PrintWriter(sw));
+      messager.printError(sw.toString(), type);
+    }
+  }
+
+  private void writeFile(TypeElement iface,
+      GeneratedTypeRegistry generatedTypes) throws IOException {
     if (iface.getKind() != ElementKind.INTERFACE) {
-      messager.printError("@DispatchTable is only allowed on interfaces",
-          iface);
+      processingEnv.getMessager().printError(
+          "@DispatchTable is only allowed on interfaces", iface);
       return;
     }
 
@@ -148,13 +149,14 @@ public class DispatchTableProcessor extends AbstractProcessor {
   }
 
   private boolean validateSlots(List<ExecutableElement> methods) {
+    var messager = processingEnv.getMessager();
     var valid = true;
     var slotIndexes = new HashMap<Integer, ExecutableElement>();
 
     for (var method : methods) {
       var slot = method.getAnnotation(Slot.class);
       if (slot == null) {
-        processingEnv.getMessager().printError(
+        messager.printError(
             "@Slot is required on @DispatchTable methods", method);
         valid = false;
         continue;
@@ -162,18 +164,15 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
       var slotIndex = slot.value();
       if (slotIndex < 0) {
-        processingEnv.getMessager().printError(
-            "@Slot value must be non-negative", method);
+        messager.printError("@Slot value must be non-negative", method);
         valid = false;
         continue;
       }
 
       var previous = slotIndexes.putIfAbsent(slotIndex, method);
       if (previous != null) {
-        processingEnv.getMessager().printError(
-            "Duplicate @Slot index: " + slotIndex, method);
-        processingEnv.getMessager().printError(
-            "Duplicate @Slot index: " + slotIndex, previous);
+        messager.printError("Duplicate @Slot index: " + slotIndex, method);
+        messager.printError("Duplicate @Slot index: " + slotIndex, previous);
         valid = false;
       }
     }

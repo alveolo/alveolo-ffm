@@ -76,10 +76,6 @@ final class ObjectMethodsGenerator {
       return virtualGenerators.stream().anyMatch(generator ->
           !generator.hasErrors);
     }
-
-    boolean hasSymbolMethods() {
-      return methods.hasSymbolMethods();
-    }
   }
 
   private final ProcessingEnvironment processingEnv;

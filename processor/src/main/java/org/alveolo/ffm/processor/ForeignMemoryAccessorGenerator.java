@@ -194,7 +194,7 @@ final class ForeignMemoryAccessorGenerator {
     var name = field.name();
     var needsAllocator = withAllocator && (indexed == null
         ? analyzer.needsAllocatorWrite(field)
-        : analyzer.indexedArrayNeedsAllocator(indexed));
+        : analyzer.indexedElementNeedsAllocator(indexed));
 
     return "<name>(memorySegment, <allocator>source.<name>());"
         .replace("<name>", name)

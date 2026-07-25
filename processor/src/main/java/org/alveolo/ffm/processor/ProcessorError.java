@@ -9,15 +9,11 @@ import javax.lang.model.element.Element;
 /// source fragments with placeholders so that only actual cause of the error
 /// is reported.
 @SuppressWarnings("serial")
-public class ProcessorError extends Exception {
-  private final Element element;
+final class ProcessorError extends Exception {
+  final Element element;
 
-  public ProcessorError(Element element, String message) {
+  ProcessorError(Element element, String message) {
     super(message);
     this.element = element;
-  }
-
-  public Element getElement() {
-    return element;
   }
 }

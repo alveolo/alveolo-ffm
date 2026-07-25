@@ -162,7 +162,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  // @Disabled
+  @Disabled
   void printNativeLinkerCanonicalLayouts() {
     Linker.nativeLinker().canonicalLayouts()
         .forEach((name, value) -> IO.println("type: " + name

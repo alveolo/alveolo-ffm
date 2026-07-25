@@ -11,7 +11,6 @@ import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
 
 import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.Symbol;
@@ -285,7 +284,6 @@ class ExecutableGenerator {
   }
 
   private Stream<String> invoke(String methodHandleExpression) {
-    var returnType = element.getReturnType();
     var call = methodHandleExpression + ".invokeExact(" + params() + ")";
     var copyOut = copyOut().toList();
 
@@ -301,7 +299,7 @@ class ExecutableGenerator {
           "(java.lang.foreign.MemorySegment) " + call, copyOut);
 
     if (returnGenerator.isRecord())
-      return returnWithCopyOut(recordExpression(returnType, call), copyOut);
+      return returnWithCopyOut(recordExpression(call), copyOut);
 
     if (returnGenerator.isCFString())
       return cfStringInvoke(call, copyOut);
@@ -368,7 +366,7 @@ class ExecutableGenerator {
     return Stream.of(base, copyOut.stream()).flatMap(identity());
   }
 
-  private String recordExpression(TypeMirror returnType, String call) {
+  private String recordExpression(String call) {
     String className = returnGenerator.foreignMemoryClassName();
 
     return returnGenerator.isValue()

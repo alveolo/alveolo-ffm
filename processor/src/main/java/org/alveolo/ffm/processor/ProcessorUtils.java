@@ -5,6 +5,7 @@ import static javax.lang.model.SourceVersion.isIdentifier;
 import static javax.lang.model.SourceVersion.isKeyword;
 
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.lang.model.element.AnnotationValue;
@@ -19,10 +20,11 @@ import javax.lang.model.util.Elements;
 import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.ForeignInterface;
+import org.alveolo.ffm.Library;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Union;
 
-public class ProcessorUtils {
+final class ProcessorUtils {
   private ProcessorUtils() {}
 
   static <T extends Annotation> void validateSimpleClassName(
@@ -145,19 +147,26 @@ public class ProcessorUtils {
   }
 
   static String sourceMethodSignature(ExecutableElement method) {
-    return "public " + sourceReturnType(method) + " "
+    return "public " + method.getReturnType() + " "
         + method.getSimpleName()
         + method.getParameters().stream()
             .map(ProcessorUtils::sourceParameter)
             .collect(joining(",\n      ", "(\n      ", ")"));
   }
 
-  static String sourceReturnType(ExecutableElement method) {
-    return method.getReturnType().toString();
-  }
-
   static String sourceParameter(VariableElement parameter) {
     return parameter.asType() + " " + parameter.getSimpleName();
+  }
+
+  static String osArray(Library.OS[] oses) {
+    return Arrays.stream(oses)
+        .map(os -> "org.alveolo.ffm.Library.OS." + os.name())
+        .collect(joining(", ",
+            "new org.alveolo.ffm.Library.OS[] {", "}"));
+  }
+
+  static String quote(String value) {
+    return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
   }
 
   static String qualifyName(String packageName, String className) {
