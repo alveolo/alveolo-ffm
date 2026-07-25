@@ -163,20 +163,24 @@ class ExecutableGenerator {
         .flatMap(identity())
         .toList();
 
-    var suffix = arguments.isEmpty() ? ""
-        : ",\n    new org.alveolo.ffm.NativeType[] {\n"
-            + "        " + String.join(",\n        ", arguments) + "\n"
-            + "    }";
+    var suffix = arguments.isEmpty() ? "" : """
+        ,
+            new org.alveolo.ffm.NativeType[] {
+                <arguments>
+            }
+        """
+        .replace("<arguments>", String.join(",\n        ", arguments))
+        .stripTrailing();
 
     return """
         org.alveolo.ffm.NativeType.adaptDowncall(
             <raw>,
-            <return><arguments>)
+            <return><suffix>)
         """
         .replace("<raw>", rawHandle.replace("\n", "\n    "))
         .replace("<return>", returnGenerator.needsDowncallAdaptation()
             ? returnGenerator.canonicalRuntimeType() : "null")
-        .replace("<arguments>", suffix)
+        .replace("<suffix>", suffix)
         .stripTrailing();
   }
 
