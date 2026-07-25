@@ -34,7 +34,7 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
           java.lang.foreign.FunctionDescriptor.of(
               java.lang.foreign.ValueLayout.JAVA_INT,
               java.lang.foreign.ValueLayout.ADDRESS,
-              org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT),
+              org.alveolo.ffm.CanonicalLayout.LONG),
               java.lang.foreign.Linker.Option.firstVariadicArg(2)),
           null,
           new org.alveolo.ffm.NativeTypes.Type[] {

@@ -1,8 +1,9 @@
 package org.alveolo.ffm;
 
-import static java.lang.foreign.Linker.nativeLinker;
 import static java.lang.invoke.MethodHandles.identity;
 import static java.lang.invoke.MethodType.methodType;
+import static org.alveolo.ffm.CanonicalLayout.LONG;
+import static org.alveolo.ffm.CanonicalLayout.WCHAR_T;
 
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -19,9 +20,9 @@ import java.lang.invoke.VarHandle;
 /// that only use padding helpers.
 public final class NativeTypes {
   public enum Type {
-    SLONG(C_LONG_LAYOUT, long.class),
-    ULONG(C_LONG_LAYOUT, long.class),
-    WCHAR_T(WCHAR_T_LAYOUT, int.class);
+    SLONG(LONG, long.class),
+    ULONG(LONG, long.class),
+    WCHAR(WCHAR_T, int.class);
 
     private final ValueLayout layout;
     private final Class<?> javaCarrier;
@@ -31,11 +32,6 @@ public final class NativeTypes {
       this.javaCarrier = javaCarrier;
     }
   }
-
-  public static final ValueLayout C_LONG_LAYOUT = canonicalLayout("long");
-  public static final ValueLayout.OfLong SIZE_T_LAYOUT =
-      (ValueLayout.OfLong) nativeLinker().canonicalLayouts().get("size_t");
-  public static final ValueLayout WCHAR_T_LAYOUT = canonicalLayout("wchar_t");
 
   private static final MethodHandle LONG_TO_SIGNED_INT_EXACT = methodHandle(
       Math.class, "toIntExact", methodType(int.class, long.class));
@@ -52,17 +48,17 @@ public final class NativeTypes {
       NativeTypes.class, "charToInt", methodType(int.class, char.class));
 
   private static final MethodHandle SLONG_GET = adaptGetter(
-      C_LONG_LAYOUT.varHandle(), Type.SLONG);
+      LONG.varHandle(), Type.SLONG);
   private static final MethodHandle SLONG_SET = adaptSetter(
-      C_LONG_LAYOUT.varHandle(), Type.SLONG);
+      LONG.varHandle(), Type.SLONG);
   private static final MethodHandle ULONG_GET = adaptGetter(
-      C_LONG_LAYOUT.varHandle(), Type.ULONG);
+      LONG.varHandle(), Type.ULONG);
   private static final MethodHandle ULONG_SET = adaptSetter(
-      C_LONG_LAYOUT.varHandle(), Type.ULONG);
+      LONG.varHandle(), Type.ULONG);
   private static final MethodHandle WCHAR_T_GET = adaptGetter(
-      WCHAR_T_LAYOUT.varHandle(), Type.WCHAR_T);
+      WCHAR_T.varHandle(), Type.WCHAR);
   private static final MethodHandle WCHAR_T_SET = adaptSetter(
-      WCHAR_T_LAYOUT.varHandle(), Type.WCHAR_T);
+      WCHAR_T.varHandle(), Type.WCHAR);
 
   private NativeTypes() {/* Utility class */}
 
@@ -208,13 +204,6 @@ public final class NativeTypes {
     return value;
   }
 
-  private static ValueLayout canonicalLayout(String name) {
-    var layout = nativeLinker().canonicalLayouts().get(name);
-    if (layout instanceof ValueLayout valueLayout) return valueLayout;
-    throw new ExceptionInInitializerError(
-        "Native linker has no scalar canonical layout for " + name);
-  }
-
   private static MethodHandle argumentFilter(
       Type type, Class<?> nativeCarrier) {
     if (nativeCarrier == type.javaCarrier) return null;
@@ -222,7 +211,7 @@ public final class NativeTypes {
     return switch (type) {
       case SLONG -> LONG_TO_SIGNED_INT_EXACT;
       case ULONG -> LONG_TO_UNSIGNED_INT_EXACT;
-      case WCHAR_T -> INT_TO_CHAR_EXACT;
+      case WCHAR -> INT_TO_CHAR_EXACT;
     };
   }
 
@@ -233,26 +222,25 @@ public final class NativeTypes {
     return switch (type) {
       case SLONG -> INT_TO_SIGNED_LONG;
       case ULONG -> INT_TO_UNSIGNED_LONG;
-      case WCHAR_T -> CHAR_TO_INT;
+      case WCHAR -> CHAR_TO_INT;
     };
   }
 
   private static void verifyNativeCarrier(
       Type type, Class<?> actualCarrier) {
     var expectedCarrier = type.layout.carrier();
-    if (actualCarrier != expectedCarrier) throw new IllegalArgumentException(
-        type + " expects native carrier " + expectedCarrier.getName()
-            + ", got " + actualCarrier.getName());
+    if (actualCarrier != expectedCarrier)
+      throw new IllegalArgumentException(
+          type + " expects native carrier " + expectedCarrier.getName()
+              + ", got " + actualCarrier.getName());
   }
 
   private static MethodHandle methodHandle(
       Class<?> owner, String methodName, MethodType type) {
     try {
-      return MethodHandles.publicLookup()
-          .findStatic(owner, methodName, type);
+      return MethodHandles.publicLookup().findStatic(owner, methodName, type);
     } catch (NoSuchMethodException | IllegalAccessException e) {
       throw new ExceptionInInitializerError(e);
     }
   }
-
 }

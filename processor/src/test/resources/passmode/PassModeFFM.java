@@ -277,7 +277,7 @@ public final class PassModeFFM implements PassMode {
   public int primitiveAddress(
       int value) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var value$MemorySegment$f = arena$f.allocate(org.alveolo.ffm.NativeTypes.WCHAR_T_LAYOUT);
+      var value$MemorySegment$f = arena$f.allocate(org.alveolo.ffm.CanonicalLayout.WCHAR_T);
       org.alveolo.ffm.NativeTypes.setWCharT(value$MemorySegment$f, 0L, value);
       return (int) MethodHandle$11$F.invokeExact(
           value$MemorySegment$f);
@@ -299,7 +299,7 @@ public final class PassModeFFM implements PassMode {
     try {
       var addressResult$f = (java.lang.foreign.MemorySegment) MethodHandle$12$F.invokeExact(
           );
-      return org.alveolo.ffm.NativeTypes.getWCharT(addressResult$f.reinterpret(org.alveolo.ffm.NativeTypes.WCHAR_T_LAYOUT.byteSize()), 0L);
+      return org.alveolo.ffm.NativeTypes.getWCharT(addressResult$f.reinterpret(org.alveolo.ffm.CanonicalLayout.WCHAR_T.byteSize()), 0L);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

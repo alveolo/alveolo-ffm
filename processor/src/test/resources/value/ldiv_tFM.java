@@ -7,8 +7,8 @@ public final class ldiv_tFM implements ldiv_t {
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT.withName("quot"),
-        org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT.withName("rem"),
+        org.alveolo.ffm.CanonicalLayout.LONG.withName("quot"),
+        org.alveolo.ffm.CanonicalLayout.LONG.withName("rem"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(

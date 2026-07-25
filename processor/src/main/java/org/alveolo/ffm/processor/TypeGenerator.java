@@ -34,17 +34,17 @@ import org.alveolo.ffm.macos.CFString;
 sealed class TypeGenerator permits VariableGenerator {
   enum CanonicalScalar {
     SLONG(SLong.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT",
+        "org.alveolo.ffm.CanonicalLayout.LONG",
         "org.alveolo.ffm.NativeTypes.Type.SLONG"),
     ULONG(ULong.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT",
+        "org.alveolo.ffm.CanonicalLayout.LONG",
         "org.alveolo.ffm.NativeTypes.Type.ULONG"),
     SIZE_T(SizeT.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.NativeTypes.SIZE_T_LAYOUT",
+        "org.alveolo.ffm.CanonicalLayout.SIZE_T",
         null),
     WCHAR_T(WCharT.class.getCanonicalName(), TypeKind.INT,
-        "org.alveolo.ffm.NativeTypes.WCHAR_T_LAYOUT",
-        "org.alveolo.ffm.NativeTypes.Type.WCHAR_T");
+        "org.alveolo.ffm.CanonicalLayout.WCHAR_T",
+        "org.alveolo.ffm.NativeTypes.Type.WCHAR");
 
     final String annotation;
     final TypeKind javaKind;

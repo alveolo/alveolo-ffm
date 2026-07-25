@@ -89,7 +89,7 @@ public final class XyzVtblFD implements XyzVtbl {
   private static final java.lang.invoke.MethodHandle DowncallHandle$2$F =
       Linker$F.downcallHandle(
           java.lang.foreign.FunctionDescriptor.of(
-              org.alveolo.ffm.NativeTypes.SIZE_T_LAYOUT,
+              org.alveolo.ffm.CanonicalLayout.SIZE_T,
               java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$2$F;
@@ -139,7 +139,7 @@ public final class XyzVtblFD implements XyzVtbl {
           Linker$F.downcallHandle(
           java.lang.foreign.FunctionDescriptor.of(
               java.lang.foreign.ValueLayout.JAVA_INT,
-              org.alveolo.ffm.NativeTypes.C_LONG_LAYOUT),
+              org.alveolo.ffm.CanonicalLayout.LONG),
               java.lang.foreign.Linker.Option.firstVariadicArg(1),
               pkg.NativeError.LinkerOption$F),
           null,
