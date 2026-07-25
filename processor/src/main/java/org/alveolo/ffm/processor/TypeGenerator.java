@@ -35,16 +35,16 @@ sealed class TypeGenerator permits VariableGenerator {
   enum CanonicalScalar {
     SLONG(SLong.class.getCanonicalName(), TypeKind.LONG,
         "org.alveolo.ffm.CanonicalLayout.LONG",
-        "org.alveolo.ffm.NativeTypes.Type.SLONG"),
+        "org.alveolo.ffm.NativeType.SLONG"),
     ULONG(ULong.class.getCanonicalName(), TypeKind.LONG,
         "org.alveolo.ffm.CanonicalLayout.LONG",
-        "org.alveolo.ffm.NativeTypes.Type.ULONG"),
+        "org.alveolo.ffm.NativeType.ULONG"),
     SIZE_T(SizeT.class.getCanonicalName(), TypeKind.LONG,
         "org.alveolo.ffm.CanonicalLayout.SIZE_T",
         null),
     WCHAR_T(WCharT.class.getCanonicalName(), TypeKind.INT,
         "org.alveolo.ffm.CanonicalLayout.WCHAR_T",
-        "org.alveolo.ffm.NativeTypes.Type.WCHAR");
+        "org.alveolo.ffm.NativeType.WCHAR");
 
     final String annotation;
     final TypeKind javaKind;
@@ -481,13 +481,13 @@ sealed class TypeGenerator permits VariableGenerator {
           "Type has no canonical scalar: " + typeMirror);
 
     return switch (canonical) {
-      case SLONG -> "org.alveolo.ffm.NativeTypes.getSLong("
+      case SLONG -> "org.alveolo.ffm.NativeType.getSLong("
           + segment + ", " + offset + ")";
-      case ULONG -> "org.alveolo.ffm.NativeTypes.getULong("
+      case ULONG -> "org.alveolo.ffm.NativeType.getULong("
           + segment + ", " + offset + ")";
       case SIZE_T -> segment + ".get(" + canonical.layout
           + ", " + offset + ")";
-      case WCHAR_T -> "org.alveolo.ffm.NativeTypes.getWCharT("
+      case WCHAR_T -> "org.alveolo.ffm.NativeType.getWCharT("
           + segment + ", " + offset + ")";
     };
   }
@@ -499,13 +499,13 @@ sealed class TypeGenerator permits VariableGenerator {
           "Type has no canonical scalar: " + typeMirror);
 
     return switch (canonical) {
-      case SLONG -> "org.alveolo.ffm.NativeTypes.setSLong("
+      case SLONG -> "org.alveolo.ffm.NativeType.setSLong("
           + segment + ", " + offset + ", " + value + ");";
-      case ULONG -> "org.alveolo.ffm.NativeTypes.setULong("
+      case ULONG -> "org.alveolo.ffm.NativeType.setULong("
           + segment + ", " + offset + ", " + value + ");";
       case SIZE_T -> segment + ".set(" + canonical.layout
           + ", " + offset + ", " + value + ");";
-      case WCHAR_T -> "org.alveolo.ffm.NativeTypes.setWCharT("
+      case WCHAR_T -> "org.alveolo.ffm.NativeType.setWCharT("
           + segment + ", " + offset + ", " + value + ");";
     };
   }

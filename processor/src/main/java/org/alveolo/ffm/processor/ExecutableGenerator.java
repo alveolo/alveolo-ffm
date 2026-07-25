@@ -164,12 +164,12 @@ class ExecutableGenerator {
         .toList();
 
     var suffix = arguments.isEmpty() ? ""
-        : ",\n    new org.alveolo.ffm.NativeTypes.Type[] {\n"
+        : ",\n    new org.alveolo.ffm.NativeType[] {\n"
             + "        " + String.join(",\n        ", arguments) + "\n"
             + "    }";
 
     return """
-        org.alveolo.ffm.NativeTypes.adaptDowncall(
+        org.alveolo.ffm.NativeType.adaptDowncall(
             <raw>,
             <return><arguments>)
         """

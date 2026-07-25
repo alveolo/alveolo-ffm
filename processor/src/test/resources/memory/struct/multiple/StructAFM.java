@@ -108,12 +108,10 @@ public final class StructAFM implements StructA {
           MemoryLayout$F.varHandle(signed$PathElement$F), 1, 0L);
 
   public static final java.lang.invoke.MethodHandle signed$get$F =
-      org.alveolo.ffm.NativeTypes.adaptGetter(
-          signed$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
+      org.alveolo.ffm.NativeType.SLONG.adaptGetter(signed$VarHandle$F);
 
   public static final java.lang.invoke.MethodHandle signed$set$F =
-      org.alveolo.ffm.NativeTypes.adaptSetter(
-          signed$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.SLONG);
+      org.alveolo.ffm.NativeType.SLONG.adaptSetter(signed$VarHandle$F);
 
   public long signed() {
     try {
@@ -145,12 +143,10 @@ public final class StructAFM implements StructA {
           MemoryLayout$F.varHandle(unsigned$PathElement$F), 1, 0L);
 
   public static final java.lang.invoke.MethodHandle unsigned$get$F =
-      org.alveolo.ffm.NativeTypes.adaptGetter(
-          unsigned$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.ULONG);
+      org.alveolo.ffm.NativeType.ULONG.adaptGetter(unsigned$VarHandle$F);
 
   public static final java.lang.invoke.MethodHandle unsigned$set$F =
-      org.alveolo.ffm.NativeTypes.adaptSetter(
-          unsigned$VarHandle$F, org.alveolo.ffm.NativeTypes.Type.ULONG);
+      org.alveolo.ffm.NativeType.ULONG.adaptSetter(unsigned$VarHandle$F);
 
   public long unsigned() {
     try {

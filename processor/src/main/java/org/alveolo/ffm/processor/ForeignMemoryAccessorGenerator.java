@@ -169,12 +169,10 @@ final class ForeignMemoryAccessorGenerator {
       out.write("""
 
             public static final java.lang.invoke.MethodHandle <name>$get$F =
-                org.alveolo.ffm.NativeTypes.adaptGetter(
-                    <name>$VarHandle$F, <nativeType>);
+                <nativeType>.adaptGetter(<name>$VarHandle$F);
 
             public static final java.lang.invoke.MethodHandle <name>$set$F =
-                org.alveolo.ffm.NativeTypes.adaptSetter(
-                    <name>$VarHandle$F, <nativeType>);
+                <nativeType>.adaptSetter(<name>$VarHandle$F);
           """
           .replace("<nativeType>", field.canonicalRuntimeType())
           .replace("<name>", field.name()));

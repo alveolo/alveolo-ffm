@@ -2,8 +2,8 @@ package org.alveolo.ffm;
 
 import static java.lang.invoke.MethodHandles.identity;
 import static org.alveolo.ffm.CanonicalLayout.LONG;
-import static org.alveolo.ffm.NativeTypes.Type.SLONG;
-import static org.alveolo.ffm.NativeTypes.Type.ULONG;
+import static org.alveolo.ffm.NativeType.SLONG;
+import static org.alveolo.ffm.NativeType.ULONG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,11 +14,11 @@ import java.lang.invoke.MethodType;
 
 import org.junit.jupiter.api.Test;
 
-class NativeTypesTest {
+class NativeTypeTest {
   @Test
   void adaptsNativeScalarHandleCarriers() throws Throwable {
     var sLongRaw = identity(LONG.carrier());
-    var sLong = NativeTypes.adaptDowncall(sLongRaw, SLONG, SLONG);
+    var sLong = NativeType.adaptDowncall(sLongRaw, SLONG, SLONG);
     assertEquals(MethodType.methodType(long.class, long.class), sLong.type());
     assertEquals(-123L, (long) sLong.invokeExact(-123L));
     if (LONG.carrier() == long.class) {
@@ -30,7 +30,7 @@ class NativeTypesTest {
     }
 
     var uLongRaw = identity(LONG.carrier());
-    var uLong = NativeTypes.adaptDowncall(uLongRaw, ULONG, ULONG);
+    var uLong = NativeType.adaptDowncall(uLongRaw, ULONG, ULONG);
     assertEquals(MethodType.methodType(long.class, long.class), uLong.type());
     assertEquals(0xffff_ffffL, (long) uLong.invokeExact(0xffff_ffffL));
     if (LONG.carrier() == long.class) {
@@ -45,18 +45,18 @@ class NativeTypesTest {
     }
 
     assertEquals(-1,
-        NativeTypes.longToUnsignedIntExact(0xffff_ffffL));
+        NativeType.longToUnsignedIntExact(0xffff_ffffL));
     assertThrows(ArithmeticException.class,
-        () -> NativeTypes.longToUnsignedIntExact(-1L));
+        () -> NativeType.longToUnsignedIntExact(-1L));
     assertThrows(ArithmeticException.class,
-        () -> NativeTypes.longToUnsignedIntExact(0x1_0000_0000L));
+        () -> NativeType.longToUnsignedIntExact(0x1_0000_0000L));
 
     assertSame(long.class, CanonicalLayout.SIZE_T.carrier());
 
     var wcharRaw = identity(CanonicalLayout.WCHAR_T.carrier());
-    var wchar = NativeTypes.adaptDowncall(
-        wcharRaw, NativeTypes.Type.WCHAR,
-        NativeTypes.Type.WCHAR);
+    var wchar = NativeType.adaptDowncall(
+        wcharRaw, NativeType.WCHAR,
+        NativeType.WCHAR);
     assertEquals(MethodType.methodType(int.class, int.class), wchar.type());
     assertEquals(0xffff, (int) wchar.invokeExact(0xffff));
     if (CanonicalLayout.WCHAR_T.carrier() == int.class) {
@@ -70,10 +70,8 @@ class NativeTypesTest {
     try (var arena = Arena.ofConfined()) {
       var sLongSegment = arena.allocate(LONG);
       var sLongVarHandle = LONG.varHandle();
-      var sLongGetter = NativeTypes.adaptGetter(
-          sLongVarHandle, SLONG);
-      var sLongSetter = NativeTypes.adaptSetter(
-          sLongVarHandle, SLONG);
+      var sLongGetter = SLONG.adaptGetter(sLongVarHandle);
+      var sLongSetter = SLONG.adaptSetter(sLongVarHandle);
       assertEquals(MethodType.methodType(long.class,
           MemorySegment.class, long.class), sLongGetter.type());
       assertEquals(MethodType.methodType(void.class,
@@ -84,10 +82,8 @@ class NativeTypesTest {
 
       var uLongSegment = arena.allocate(LONG);
       var uLongVarHandle = LONG.varHandle();
-      var uLongGetter = NativeTypes.adaptGetter(
-          uLongVarHandle, ULONG);
-      var uLongSetter = NativeTypes.adaptSetter(
-          uLongVarHandle, ULONG);
+      var uLongGetter = ULONG.adaptGetter(uLongVarHandle);
+      var uLongSetter = ULONG.adaptSetter(uLongVarHandle);
       assertEquals(MethodType.methodType(long.class,
           MemorySegment.class, long.class), uLongGetter.type());
       assertEquals(MethodType.methodType(void.class,
@@ -98,10 +94,8 @@ class NativeTypesTest {
 
       var wcharSegment = arena.allocate(CanonicalLayout.WCHAR_T);
       var wcharVarHandle = CanonicalLayout.WCHAR_T.varHandle();
-      var wcharGetter = NativeTypes.adaptGetter(
-          wcharVarHandle, NativeTypes.Type.WCHAR);
-      var wcharSetter = NativeTypes.adaptSetter(
-          wcharVarHandle, NativeTypes.Type.WCHAR);
+      var wcharGetter = NativeType.WCHAR.adaptGetter(wcharVarHandle);
+      var wcharSetter = NativeType.WCHAR.adaptSetter(wcharVarHandle);
       assertEquals(MethodType.methodType(int.class,
           MemorySegment.class, long.class), wcharGetter.type());
       assertEquals(MethodType.methodType(void.class,

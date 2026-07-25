@@ -18,19 +18,17 @@ import java.lang.invoke.VarHandle;
 /// [SLong], [ULong], [SizeT], and [WCharT]. Keeping this state separate from
 /// [ForeignUtils] avoids initializing the native linker for fixed-layout structs
 /// that only use padding helpers.
-public final class NativeTypes {
-  public enum Type {
-    SLONG(LONG, long.class),
-    ULONG(LONG, long.class),
-    WCHAR(WCHAR_T, int.class);
+public enum NativeType {
+  SLONG(LONG, long.class),
+  ULONG(LONG, long.class),
+  WCHAR(WCHAR_T, int.class);
 
-    private final ValueLayout layout;
-    private final Class<?> javaCarrier;
+  private final ValueLayout layout;
+  private final Class<?> javaCarrier;
 
-    Type(ValueLayout layout, Class<?> javaCarrier) {
-      this.layout = layout;
-      this.javaCarrier = javaCarrier;
-    }
+  NativeType(ValueLayout layout, Class<?> javaCarrier) {
+    this.layout = layout;
+    this.javaCarrier = javaCarrier;
   }
 
   private static final MethodHandle LONG_TO_SIGNED_INT_EXACT = methodHandle(
@@ -38,29 +36,27 @@ public final class NativeTypes {
   private static final MethodHandle INT_TO_SIGNED_LONG =
       identity(long.class).asType(methodType(long.class, int.class));
   private static final MethodHandle LONG_TO_UNSIGNED_INT_EXACT = methodHandle(
-      NativeTypes.class, "longToUnsignedIntExact",
+      NativeType.class, "longToUnsignedIntExact",
       methodType(int.class, long.class));
   private static final MethodHandle INT_TO_UNSIGNED_LONG = methodHandle(
       Integer.class, "toUnsignedLong", methodType(long.class, int.class));
   private static final MethodHandle INT_TO_CHAR_EXACT = methodHandle(
-      NativeTypes.class, "intToCharExact", methodType(char.class, int.class));
+      NativeType.class, "intToCharExact", methodType(char.class, int.class));
   private static final MethodHandle CHAR_TO_INT = methodHandle(
-      NativeTypes.class, "charToInt", methodType(int.class, char.class));
+      NativeType.class, "charToInt", methodType(int.class, char.class));
 
-  private static final MethodHandle SLONG_GET = adaptGetter(
-      LONG.varHandle(), Type.SLONG);
-  private static final MethodHandle SLONG_SET = adaptSetter(
-      LONG.varHandle(), Type.SLONG);
-  private static final MethodHandle ULONG_GET = adaptGetter(
-      LONG.varHandle(), Type.ULONG);
-  private static final MethodHandle ULONG_SET = adaptSetter(
-      LONG.varHandle(), Type.ULONG);
-  private static final MethodHandle WCHAR_T_GET = adaptGetter(
-      WCHAR_T.varHandle(), Type.WCHAR);
-  private static final MethodHandle WCHAR_T_SET = adaptSetter(
-      WCHAR_T.varHandle(), Type.WCHAR);
-
-  private NativeTypes() {/* Utility class */}
+  private static final MethodHandle SLONG_GET =
+      SLONG.adaptGetter(LONG.varHandle());
+  private static final MethodHandle SLONG_SET =
+      SLONG.adaptSetter(LONG.varHandle());
+  private static final MethodHandle ULONG_GET =
+      ULONG.adaptGetter(LONG.varHandle());
+  private static final MethodHandle ULONG_SET =
+      ULONG.adaptSetter(LONG.varHandle());
+  private static final MethodHandle WCHAR_T_GET =
+      WCHAR.adaptGetter(WCHAR_T.varHandle());
+  private static final MethodHandle WCHAR_T_SET =
+      WCHAR.adaptSetter(WCHAR_T.varHandle());
 
   /// Adapts a raw downcall handle to stable Java carriers.
   ///
@@ -69,7 +65,7 @@ public final class NativeTypes {
   /// captured-call-state segment. Use `null` for parameters that do not need a
   /// canonical scalar adaptation.
   public static MethodHandle adaptDowncall(MethodHandle target,
-      Type returnType, Type... argumentTypes) {
+      NativeType returnType, NativeType... argumentTypes) {
     var targetType = target.type();
     if (argumentTypes.length != targetType.parameterCount())
       throw new IllegalArgumentException(
@@ -83,8 +79,8 @@ public final class NativeTypes {
       }
 
       var nativeCarrier = target.type().parameterType(index);
-      verifyNativeCarrier(canonical, nativeCarrier);
-      var filter = argumentFilter(canonical, nativeCarrier);
+      canonical.verifyNativeCarrier(nativeCarrier);
+      var filter = canonical.argumentFilter(nativeCarrier);
       if (filter != null) {
         target = MethodHandles.filterArguments(target, index, filter);
       }
@@ -92,8 +88,8 @@ public final class NativeTypes {
 
     if (returnType != null) {
       var nativeCarrier = target.type().returnType();
-      verifyNativeCarrier(returnType, nativeCarrier);
-      var filter = returnFilter(returnType, nativeCarrier);
+      returnType.verifyNativeCarrier(nativeCarrier);
+      var filter = returnType.returnFilter(nativeCarrier);
       if (filter != null) {
         target = MethodHandles.filterReturnValue(target, filter);
       }
@@ -104,23 +100,23 @@ public final class NativeTypes {
 
   /// Converts a VarHandle getter to a MethodHandle with a stable Java return
   /// carrier. Coordinates are preserved unchanged.
-  public static MethodHandle adaptGetter(VarHandle target, Type type) {
+  public MethodHandle adaptGetter(VarHandle target) {
     var getter = target.toMethodHandle(VarHandle.AccessMode.GET);
     var nativeCarrier = getter.type().returnType();
-    verifyNativeCarrier(type, nativeCarrier);
-    var filter = returnFilter(type, nativeCarrier);
+    verifyNativeCarrier(nativeCarrier);
+    var filter = returnFilter(nativeCarrier);
     return filter == null
         ? getter : MethodHandles.filterReturnValue(getter, filter);
   }
 
   /// Converts a VarHandle setter to a MethodHandle with a stable Java value
   /// carrier. Coordinates are preserved unchanged.
-  public static MethodHandle adaptSetter(VarHandle target, Type type) {
+  public MethodHandle adaptSetter(VarHandle target) {
     var setter = target.toMethodHandle(VarHandle.AccessMode.SET);
     var valueIndex = setter.type().parameterCount() - 1;
     var nativeCarrier = setter.type().parameterType(valueIndex);
-    verifyNativeCarrier(type, nativeCarrier);
-    var filter = argumentFilter(type, nativeCarrier);
+    verifyNativeCarrier(nativeCarrier);
+    var filter = argumentFilter(nativeCarrier);
     return filter == null
         ? setter : MethodHandles.filterArguments(setter, valueIndex, filter);
   }
@@ -204,34 +200,31 @@ public final class NativeTypes {
     return value;
   }
 
-  private static MethodHandle argumentFilter(
-      Type type, Class<?> nativeCarrier) {
-    if (nativeCarrier == type.javaCarrier) return null;
+  private MethodHandle argumentFilter(Class<?> nativeCarrier) {
+    if (nativeCarrier == javaCarrier) return null;
 
-    return switch (type) {
+    return switch (this) {
       case SLONG -> LONG_TO_SIGNED_INT_EXACT;
       case ULONG -> LONG_TO_UNSIGNED_INT_EXACT;
       case WCHAR -> INT_TO_CHAR_EXACT;
     };
   }
 
-  private static MethodHandle returnFilter(
-      Type type, Class<?> nativeCarrier) {
-    if (nativeCarrier == type.javaCarrier) return null;
+  private MethodHandle returnFilter(Class<?> nativeCarrier) {
+    if (nativeCarrier == javaCarrier) return null;
 
-    return switch (type) {
+    return switch (this) {
       case SLONG -> INT_TO_SIGNED_LONG;
       case ULONG -> INT_TO_UNSIGNED_LONG;
       case WCHAR -> CHAR_TO_INT;
     };
   }
 
-  private static void verifyNativeCarrier(
-      Type type, Class<?> actualCarrier) {
-    var expectedCarrier = type.layout.carrier();
+  private void verifyNativeCarrier(Class<?> actualCarrier) {
+    var expectedCarrier = layout.carrier();
     if (actualCarrier != expectedCarrier)
       throw new IllegalArgumentException(
-          type + " expects native carrier " + expectedCarrier.getName()
+          this + " expects native carrier " + expectedCarrier.getName()
               + ", got " + actualCarrier.getName());
   }
 
