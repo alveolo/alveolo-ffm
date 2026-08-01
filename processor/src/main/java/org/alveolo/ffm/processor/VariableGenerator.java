@@ -117,6 +117,164 @@ final class VariableGenerator extends TypeGenerator {
         : name() + ".MemorySegment$F";
   }
 
+  boolean needsLocalAllocation() {
+    return isPrimitiveAddress()
+        || isCallArrayOrBuffer()
+        || isRecord()
+        || isString() && !isCFString();
+  }
+
+  String plannedPreparation() {
+    if (isString() && !isCFString())
+      return "var " + bytesName() + " = " + name()
+          + ".getBytes(java.nio.charset.StandardCharsets.UTF_8);";
+
+    if (!isCallArrayOrBuffer()) return "";
+
+    if (isArray())
+      return """
+          <sizeInitializer>
+          <sequenceCheck>
+          """
+          .replace("<sizeInitializer>\n", sizeInitializer(
+              name + ".length", "length"))
+          .replace("<sequenceCheck>\n", sequenceCheck("length"))
+          .stripTrailing();
+
+    return """
+        var <position> = <name>.position();
+        <sizeInitializer>
+        <sequenceCheck>
+        <readOnlyCheck>
+        <directOrderCheck>
+        var <direct> = <name>.isDirect();
+        """
+        .replace("<position>", positionName())
+        .replace("<name>", name)
+        .replace("<sizeInitializer>\n", sizeInitializer(
+            name + ".remaining()", "remaining"))
+        .replace("<sequenceCheck>\n", sequenceCheck("remaining"))
+        .replace("<readOnlyCheck>\n", readOnlyCheck())
+        .replace("<directOrderCheck>\n", directOrderCheck())
+        .replace("<direct>", directName())
+        .stripTrailing();
+  }
+
+  String plannedInitializer(String memorySegment) {
+    if (isPrimitiveAddress()) {
+      var initialize = hasCanonicalScalar()
+          ? canonicalSet(segmentName(), "0L", name)
+          : segmentName() + ".set(" + valueLayout() + ", 0L, " + name
+              + ");";
+      return """
+          var <segment> = <memorySegment>;
+          <initialize>
+          """
+          .replace("<segment>", segmentName())
+          .replace("<memorySegment>", memorySegment)
+          .replace("<initialize>", initialize)
+          .stripTrailing();
+    }
+
+    if (isString() && !isCFString())
+      return """
+          var <segment> = <memorySegment>;
+          java.lang.foreign.MemorySegment.copy(
+              <bytes>, 0, <segment>,
+              java.lang.foreign.ValueLayout.JAVA_BYTE, 0, <bytes>.length);
+          <segment>.set(
+              java.lang.foreign.ValueLayout.JAVA_BYTE, <bytes>.length,
+              (byte) 0);
+          """
+          .replace("<segment>", segmentName())
+          .replace("<memorySegment>", memorySegment)
+          .replace("<bytes>", bytesName())
+          .stripTrailing();
+
+    if (isRecord())
+      return """
+          var <segment> = <memorySegment>;
+          <foreignClass>.toMemorySegment$F(<name>, <segment>);
+          """
+          .replace("<segment>", segmentName())
+          .replace("<memorySegment>", memorySegment)
+          .replace("<foreignClass>", foreignMemoryClassName())
+          .replace("<name>", name)
+          .stripTrailing();
+
+    if (isValueStructRecordArray())
+      return """
+          var <segment> = <memorySegment>;
+          <copyIn>
+          """
+          .replace("<segment>", segmentName())
+          .replace("<memorySegment>", memorySegment)
+          .replace("<copyIn>", copyIn() ? plannedRecordArrayCopyIn() : "")
+          .stripTrailing();
+
+    if (isArray())
+      return """
+          var <segment> = <memorySegment>;
+          <copyIn>
+          """
+          .replace("<segment>", segmentName())
+          .replace("<memorySegment>", memorySegment)
+          .replace("<copyIn>", copyIn() ? arrayCopyIn() : "")
+          .stripTrailing();
+
+    return """
+        var <segment> = <direct>
+            ? java.lang.foreign.MemorySegment.ofBuffer(<name>).asSlice(
+                0L, Math.multiplyExact(<layout>.byteSize(), (long) <size>))
+            : <memorySegment>;
+        <copyIn>
+        """
+        .replace("<segment>", segmentName())
+        .replace("<direct>", directName())
+        .replace("<name>", name)
+        .replace("<layout>", elementLayout())
+        .replace("<size>", sizeName())
+        .replace("<memorySegment>", memorySegment)
+        .replace("<copyIn>", copyIn() ? bufferCopyIn() : "")
+        .stripTrailing();
+  }
+
+  String plannedInvoke() {
+    return isRecord() || isString() && !isCFString()
+        ? segmentName() : invoke();
+  }
+
+  String allocationByteSize() {
+    if (isString() && !isCFString())
+      return "Math.addExact((long) " + bytesName() + ".length, 1L)";
+
+    if (isNioBuffer())
+      return directName() + " ? 0L : Math.multiplyExact("
+          + allocationLayout() + ".byteSize(), (long) " + sizeName() + ")";
+
+    if (isCallArrayOrBuffer())
+      return "Math.multiplyExact(" + allocationLayout()
+          + ".byteSize(), (long) " + sizeName() + ")";
+
+    return allocationLayout() + ".byteSize()";
+  }
+
+  String allocationAlignment() {
+    return isString() && !isCFString()
+        ? "1L" : allocationLayout() + ".byteAlignment()";
+  }
+
+  private String allocationLayout() {
+    if (isPrimitiveAddress()) return valueLayout();
+    if (isValueStructRecordArray())
+      return recordForeignMemoryClassName() + ".MemoryLayout$F";
+    if (isCallArrayOrBuffer()) return elementLayout();
+    if (isRecord()) return foreignMemoryClassName() + ".MemoryLayout$F";
+
+    throw new IllegalStateException(
+        "Variable does not need a local allocation: " + name);
+  }
+
   String cfStringName() {
     return name() + "$CFString$f";
   }
@@ -386,13 +544,36 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   private String recordArrayCopyIn() {
+    var withAllocator = new ForeignMemoryAnalyzer(
+        processingEnv, generatedTypes).recordConverterNeedsAllocator(
+            arrayComponentGenerator().typeElement);
+
     return """
         for (var <index> = 0; <index> < <size>; <index>++) {
-          <segment>.asSlice(
-              (long) <index> * <foreignClass>.MemoryLayout$F.byteSize(),
-              <foreignClass>.MemoryLayout$F).copyFrom(
-                  <foreignClass>.toMemorySegment$F(
-                      arena$f, <name>[<index>]));
+          <foreignClass>.toMemorySegment$F(
+              <name>[<index>],
+              <segment>.asSlice(
+                  (long) <index> * <foreignClass>.MemoryLayout$F.byteSize(),
+                  <foreignClass>.MemoryLayout$F)<allocator>);
+        }
+        """
+        .replace("<index>", indexName())
+        .replace("<size>", sizeName())
+        .replace("<segment>", segmentName())
+        .replace("<foreignClass>", recordForeignMemoryClassName())
+        .replace("<name>", name)
+        .replace("<allocator>", withAllocator ? ", arena$f" : "")
+        .stripTrailing();
+  }
+
+  private String plannedRecordArrayCopyIn() {
+    return """
+        for (var <index> = 0; <index> < <size>; <index>++) {
+          <foreignClass>.toMemorySegment$F(
+              <name>[<index>],
+              <segment>.asSlice(
+                  (long) <index> * <foreignClass>.MemoryLayout$F.byteSize(),
+                  <foreignClass>.MemoryLayout$F));
         }
         """
         .replace("<index>", indexName())
@@ -487,7 +668,7 @@ final class VariableGenerator extends TypeGenerator {
         .stripTrailing();
   }
 
-  private String segmentName() {
+  String segmentName() {
     return name + "$MemorySegment$f";
   }
 
@@ -515,7 +696,11 @@ final class VariableGenerator extends TypeGenerator {
     return name + "$count$f";
   }
 
-  private String recordForeignMemoryClassName() {
+  private String bytesName() {
+    return name + "$bytes$f";
+  }
+
+  String recordForeignMemoryClassName() {
     return ProcessorUtils.foreignMemoryClassName(
         arrayComponentGenerator().typeElement, elements);
   }

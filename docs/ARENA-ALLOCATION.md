@@ -1,24 +1,25 @@
 # Efficient Arena Allocation
 
-Status: design decision, 2026-07-19.
+Status: implemented, 2026-07-25.
 
 ## Decision
 
 Keep `Arena.ofConfined()` as the owner of call-scoped native memory. When a
 generated method needs one native allocation, allocate it directly from the
 arena. When it needs two or more simultaneously live allocations whose sizes
-and alignments are known, allocate one backing segment and serve the logical
-allocations from a `SegmentAllocator.slicingAllocator(...)`.
+and alignments can be determined before the call, allocate one backing segment
+and serve the logical allocations with direct `MemorySegment.asSlice(...)`
+calls.
 
-The same slicing allocator should serve argument materialization and the
-allocator parameter used by the linker for a struct returned by value. This
-reduces native allocation and cleanup work without changing ownership: closing
-the confined arena still invalidates every slice and releases the backing
-region.
+Argument converters write directly into their assigned slices. A
+`SegmentAllocator.prefixAllocator(...)` over the dedicated result slice serves
+the allocator parameter used by the linker for a struct returned by value.
+This reduces native allocation and cleanup work without changing ownership:
+closing the confined arena still invalidates every slice and releases the
+backing region.
 
-This note records the intended generation strategy. It does not introduce
-cross-call pooling, thread-local storage, new public APIs, or a generator change
-by itself.
+This implementation does not introduce cross-call pooling, thread-local
+storage, or new public APIs.
 
 ## Motivation
 
@@ -53,6 +54,24 @@ consolidating native allocations, not the complete cost of a generated foreign
 call. Any generator change must also be checked with end-to-end downcall
 benchmarks in which argument and return slices are actually used.
 
+An end-to-end JMH benchmark on Zulu/OpenJDK HotSpot 25+36 on Apple M-series
+macOS compared a generated `abs(IntR)` downcall which materializes one record
+argument and one record return:
+
+| Allocation shape | Average time |
+| --- | ---: |
+| Two confined arena allocations | `63.828 ± 0.506 ns` |
+| One backing allocation with a slicing allocator | `34.791 ± 0.351 ns` |
+| One backing allocation with direct slices | `33.588 ± 0.251 ns` |
+| Generated direct-slice implementation | `33.392 ± 0.348 ns` |
+| Hand-written direct-slice implementation | `33.329 ± 0.209 ns` |
+
+Each main comparison used three forks and 24 measurement iterations. A shorter
+GC-profiled comparison measured `64 B/op` for both consolidated variants.
+Direct slicing was about 3.5% faster than the slicing allocator and the
+generated implementation matched the hand-written form, so generation uses
+direct slices.
+
 These details are properties of the observed OpenJDK implementation and
 HotSpot optimizer, not requirements of the FFM API. Other JDK releases or JVMs
 may use different allocation and escape-analysis strategies. The generated
@@ -61,8 +80,8 @@ explicitly.
 
 ## Generated Shape
 
-A record passed to and returned from a native function currently has the
-equivalent allocation shape:
+Before this change, a record passed to and returned from a native function had
+the equivalent allocation shape:
 
 ```java
 try (var arena = Arena.ofConfined()) {
@@ -72,28 +91,29 @@ try (var arena = Arena.ofConfined()) {
 }
 ```
 
-Both the argument conversion and the linker return allocate from `arena`.
-Where both layouts are statically known, generate the equivalent of:
+Both the argument conversion and the linker return allocated from `arena`.
+When both requests can be planned before the call, generation now emits the
+equivalent of:
 
 ```java
 try (var arena = Arena.ofConfined()) {
-  var allocator = SegmentAllocator.slicingAllocator(
-      arena.allocate(requiredSize, requiredAlignment));
+  var memory = arena.allocate(requiredSize, requiredAlignment);
+  var argumentMemory = memory.asSlice(argumentOffset, argumentLayout);
+  ArgumentFM.toMemorySegment$F(argument, argumentMemory);
+  var resultMemory = memory.asSlice(resultOffset, resultLayout);
 
   return ResultFM.fromMemorySegment$F((MemorySegment) handle.invokeExact(
-      (SegmentAllocator) allocator,
-      ArgumentFM.toMemorySegment$F(allocator, argument)));
+      (SegmentAllocator) SegmentAllocator.prefixAllocator(resultMemory),
+      argumentMemory));
 }
 ```
 
-Java evaluates invocation arguments from left to right. Argument conversions
-therefore consume their slices before the linker requests the return slice.
 All slices remain live through the downcall and share the backing arena's
-lifetime.
+lifetime. Record arrays are written directly into element slices of their final
+array segment rather than allocating one temporary segment per element.
 
-Generated memory wrappers already accept `SegmentAllocator`, so this strategy
-composes with existing constructors and `allocate$F(...)` and
-`toMemorySegment$F(...)` helpers. It should not require an arena-specific
+Generated record wrappers already provide a converter which writes into a
+caller-provided segment, so this strategy does not require an arena-specific
 overload.
 
 ## Size and Alignment
@@ -105,16 +125,17 @@ allocation request in evaluation order:
 2. Add the requested byte size using checked arithmetic.
 3. Use the greatest requested alignment for the backing allocation.
 
-The generated capacity calculation must apply the same rules as the slicing
+The generated capacity calculation applies the same rules as a slicing
 allocator. Simply summing layout sizes is incorrect when adjacent layouts have
-different alignments. Static layout sizes should produce static generated
-expressions; no general-purpose runtime allocation planner is needed.
+different alignments. Generated code aligns each offset and uses checked
+arithmetic for both padding and sizes.
 
-Use direct arena allocation instead when the complete request sequence cannot
-be bounded concisely before the call. Examples include dynamically sized
-strings, variable element counts, and converters that can make hidden
-data-dependent allocations. A smaller predictable optimization is preferable
-to speculative sizing or over-allocation.
+Top-level dynamically sized strings, arrays, and heap buffers are planned:
+UTF-8 bytes and element counts are obtained before allocating the backing
+segment. Use the direct-arena fallback when a record converter can make hidden
+data-dependent allocations, because the complete object graph cannot be
+bounded concisely before the call. A smaller predictable optimization is
+preferable to speculative sizing or over-allocation.
 
 ## Return Storage
 
@@ -127,9 +148,10 @@ specific `MemorySegment`. That does not prevent preallocated return storage:
   `SegmentAllocator.prefixAllocator(resultSegment)` when exactly one return
   allocation should reuse that segment.
 
-Do not use one prefix allocator for simultaneously live arguments and a return
-value: every request starts at offset zero and would overlap. Slicing is the
-correct model for multiple live values.
+The implementation uses the second form: direct, non-overlapping argument
+slices and one prefix allocator dedicated to the result slice. Do not use one
+prefix allocator for simultaneously live arguments and a return value: every
+request starts at offset zero and would overlap.
 
 Memory-backed interface results continue to use caller-owned allocation because
 their lifetime can extend beyond the generated method. Record results can use a
@@ -154,14 +176,16 @@ The optimization must preserve:
 
 ## Verification
 
-Before changing generation, add full-equivalence processor tests for methods
-with:
+Full-equivalence processor tests cover methods with:
 
-1. Two or more fixed-size record arguments.
-2. A fixed-size record argument and record return.
-3. Mixed sizes and alignments that require padding.
-4. A caller-provided allocator and memory-backed interface return.
-5. A dynamic allocation that must retain the direct-arena fallback.
+1. ✅ Two or more fixed-size record arguments.
+2. ✅ A fixed-size record argument and record return.
+3. ✅ Mixed sizes and alignments that require padding.
+4. ✅ A caller-provided allocator and memory-backed interface return.
+5. ✅ Dynamically sized UTF-8 and array allocations.
+6. ✅ Record arrays written into final element slices.
+7. ✅ A record converter with hidden allocations that retains the direct-arena
+   fallback.
 
 Benchmark the complete generated downcalls, not only unused slice creation.
 Use the short JMH configuration for quick directional checks and occasional

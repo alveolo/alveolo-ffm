@@ -47,4 +47,6 @@ public interface ArrayParameters {
   void valueBuffer(@Value @Sequence(2) IntBuffer values);
 
   void valueRecords(@Value @Sequence(2) CallPoint[] values);
+
+  void textAndValues(String text, long[] values);
 }

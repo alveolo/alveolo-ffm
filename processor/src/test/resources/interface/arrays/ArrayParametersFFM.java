@@ -261,11 +261,11 @@ public final class ArrayParametersFFM implements ArrayParameters {
       var points$MemorySegment$f = arena$f.allocate(
           pkg.CallPointFM.MemoryLayout$F, points$size$f);
       for (var points$index$f = 0; points$index$f < points$size$f; points$index$f++) {
-        points$MemorySegment$f.asSlice(
-            (long) points$index$f * pkg.CallPointFM.MemoryLayout$F.byteSize(),
-            pkg.CallPointFM.MemoryLayout$F).copyFrom(
-                pkg.CallPointFM.toMemorySegment$F(
-                    arena$f, points[points$index$f]));
+        pkg.CallPointFM.toMemorySegment$F(
+            points[points$index$f],
+            points$MemorySegment$f.asSlice(
+                (long) points$index$f * pkg.CallPointFM.MemoryLayout$F.byteSize(),
+                pkg.CallPointFM.MemoryLayout$F));
       }
       var result$f = (int) MethodHandle$7$F.invokeExact(
           points$MemorySegment$f,
@@ -328,11 +328,11 @@ public final class ArrayParametersFFM implements ArrayParameters {
       var points$MemorySegment$f = arena$f.allocate(
           pkg.CallPointFM.MemoryLayout$F, points$size$f);
       for (var points$index$f = 0; points$index$f < points$size$f; points$index$f++) {
-        points$MemorySegment$f.asSlice(
-            (long) points$index$f * pkg.CallPointFM.MemoryLayout$F.byteSize(),
-            pkg.CallPointFM.MemoryLayout$F).copyFrom(
-                pkg.CallPointFM.toMemorySegment$F(
-                    arena$f, points[points$index$f]));
+        pkg.CallPointFM.toMemorySegment$F(
+            points[points$index$f],
+            points$MemorySegment$f.asSlice(
+                (long) points$index$f * pkg.CallPointFM.MemoryLayout$F.byteSize(),
+                pkg.CallPointFM.MemoryLayout$F));
       }
       MethodHandle$9$F.invokeExact(
           points$MemorySegment$f);
@@ -472,14 +472,61 @@ public final class ArrayParametersFFM implements ArrayParameters {
       var values$MemorySegment$f = arena$f.allocate(
           pkg.CallPointFM.MemoryLayout$F, values$size$f);
       for (var values$index$f = 0; values$index$f < values$size$f; values$index$f++) {
-        values$MemorySegment$f.asSlice(
-            (long) values$index$f * pkg.CallPointFM.MemoryLayout$F.byteSize(),
-            pkg.CallPointFM.MemoryLayout$F).copyFrom(
-                pkg.CallPointFM.toMemorySegment$F(
-                    arena$f, values[values$index$f]));
+        pkg.CallPointFM.toMemorySegment$F(
+            values[values$index$f],
+            values$MemorySegment$f.asSlice(
+                (long) values$index$f * pkg.CallPointFM.MemoryLayout$F.byteSize(),
+                pkg.CallPointFM.MemoryLayout$F));
       }
       MethodHandle$13$F.invokeExact(
           values$MemorySegment$f);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+
+  private static final java.lang.invoke.MethodHandle MethodHandle$14$F =
+      Linker$F.downcallHandle(
+      SymbolLookup$F.findOrThrow("textAndValues"),
+      java.lang.foreign.FunctionDescriptor.ofVoid(
+          java.lang.foreign.ValueLayout.ADDRESS,
+          java.lang.foreign.ValueLayout.ADDRESS));
+
+  public void textAndValues(
+      java.lang.String text,
+      long[] values) {
+    try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      var text$bytes$f = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      var values$size$f = values.length;
+      var text$allocationOffset$f = 0L;
+      var allocationOffset$f = Math.addExact((long) text$bytes$f.length, 1L);
+      allocationOffset$f = Math.addExact(
+          allocationOffset$f,
+          Math.floorMod(-allocationOffset$f, java.lang.foreign.ValueLayout.JAVA_LONG.byteAlignment()));
+      var values$allocationOffset$f = allocationOffset$f;
+      allocationOffset$f = Math.addExact(
+          allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) values$size$f));
+      var allocation$MemorySegment$f = arena$f.allocate(
+          allocationOffset$f, java.lang.foreign.ValueLayout.JAVA_LONG.byteAlignment());
+      var text$MemorySegment$f = allocation$MemorySegment$f.asSlice(
+          text$allocationOffset$f, Math.addExact((long) text$bytes$f.length, 1L));
+      java.lang.foreign.MemorySegment.copy(
+          text$bytes$f, 0, text$MemorySegment$f,
+          java.lang.foreign.ValueLayout.JAVA_BYTE, 0, text$bytes$f.length);
+      text$MemorySegment$f.set(
+          java.lang.foreign.ValueLayout.JAVA_BYTE, text$bytes$f.length,
+          (byte) 0);
+      var values$MemorySegment$f = allocation$MemorySegment$f.asSlice(
+          values$allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) values$size$f));
+      java.lang.foreign.MemorySegment.copy(
+          values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_LONG, 0, values$size$f);
+      MethodHandle$14$F.invokeExact(
+          text$MemorySegment$f,
+          values$MemorySegment$f);
+      java.lang.foreign.MemorySegment.copy(
+          values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_LONG, 0, values, 0, values$size$f);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

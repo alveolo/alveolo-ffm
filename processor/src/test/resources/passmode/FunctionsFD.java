@@ -101,10 +101,35 @@ public final class FunctionsFD implements Functions {
       passmode.ValueRecord value,
       passmode.AddressRecord address) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
+      var defaultValue$allocationOffset$f = 0L;
+      var allocationOffset$f = passmode.DefaultRecordFM.MemoryLayout$F.byteSize();
+      allocationOffset$f = Math.addExact(
+          allocationOffset$f,
+          Math.floorMod(-allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()));
+      var value$allocationOffset$f = allocationOffset$f;
+      allocationOffset$f = Math.addExact(
+          allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteSize());
+      allocationOffset$f = Math.addExact(
+          allocationOffset$f,
+          Math.floorMod(-allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
+      var address$allocationOffset$f = allocationOffset$f;
+      allocationOffset$f = Math.addExact(
+          allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
+      var allocation$MemorySegment$f = arena$f.allocate(
+          allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
+      var defaultValue$MemorySegment$f = allocation$MemorySegment$f.asSlice(
+          defaultValue$allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
+      passmode.DefaultRecordFM.toMemorySegment$F(defaultValue, defaultValue$MemorySegment$f);
+      var value$MemorySegment$f = allocation$MemorySegment$f.asSlice(
+          value$allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteSize());
+      passmode.ValueRecordFM.toMemorySegment$F(value, value$MemorySegment$f);
+      var address$MemorySegment$f = allocation$MemorySegment$f.asSlice(
+          address$allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
+      passmode.AddressRecordFM.toMemorySegment$F(address, address$MemorySegment$f);
       return (int) MethodHandle$2$F.invokeExact(
-          passmode.DefaultRecordFM.toMemorySegment$F(arena$f, defaultValue),
-          passmode.ValueRecordFM.toMemorySegment$F(arena$f, value),
-          passmode.AddressRecordFM.toMemorySegment$F(arena$f, address));
+          defaultValue$MemorySegment$f,
+          value$MemorySegment$f,
+          address$MemorySegment$f);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

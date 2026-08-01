@@ -56,6 +56,15 @@ record ValueRecord(int value) {}
 @Struct
 record AddressRecord(int value) {}
 
+@Struct
+record ByteRecord(byte value) {}
+
+@Struct
+record LongRecord(long value) {}
+
+@Struct
+record PointerRecord(@Address int value) {}
+
 @Struct(vtable = true)
 interface VirtualStructSpec {
   @Virtual(0)
@@ -151,4 +160,8 @@ public interface PassMode {
 
   @Address @WCharT
   int primitiveAddressReturn();
+
+  LongRecord mixedRecord(ByteRecord small, LongRecord aligned);
+
+  int allocatingRecords(PointerRecord first, PointerRecord second);
 }

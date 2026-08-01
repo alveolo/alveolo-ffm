@@ -4,6 +4,7 @@ import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -26,8 +27,11 @@ class ExecutableGenerator {
   final String lookupExpression;
   final TypeGenerator returnGenerator;
   final List<VariableGenerator> parameterGenerators;
+  final ForeignMemoryAnalyzer memoryAnalyzer;
 
   record NativeArgument(String layout, String expression) {}
+  record LocalAllocation(
+      String name, String byteSize, String alignment) {}
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
       GeneratedTypeRegistry generatedTypes,
@@ -56,6 +60,8 @@ class ExecutableGenerator {
     this.leadingNativeArguments = leadingNativeArguments;
     this.linkerExpression = linkerExpression;
     this.lookupExpression = lookupExpression;
+    memoryAnalyzer = new ForeignMemoryAnalyzer(
+        processingEnv, generatedTypes);
 
     returnGenerator = new TypeGenerator(
         processingEnv, generatedTypes, element.getReturnType(), element);
@@ -191,7 +197,17 @@ class ExecutableGenerator {
   }
 
   private String methodBody(String methodHandleExpression) {
-    return Stream.of(paramInitializers(), invoke(methodHandleExpression))
+    if (!canPlanAllocations())
+      return Stream.of(paramInitializers(),
+          invoke(methodHandleExpression, false))
+          .flatMap(identity())
+          .collect(joining("\n      ", "", ""));
+
+    return Stream.of(
+        plannedPreparations(),
+        allocationPlan().lines(),
+        plannedInitializers(),
+        invoke(methodHandleExpression, true))
         .flatMap(identity())
         .collect(joining("\n      ", "", ""));
   }
@@ -287,8 +303,10 @@ class ExecutableGenerator {
         ? "(var arena$f = java.lang.foreign.Arena.ofConfined()) " : "";
   }
 
-  private Stream<String> invoke(String methodHandleExpression) {
-    var call = methodHandleExpression + ".invokeExact(" + params() + ")";
+  private Stream<String> invoke(
+      String methodHandleExpression, boolean plannedAllocations) {
+    var call = methodHandleExpression + ".invokeExact("
+        + params(plannedAllocations) + ")";
     var copyOut = copyOut().toList();
 
     if (returnGenerator.isPrimitiveAddress())
@@ -321,7 +339,7 @@ class ExecutableGenerator {
     return statementWithCopyOut(call, copyOut);
   }
 
-  private String params() {
+  private String params(boolean plannedAllocations) {
     String newLine = "\n    ";
 
     boolean needsLocalAllocator =
@@ -332,7 +350,12 @@ class ExecutableGenerator {
     // allocator parameter is rejected unless it is passed here.
     var paramsList = Stream.of(
         Stream.ofNullable(needsLocalAllocator
-            ? "(java.lang.foreign.SegmentAllocator) arena$f" : null),
+            ? "(java.lang.foreign.SegmentAllocator) "
+                + (plannedAllocations
+                    ? "java.lang.foreign.SegmentAllocator.prefixAllocator("
+                        + "result$allocation$f)"
+                    : "arena$f")
+            : null),
         parameterGenerators.stream()
             .filter(TypeGenerator::isSegmentAllocator)
             .map(VariableGenerator::invoke),
@@ -343,7 +366,9 @@ class ExecutableGenerator {
         parameterGenerators.stream()
             .filter(not(TypeGenerator::isSegmentAllocator))
             .filter(not(TypeGenerator::isCallState))
-            .map(VariableGenerator::invoke))
+            .map(plannedAllocations
+                ? VariableGenerator::plannedInvoke
+                : VariableGenerator::invoke))
         .flatMap(identity());
 
     return paramsList.collect(joining("," + newLine, newLine, ""));
@@ -482,6 +507,138 @@ class ExecutableGenerator {
   private Stream<String> paramInitializers() {
     return parameterGenerators.stream().flatMap(this::paramInitializers);
 
+  }
+
+  private boolean canPlanAllocations() {
+    if (!needsConfinedArena() || localAllocations().size() < 2)
+      return false;
+
+    // Such converters can allocate a runtime-dependent record graph. Keep the
+    // direct-arena fallback instead of guessing a backing capacity.
+    return parameterGenerators.stream()
+        .noneMatch(this::converterNeedsAllocator);
+  }
+
+  private boolean converterNeedsAllocator(VariableGenerator parameter) {
+    if (parameter.isRecord())
+      return memoryAnalyzer.recordConverterNeedsAllocator(
+          parameter.typeElement);
+
+    if (!parameter.isValueStructRecordArray()) return false;
+
+    return memoryAnalyzer.recordConverterNeedsAllocator(
+        parameter.arrayComponentGenerator().typeElement);
+  }
+
+  private Stream<String> plannedPreparations() {
+    return parameterGenerators.stream()
+        .map(VariableGenerator::plannedPreparation)
+        .filter(not(String::isEmpty))
+        .flatMap(String::lines);
+  }
+
+  private Stream<String> plannedInitializers() {
+    return parameterGenerators.stream()
+        .filter(VariableGenerator::needsLocalAllocation)
+        .map(parameter -> parameter.plannedInitializer(
+            plannedAllocationSegment(parameter)))
+        .flatMap(String::lines);
+  }
+
+  private String plannedAllocationSegment(VariableGenerator parameter) {
+    return """
+        allocation$MemorySegment$f.asSlice(
+            <name>$allocationOffset$f, <size>)
+        """
+        .replace("<name>", parameter.name())
+        .replace("<size>", parameter.allocationByteSize())
+        .strip();
+  }
+
+  private String allocationPlan() {
+    var allocations = localAllocations();
+    if (allocations.size() < 2)
+      throw new IllegalStateException(
+          "Allocation plan requires at least two allocations");
+
+    var first = allocations.getFirst();
+    var plan = new StringBuilder("""
+        var <name>$allocationOffset$f = 0L;
+        var allocationOffset$f = <size>;
+        """
+        .replace("<name>", first.name())
+        .replace("<size>", first.byteSize()));
+
+    // Match slicingAllocator alignment while retaining direct slices.
+    for (var allocation : allocations.subList(1, allocations.size())) {
+      plan.append("""
+          allocationOffset$f = Math.addExact(
+              allocationOffset$f,
+              Math.floorMod(-allocationOffset$f, <alignment>));
+          var <name>$allocationOffset$f = allocationOffset$f;
+          allocationOffset$f = Math.addExact(
+              allocationOffset$f, <size>);
+          """
+          .replace("<name>", allocation.name())
+          .replace("<size>", allocation.byteSize())
+          .replace("<alignment>", allocation.alignment()));
+    }
+
+    plan.append("""
+        var allocation$MemorySegment$f = arena$f.allocate(
+            allocationOffset$f, <alignment>);
+        """
+        .replace("<alignment>", maximumAlignment(allocations)));
+
+    for (var allocation : allocations) {
+      if (!allocation.name().equals("result")) continue;
+
+      plan.append("""
+          var result$allocation$f = allocation$MemorySegment$f.asSlice(
+              result$allocationOffset$f, <size>);
+          """
+          .replace("<size>", allocation.byteSize()));
+    }
+
+    return plan.toString().stripTrailing();
+  }
+
+  private List<LocalAllocation> localAllocations() {
+    var allocations = new ArrayList<LocalAllocation>();
+    parameterGenerators.stream()
+        .filter(VariableGenerator::needsLocalAllocation)
+        .map(parameter -> new LocalAllocation(
+            parameter.name(),
+            parameter.allocationByteSize(),
+            parameter.allocationAlignment()))
+        .forEach(allocations::add);
+
+    if (returnGenerator.isRecord() && returnGenerator.isValue()) {
+      var layout = returnGenerator.foreignMemoryClassName()
+          + ".MemoryLayout$F";
+      allocations.add(new LocalAllocation(
+          "result",
+          layout + ".byteSize()",
+          layout + ".byteAlignment()"));
+    }
+
+    return allocations;
+  }
+
+  private String maximumAlignment(List<LocalAllocation> allocations) {
+    var alignments = allocations.stream()
+        .map(LocalAllocation::alignment)
+        .distinct()
+        .toList();
+    if (alignments.size() > 1)
+      alignments = alignments.stream()
+          .filter(alignment -> !alignment.equals("1L"))
+          .toList();
+
+    return alignments.stream()
+        .reduce((left, right) ->
+            "Math.max(" + left + ", " + right + ")")
+        .orElseThrow();
   }
 
   private Stream<String> paramInitializers(VariableGenerator p) {
