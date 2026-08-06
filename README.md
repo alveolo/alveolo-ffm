@@ -770,6 +770,12 @@ Build the benchmark module and its dependencies:
 mvn -pl benchmark -am package -DskipTests
 ```
 
+## Release
+
+Releases are published to Maven Central through the manual GitHub Actions
+`Release` workflow. See [docs/release.md](docs/release.md) for the Central
+Portal namespace, token, GPG signing, dry-run, and publish steps.
+
 ## Status
 
 This project targets Java 25 and is intentionally small. The generated code is

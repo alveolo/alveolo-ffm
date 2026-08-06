@@ -13,6 +13,7 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
   </parent>
 
   <artifactId>alveolo-ffm-root</artifactId>
+  <version>0.0.2-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Alveolo FFM - Root</name>
   <description>Alveolo FFM - Root</description>
@@ -35,10 +36,21 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/alveolo/alveolo-ffm.git</connection>
-    <developerConnection>scm:git:ssh://github.com:alveolo/alveolo-ffm.git</developerConnection>
-    <url>https://github.com/alveolo/alveolo-ffm/tree/main</url>
+    <connection>scm:git:https://github.com/alveolo/alveolo-ffm.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/alveolo/alveolo-ffm.git</developerConnection>
+    <url>https://github.com/alveolo/alveolo-ffm</url>
+    <tag>HEAD</tag>
   </scm>
+
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://github.com/alveolo/alveolo-ffm/issues</url>
+  </issueManagement>
+
+  <ciManagement>
+    <system>GitHub Actions</system>
+    <url>https://github.com/alveolo/alveolo-ffm/actions</url>
+  </ciManagement>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
