@@ -62,7 +62,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
       validateSimpleClassName(type, annotation, annotation.name());
       validateGeneratedClassName(type, annotation,
           dispatchTableSimpleClassName(type));
-      validateUserIdentifiers(type);
+      validateUserIdentifiers(type,
+          processingEnv.getElementUtils().getAllMembers(type));
       validateTopLevelType(type, annotation);
       writeFile(type, generatedTypes);
     } catch (ProcessorError e) {
@@ -140,7 +141,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
   }
 
   private List<ExecutableElement> abstractMethods(TypeElement type) {
-    return type.getEnclosedElements().stream()
+    return processingEnv.getElementUtils().getAllMembers(type).stream()
         .filter(ExecutableElement.class::isInstance)
         .map(ExecutableElement.class::cast)
         .filter(method -> method.getKind() == ElementKind.METHOD)

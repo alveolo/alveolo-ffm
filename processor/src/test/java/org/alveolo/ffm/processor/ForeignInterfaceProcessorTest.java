@@ -66,6 +66,13 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesInheritedInterfaceMethods() {
+    var c = compile("interface/Inherited.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.InheritedFFM", "interface/InheritedFFM.java");
+  }
+
+  @Test
   void rejectsFirstVariadicArgOutsideNativeParameterRange() {
     var lib = forSourceString("test.BadVariadic", """
         package test;

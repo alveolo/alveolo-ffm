@@ -165,8 +165,8 @@ var length = LibCFFM.INSTANCE$F.stringLength("hello");
 ```
 
 Default and static methods are ignored by the processor, so the interface can
-still contain ordinary Java helpers. Native methods must currently be declared
-directly on the annotated interface; inherited abstract methods are not scanned.
+still contain ordinary Java helpers. Abstract native methods may be declared
+directly on the annotated interface or inherited from parent interfaces.
 
 ## Platform C Scalar Types
 
@@ -373,7 +373,8 @@ public interface XyzVtbl {
 ```
 
 The generated `XyzVtblFD` wrapper reads function pointers from address-sized
-slots and exposes Java methods with the declared signatures.
+slots and exposes Java methods with the declared signatures. Abstract methods
+may be inherited from parent interfaces; every method must declare its `@Slot`.
 
 For object-style native structs, `@Struct(vtable = true)` reserves the first
 field for a dispatch table pointer. Methods annotated with `@Virtual` call

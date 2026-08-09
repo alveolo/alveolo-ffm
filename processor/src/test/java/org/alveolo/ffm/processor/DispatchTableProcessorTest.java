@@ -55,6 +55,35 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesInheritedDispatchTableMethods() {
+    var c = compile("dispatch/InheritedVtbl.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.InheritedVtblFD",
+        "dispatch/InheritedVtblFD.java");
+  }
+
+  @Test
+  void rejectsReservedInheritedParameterSuffix() {
+    var source = forSourceString("test.ChildVtbl", """
+        package test;
+
+        interface ParentVtbl {
+          @org.alveolo.ffm.Slot(0)
+          void call(int self$f);
+        }
+
+        @org.alveolo.ffm.DispatchTable
+        interface ChildVtbl extends ParentVtbl {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "User parameter names ending in '$F' or '$f' are reserved");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void generatesDispatchTableNameOverrideInSourcePackage() {
     var c = compile("dispatch/RenamedVtbl.java");
     assertThat(c).succeeded();

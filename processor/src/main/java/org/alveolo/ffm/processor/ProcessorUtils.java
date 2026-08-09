@@ -48,6 +48,12 @@ final class ProcessorUtils {
 
   static void validateUserIdentifiers(TypeElement element)
       throws ProcessorError {
+    validateUserIdentifiers(element, element.getEnclosedElements());
+  }
+
+  static void validateUserIdentifiers(
+      TypeElement element, Iterable<? extends Element> members)
+      throws ProcessorError {
     if (isAlveoloGeneratedSpecification(element)) return;
 
     validateUserIdentifier(element, element.getSimpleName().toString(),
@@ -58,8 +64,8 @@ final class ProcessorUtils {
           "record component");
     }
 
-    for (var enclosed : element.getEnclosedElements()) {
-      if (!(enclosed instanceof ExecutableElement method)
+    for (var member : members) {
+      if (!(member instanceof ExecutableElement method)
           || method.getKind() != ElementKind.METHOD) {
         continue;
       }

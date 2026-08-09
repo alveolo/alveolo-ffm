@@ -64,7 +64,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       validateSimpleClassName(type, annotation, annotation.name());
       validateGeneratedClassName(type, annotation,
           foreignInterfaceSimpleClassName(type));
-      validateUserIdentifiers(type);
+      validateUserIdentifiers(type,
+          processingEnv.getElementUtils().getAllMembers(type));
       validateTopLevelType(type, annotation);
       writeFile(type, generatedTypes);
     } catch (ProcessorError e) {
@@ -136,7 +137,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       }
 
       int index = 0;
-      for (var member : iface.getEnclosedElements()) {
+      for (var member : elements.getAllMembers(iface)) {
         if (member instanceof ExecutableElement method) {
           if (method.getKind() != ElementKind.METHOD
               || !method.getModifiers().contains(Modifier.ABSTRACT)) {
