@@ -1,13 +1,14 @@
-package passmode;
+package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public class CircularDefault implements CircularDefaultSpec {
+public class IndexedDerivedFM extends pkg.IndexedBaseFM
+    implements IndexedDerived {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        passmode.CircularValue.MemoryLayout$F.withName("value"),
+        pkg.IndexedBaseFM.MemoryLayout$F,
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -24,9 +25,10 @@ public class CircularDefault implements CircularDefaultSpec {
     return allocator.allocate(MemoryLayout$F, count);
   }
 
-  public static CircularDefault reinterpret$F(
+  public static IndexedDerivedFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new CircularDefault(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return new IndexedDerivedFM(
+        memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -47,40 +49,44 @@ public class CircularDefault implements CircularDefaultSpec {
         index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static CircularDefault at$F(
+  public static IndexedDerivedFM at$F(
       java.lang.foreign.MemorySegment array, long index) {
-    return new CircularDefault(elementAt$F(array, index));
+    return new IndexedDerivedFM(elementAt$F(array, index));
   }
 
-  public final java.lang.foreign.MemorySegment MemorySegment$F;
-
-  public CircularDefault(java.lang.foreign.SegmentAllocator allocator) {
+  public IndexedDerivedFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate$F(allocator));
   }
 
-  public CircularDefault(java.lang.foreign.MemorySegment memorySegment) {
-    this.MemorySegment$F = memorySegment;
+  public IndexedDerivedFM(
+      java.lang.foreign.MemorySegment memorySegment) {
+    super(memorySegment);
   }
 
-  public static final java.lang.foreign.MemoryLayout.PathElement
-      value$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("value");
-
-  public passmode.CircularValue value() {
-    return new passmode.CircularValue(MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(value$PathElement$F),
-        MemoryLayout$F.select(value$PathElement$F).byteSize()));
+  @Override
+  public IndexedDerivedFM values(
+      long index0$f,
+      int value$f) {
+    return (IndexedDerivedFM) super.values(
+        index0$f, value$f);
   }
 
-  public CircularDefault value(passmode.CircularValue value) {
-    var memoryLayout =
-        MemoryLayout$F.select(value$PathElement$F);
-    var slice = MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(value$PathElement$F),
-        memoryLayout.byteSize());
-    java.lang.foreign.MemorySegment.copy(
-        value.MemorySegment$F, 0,
-        slice, 0, memoryLayout.byteSize());
-    return this;
+  @Override
+  public IndexedDerivedFM valuesFromArray$F(int[] value) {
+    return (IndexedDerivedFM) super.valuesFromArray$F(value);
+  }
+
+  @Override
+  public IndexedDerivedFM pointers(
+      long index0$f,
+      java.lang.foreign.MemorySegment value$f) {
+    return (IndexedDerivedFM) super.pointers(
+        index0$f, value$f);
+  }
+
+  @Override
+  public IndexedDerivedFM pointersAsAddress$F(
+      long index0, java.lang.foreign.MemorySegment value) {
+    return (IndexedDerivedFM) super.pointersAsAddress$F(index0, value);
   }
 }

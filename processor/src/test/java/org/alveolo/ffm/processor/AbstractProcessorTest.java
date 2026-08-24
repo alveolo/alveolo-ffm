@@ -18,6 +18,7 @@ import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.FirstVariadicArg;
+import org.alveolo.ffm.Fields;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Libraries;
@@ -36,6 +37,7 @@ import org.alveolo.ffm.Virtual;
 import org.alveolo.ffm.WCharT;
 import org.alveolo.ffm.macos.CFString;
 import org.alveolo.ffm.macos.CFStringSupport;
+import org.alveolo.ffm.processor.fixture.BinaryFieldsParent;
 
 import com.google.testing.compile.Compilation;
 
@@ -48,6 +50,7 @@ abstract class AbstractProcessorTest {
     CFStringSupport.class,
     DispatchTable.class,
     FirstVariadicArg.class,
+    Fields.class,
     ForeignInterface.class,
     Libraries.class,
     Library.class,
@@ -64,6 +67,7 @@ abstract class AbstractProcessorTest {
     Value.class,
     Virtual.class,
     WCharT.class,
+    BinaryFieldsParent.class,
   };
 
   protected JavaFileObject forTestResource(String resource) {
@@ -77,9 +81,11 @@ abstract class AbstractProcessorTest {
         .map(CodeSource::getLocation)
         .map(URL::getPath)
         .map(File::new)
+        .distinct()
         .toList();
     return javac()
         .withClasspath(files)
+        .withOptions("-sourcepath", "")
         .withProcessors(
             new CallStateProcessor(),
             new DispatchTableProcessor(),

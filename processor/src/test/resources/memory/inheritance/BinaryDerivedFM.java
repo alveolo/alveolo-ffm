@@ -1,14 +1,15 @@
-package pkg;
+package test;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public class OuterFM implements Outer {
+public class BinaryDerivedFM implements BinaryDerived {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        java.lang.foreign.ValueLayout.ADDRESS.withName("inner"),
-        java.lang.foreign.ValueLayout.JAVA_INT.withName("tag"),
+        java.lang.foreign.ValueLayout.JAVA_LONG.withName("second"),
+        java.lang.foreign.ValueLayout.JAVA_INT.withName("first"),
+        java.lang.foreign.ValueLayout.JAVA_BYTE.withName("own"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -25,9 +26,10 @@ public class OuterFM implements Outer {
     return allocator.allocate(MemoryLayout$F, count);
   }
 
-  public static OuterFM reinterpret$F(
+  public static BinaryDerivedFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new OuterFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return new BinaryDerivedFM(
+        memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -48,52 +50,69 @@ public class OuterFM implements Outer {
         index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static OuterFM at$F(
+  public static BinaryDerivedFM at$F(
       java.lang.foreign.MemorySegment array, long index) {
-    return new OuterFM(elementAt$F(array, index));
+    return new BinaryDerivedFM(elementAt$F(array, index));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public OuterFM(java.lang.foreign.SegmentAllocator allocator) {
+  public BinaryDerivedFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate$F(allocator));
   }
 
-  public OuterFM(java.lang.foreign.MemorySegment memorySegment) {
+  public BinaryDerivedFM(java.lang.foreign.MemorySegment memorySegment) {
     this.MemorySegment$F = memorySegment;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
-      inner$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("inner");
+      second$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("second");
 
-  public static final java.lang.invoke.VarHandle inner$VarHandle$F =
+  public static final java.lang.invoke.VarHandle second$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(inner$PathElement$F), 1, 0L);
+          MemoryLayout$F.varHandle(second$PathElement$F), 1, 0L);
 
-  public pkg.Inner inner() {
-    return pkg.InnerFM.reinterpret$F((java.lang.foreign.MemorySegment) inner$VarHandle$F.get(MemorySegment$F));
+  public long second() {
+    return (long) second$VarHandle$F.get(MemorySegment$F);
   }
 
-  public OuterFM inner(pkg.Inner value) {
-    inner$VarHandle$F.set(MemorySegment$F, ((pkg.InnerFM) value).MemorySegment$F);
+  public BinaryDerivedFM second(long value) {
+    second$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
-      tag$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("tag");
+      first$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("first");
 
-  public static final java.lang.invoke.VarHandle tag$VarHandle$F =
+  public static final java.lang.invoke.VarHandle first$VarHandle$F =
       java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(tag$PathElement$F), 1, 0L);
+          MemoryLayout$F.varHandle(first$PathElement$F), 1, 0L);
 
-  public int tag() {
-    return (int) tag$VarHandle$F.get(MemorySegment$F);
+  public int first() {
+    return (int) first$VarHandle$F.get(MemorySegment$F);
   }
 
-  public OuterFM tag(int value) {
-    tag$VarHandle$F.set(MemorySegment$F, value);
+  public BinaryDerivedFM first(int value) {
+    first$VarHandle$F.set(MemorySegment$F, value);
+    return this;
+  }
+
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      own$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("own");
+
+  public static final java.lang.invoke.VarHandle own$VarHandle$F =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          MemoryLayout$F.varHandle(own$PathElement$F), 1, 0L);
+
+  public byte own() {
+    return (byte) own$VarHandle$F.get(MemorySegment$F);
+  }
+
+  public BinaryDerivedFM own(byte value) {
+    own$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 }

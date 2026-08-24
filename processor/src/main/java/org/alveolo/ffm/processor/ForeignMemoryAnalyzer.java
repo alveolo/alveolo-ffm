@@ -46,19 +46,23 @@ final class ForeignMemoryAnalyzer {
     if (type.getKind() == ElementKind.RECORD)
       return inferRecordFields(type);
 
+    var methods = type.getEnclosedElements().stream()
+        .filter(ExecutableElement.class::isInstance)
+        .map(ExecutableElement.class::cast)
+        .filter(method -> method.getModifiers().contains(ABSTRACT))
+        .filter(method -> !method.getModifiers().contains(STATIC))
+        .filter(method -> !method.getModifiers().contains(DEFAULT))
+        .filter(method -> !excludeObjectMethods || !isObjectMethod(method))
+        .toList();
+    return inferFields(methods);
+  }
+
+  Fields inferFields(List<ExecutableElement> declarations) {
     // Group methods by name.
     Map<String, List<ExecutableElement>> methodsByName = new LinkedHashMap<>();
-    for (var enclosed : type.getEnclosedElements()) {
-      if (enclosed instanceof ExecutableElement method
-          && enclosed.getModifiers().contains(ABSTRACT)
-          && !enclosed.getModifiers().contains(STATIC)
-          && !enclosed.getModifiers().contains(DEFAULT)) {
-        if (excludeObjectMethods && isObjectMethod(method)) {
-          continue;
-        }
-        var name = method.getSimpleName().toString();
-        methodsByName.computeIfAbsent(name, _ -> new ArrayList<>()).add(method);
-      }
+    for (var method : declarations) {
+      var name = method.getSimpleName().toString();
+      methodsByName.computeIfAbsent(name, _ -> new ArrayList<>()).add(method);
     }
 
     var fields = new ArrayList<VariableGenerator>();

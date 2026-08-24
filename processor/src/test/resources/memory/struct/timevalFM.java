@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class timevalFM implements timeval {
+public class timevalFM implements timeval {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(

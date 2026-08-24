@@ -33,11 +33,15 @@ final class ForeignMemoryGenerator {
 
     var isStructInterface = kind.equals("struct")
         && source.getKind() == ElementKind.INTERFACE;
-    var objectMethods = isStructInterface
-        ? objectGenerator.objectMethods(source)
-        : ObjectMethodsGenerator.Methods.empty();
+    var model = isStructInterface
+        ? new StructInterfaceModel(processingEnv).analyze(source) : null;
+    if (model != null && !model.valid()) return;
+
+    var objectMethods = model == null
+        ? ObjectMethodsGenerator.Methods.empty() : model.objectMethods();
+    var effectiveVtable = model == null ? vtable : model.vtable();
     if (!objectGenerator.validateObjectMethods(
-        source, objectMethods, vtable))
+        source, objectMethods, effectiveVtable))
       return;
 
     var preparedObjectMethods = objectGenerator.prepare(
@@ -46,15 +50,24 @@ final class ForeignMemoryGenerator {
 
     objectGenerator.writeDispatchTable(source, preparedObjectMethods);
 
-    var fields = analyzer.inferFields(source, isStructInterface);
+    var fields = model == null
+        ? analyzer.inferFields(source, isStructInterface)
+        : analyzer.inferFields(model.fieldMethods());
     analyzer.validateFields(fields);
+    var baseFields = model == null || model.baseStruct() == null
+        ? null : analyzer.inferFields(model.baseFieldMethods());
+    if (baseFields != null) analyzer.validateFields(baseFields);
 
-    writeSource(source, kind, vtable, fields, preparedObjectMethods);
+    writeSource(source, kind, effectiveVtable, fields,
+        baseFields, preparedObjectMethods,
+        model == null ? null : model.baseStruct());
   }
 
   private void writeSource(TypeElement source, String kind, boolean vtable,
       ForeignMemoryAnalyzer.Fields fields,
-      ObjectMethodsGenerator.Prepared objectMethods)
+      ForeignMemoryAnalyzer.Fields baseFields,
+      ObjectMethodsGenerator.Prepared objectMethods,
+      TypeElement baseStruct)
       throws IOException {
     var elements = processingEnv.getElementUtils();
     var packageName = packageName(source, elements);
@@ -63,6 +76,8 @@ final class ForeignMemoryGenerator {
     var simpleClassName = foreignMemorySimpleClassName(source);
     var vtableSimpleName =
         ProcessorUtils.vtableImplementationSimpleClassName(source);
+    var baseClassName = baseStruct == null ? null
+        : ProcessorUtils.foreignMemoryClassName(baseStruct, elements);
 
     var file = processingEnv.getFiler().createSourceFile(className, source);
     try (var out = new PlatformWriter(file.openWriter())) {
@@ -71,8 +86,9 @@ final class ForeignMemoryGenerator {
       }
 
       var declaration = switch (source.getKind()) {
-        case INTERFACE -> simpleClassName + " implements "
-            + sourceSimpleName;
+        case INTERFACE -> simpleClassName
+            + (baseClassName == null ? "" : " extends " + baseClassName)
+            + " implements " + sourceSimpleName;
         case RECORD -> simpleClassName;
         case ElementKind unexpected -> throw new IllegalArgumentException(
             "Unexpected value: " + unexpected);
@@ -81,14 +97,17 @@ final class ForeignMemoryGenerator {
       out.write("""
           @javax.annotation.processing.Generated(
               "<generator>")
-          public final class <declaration> {
+          <modifier> class <declaration> {
           """
           .replace("<generator>",
               ForeignMemoryProcessor.class.getCanonicalName())
+          .replace("<modifier>", source.getKind() == ElementKind.INTERFACE
+              && kind.equals("struct") ? "public" : "public final")
           .replace("<declaration>", declaration));
 
-      writeLayout(out, fields, kind, vtable);
-      if (vtable) {
+      writeLayout(out, fields, kind, vtable && baseStruct == null,
+          baseClassName);
+      if (vtable && baseStruct == null) {
         objectGenerator.writeVtableMetadata(out);
       }
       writeAllocators(out);
@@ -98,7 +117,11 @@ final class ForeignMemoryGenerator {
       switch (source.getKind()) {
         case INTERFACE -> {
           writeConstructors(out, simpleClassName, vtableSimpleName,
-              objectMethods.hasUsableVirtualMethods());
+              objectMethods.hasUsableVirtualMethods(), baseClassName);
+          if (baseFields != null) {
+            accessorGenerator.writeInheritedFluentSetters(
+                out, simpleClassName, baseFields);
+          }
           accessorGenerator.writeInterfaceFields(
               out, simpleClassName, fields);
           objectGenerator.writeSymbolHolder(out, objectMethods);
@@ -118,7 +141,7 @@ final class ForeignMemoryGenerator {
   }
 
   private void writeLayout(Writer out, ForeignMemoryAnalyzer.Fields fields,
-      String kind, boolean vtable) throws IOException {
+      String kind, boolean vtable, String baseClassName) throws IOException {
     out.write("""
           public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
               java.lang.foreign.MemoryLayout.<kind>Layout(
@@ -126,6 +149,9 @@ final class ForeignMemoryGenerator {
                       new java.lang.foreign.MemoryLayout [] {
         """
         .replace("<kind>", kind));
+
+    if (baseClassName != null)
+      out.write("        " + baseClassName + ".MemoryLayout$F,\n");
 
     if (vtable) {
       out.write("        java.lang.foreign.ValueLayout.ADDRESS.withName(\""
@@ -235,9 +261,10 @@ final class ForeignMemoryGenerator {
   }
 
   private void writeConstructors(Writer out, String className,
-      String vtableTypeName, boolean hasVirtualMethods)
+      String vtableTypeName, boolean hasVirtualMethods,
+      String baseClassName)
       throws IOException {
-    out.write("""
+    if (baseClassName == null) out.write("""
 
           public final java.lang.foreign.MemorySegment MemorySegment$F;
         """);
@@ -255,6 +282,9 @@ final class ForeignMemoryGenerator {
             + ".reinterpret$F((java.lang.foreign.MemorySegment) "
             + "vtable$F$VarHandle$F.get(MemorySegment$F));\n"
         : "";
+    var memoryInitializer = baseClassName == null
+        ? "this.MemorySegment$F = memorySegment;"
+        : "super(memorySegment);";
     out.write("""
 
           public <class>(java.lang.foreign.SegmentAllocator allocator) {
@@ -262,11 +292,12 @@ final class ForeignMemoryGenerator {
           }
 
           public <class>(java.lang.foreign.MemorySegment memorySegment) {
-            this.MemorySegment$F = memorySegment;
+            <memoryInitializer>
             <vtableInitializer>
           }
         """
         .replace("<class>", className)
+        .replace("<memoryInitializer>", memoryInitializer)
         .replace("    <vtableInitializer>\n", vtableInitializer));
 
     if (hasVirtualMethods) {

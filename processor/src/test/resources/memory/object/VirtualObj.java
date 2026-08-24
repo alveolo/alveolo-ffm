@@ -8,10 +8,7 @@ import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.Virtual;
 
-@Struct(vtable = true, symbols = NativeApi.class)
-public interface VirtualObj {
-  int field();
-
+interface VirtualObjMethods {
   @Virtual(2)
   @FirstVariadicArg(1)
   int method(@SLong long arg);
@@ -22,4 +19,9 @@ public interface VirtualObj {
   @Symbol("native_symbol")
   @FirstVariadicArg(1)
   int call(int arg);
+}
+
+@Struct(vtable = true, symbols = NativeApi.class)
+public interface VirtualObj extends VirtualObjMethods {
+  int field();
 }

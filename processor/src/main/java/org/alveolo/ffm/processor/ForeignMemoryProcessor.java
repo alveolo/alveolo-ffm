@@ -12,6 +12,7 @@ import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -24,6 +25,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
+import org.alveolo.ffm.Fields;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Virtual;
@@ -31,6 +33,7 @@ import org.alveolo.ffm.Virtual;
 @SupportedAnnotationTypes({
   "org.alveolo.ffm.Struct",
   "org.alveolo.ffm.Union",
+  "org.alveolo.ffm.Fields",
   "org.alveolo.ffm.Virtual",
 })
 @SupportedSourceVersion(RELEASE_25)
@@ -47,6 +50,13 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       if (annotation.getQualifiedName().contentEquals(
           Virtual.class.getCanonicalName())) {
         validateVirtualAnnotations(roundEnv.getElementsAnnotatedWith(
+            annotation));
+        continue;
+      }
+
+      if (annotation.getQualifiedName().contentEquals(
+          Fields.class.getCanonicalName())) {
+        validateFieldsAnnotations(roundEnv.getElementsAnnotatedWith(
             annotation));
         continue;
       }
@@ -68,11 +78,20 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       case INTERFACE, RECORD -> {
         try {
           var struct = type.getAnnotation(Struct.class);
+          var union = type.getAnnotation(Union.class);
+          if (type.getAnnotation(Fields.class) != null
+              && (struct != null || union != null)) return;
+
           if (struct != null) {
             validateSimpleClassName(type, struct, struct.name());
             validateGeneratedClassName(type, struct,
                 foreignMemorySimpleClassName(type));
-            validateUserIdentifiers(type);
+            if (type.getKind() == ElementKind.INTERFACE) {
+              validateUserIdentifiers(type,
+                  processingEnv.getElementUtils().getAllMembers(type));
+            } else {
+              validateUserIdentifiers(type);
+            }
             validateTopLevelType(type, struct);
             if (struct.vtable()
                 && type.getKind() == ElementKind.RECORD) {
@@ -85,7 +104,6 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
             }
           }
 
-          var union = type.getAnnotation(Union.class);
           if (union != null) {
             validateSimpleClassName(type, union, union.name());
             validateGeneratedClassName(type, union,
@@ -120,27 +138,49 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     for (var element : elements) {
       if (!(element instanceof ExecutableElement method)
-          || !(method.getEnclosingElement() instanceof TypeElement owner)) {
-        messager.printError(
-            "@Virtual is only allowed on methods of @Struct(vtable = true)",
-            element);
-        continue;
-      }
-
-      var struct = owner.getAnnotation(Struct.class);
-      if (struct == null || !struct.vtable()) {
-        messager.printError(
-            "@Virtual is only allowed on @Struct(vtable = true) methods",
-            method);
-        continue;
-      }
-
-      if (method.getKind() != ElementKind.METHOD
+          || method.getKind() != ElementKind.METHOD
           || !method.getModifiers().contains(ABSTRACT)
           || method.getModifiers().contains(STATIC)
           || method.getModifiers().contains(DEFAULT)) {
         messager.printError(
-            "@Virtual is only allowed on abstract instance methods", method);
+            "@Virtual is only allowed on abstract instance methods", element);
+      }
+    }
+  }
+
+  private void validateFieldsAnnotations(Set<? extends Element> elements) {
+    var messager = processingEnv.getMessager();
+    var elementUtils = processingEnv.getElementUtils();
+
+    for (var element : elements) {
+      if (!(element instanceof TypeElement type)
+          || type.getKind() != ElementKind.INTERFACE) {
+        messager.printError("@Fields is only allowed on interfaces", element);
+        continue;
+      }
+      if (type.getAnnotation(Struct.class) != null
+          || type.getAnnotation(Union.class) != null) {
+        messager.printError(
+            "@Fields is not allowed on @Struct or @Union interfaces", type);
+        continue;
+      }
+
+      var seen = new HashSet<String>();
+      for (var name : type.getAnnotation(Fields.class).value()) {
+        if (!seen.add(name)) {
+          messager.printError("Duplicate @Fields name: " + name, type);
+          continue;
+        }
+
+        var found = elementUtils.getAllMembers(type).stream()
+            .filter(ExecutableElement.class::isInstance)
+            .map(ExecutableElement.class::cast)
+            .filter(method -> method.getModifiers().contains(ABSTRACT))
+            .filter(method -> !method.getModifiers().contains(STATIC))
+            .filter(method -> !method.getModifiers().contains(DEFAULT))
+            .anyMatch(method -> method.getSimpleName().contentEquals(name));
+        if (!found)
+          messager.printError("@Fields method not found: " + name, type);
       }
     }
   }

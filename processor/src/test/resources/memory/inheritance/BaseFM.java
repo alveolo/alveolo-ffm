@@ -1,13 +1,13 @@
-package passmode;
+package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public class CircularDefault implements CircularDefaultSpec {
+public class BaseFM implements Base {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        passmode.CircularValue.MemoryLayout$F.withName("value"),
+        java.lang.foreign.ValueLayout.JAVA_SHORT.withName("base"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -24,9 +24,9 @@ public class CircularDefault implements CircularDefaultSpec {
     return allocator.allocate(MemoryLayout$F, count);
   }
 
-  public static CircularDefault reinterpret$F(
+  public static BaseFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new CircularDefault(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return new BaseFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -47,40 +47,35 @@ public class CircularDefault implements CircularDefaultSpec {
         index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
   }
 
-  public static CircularDefault at$F(
+  public static BaseFM at$F(
       java.lang.foreign.MemorySegment array, long index) {
-    return new CircularDefault(elementAt$F(array, index));
+    return new BaseFM(elementAt$F(array, index));
   }
 
   public final java.lang.foreign.MemorySegment MemorySegment$F;
 
-  public CircularDefault(java.lang.foreign.SegmentAllocator allocator) {
+  public BaseFM(java.lang.foreign.SegmentAllocator allocator) {
     this(allocate$F(allocator));
   }
 
-  public CircularDefault(java.lang.foreign.MemorySegment memorySegment) {
+  public BaseFM(java.lang.foreign.MemorySegment memorySegment) {
     this.MemorySegment$F = memorySegment;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
-      value$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("value");
+      base$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("base");
 
-  public passmode.CircularValue value() {
-    return new passmode.CircularValue(MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(value$PathElement$F),
-        MemoryLayout$F.select(value$PathElement$F).byteSize()));
+  public static final java.lang.invoke.VarHandle base$VarHandle$F =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          MemoryLayout$F.varHandle(base$PathElement$F), 1, 0L);
+
+  public short base() {
+    return (short) base$VarHandle$F.get(MemorySegment$F);
   }
 
-  public CircularDefault value(passmode.CircularValue value) {
-    var memoryLayout =
-        MemoryLayout$F.select(value$PathElement$F);
-    var slice = MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(value$PathElement$F),
-        memoryLayout.byteSize());
-    java.lang.foreign.MemorySegment.copy(
-        value.MemorySegment$F, 0,
-        slice, 0, memoryLayout.byteSize());
+  public BaseFM base(short value) {
+    base$VarHandle$F.set(MemorySegment$F, value);
     return this;
   }
 }

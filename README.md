@@ -36,6 +36,7 @@ NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
 - `@ForeignInterface` bindings for native functions.
 - Specialized C variadic downcalls with `@FirstVariadicArg`.
 - `@Struct` and `@Union` memory wrappers.
+- Persisted `@Fields` ordering and append-only interface-struct inheritance.
 - Reusable native error-state capture with `@CallState`.
 - `@DispatchTable` wrappers and `@Struct(vtable = true)` virtual calls.
 - C name mapping with `@Symbol`.
@@ -422,6 +423,72 @@ public interface timeval {
   int tv_usec();
 }
 ```
+
+Direct accessor methods on a `@Struct` define fields in declaration order. An
+inherited abstract method must already be mapped by `@Fields`, `@Virtual`, or
+`@Symbol`, or it must be overridden directly on the struct so its field
+placement is explicit:
+
+```java
+interface Tagged {
+  int tag();
+}
+
+@Struct
+public interface Packet extends Tagged {
+  @Override
+  int tag();
+
+  long payload();
+}
+```
+
+Use `@Fields` on a reusable, non-struct interface when that abstraction owns
+the field identity and ordering. The annotation is stored in the class file,
+so a later struct can use the mapping without the parent's source:
+
+```java
+interface Coordinates {
+  int x();
+  int y();
+}
+
+@Fields({"y", "x"})
+interface NativeCoordinates extends Coordinates {}
+
+@Struct
+public interface Positioned extends NativeCoordinates {
+  long flags();
+}
+```
+
+Here the native field order is `y`, `x`, then `flags`. `@Fields` is not allowed
+on a `@Struct` or `@Union`; direct unmapped accessors always provide the field
+order there. A method's first mapping is final. A child may make an unannotated
+override with the same return type, but applying `@Fields`, `@Virtual`, or
+`@Symbol` to map it again is an error.
+
+An interface struct may inherit from one physical `@Struct` base. The generated
+wrapper extends the base wrapper, the complete base `MemoryLayout$F` is the
+layout prefix, and new fields append after it:
+
+```java
+@Struct
+interface Header {
+  int size();
+}
+
+@Struct
+interface Message extends Header, NativeCoordinates {
+  long payload();
+}
+```
+
+`MessageFM` therefore uses `HeaderFM.MemoryLayout$F`, followed by `y`, `x`, and
+`payload`. Multiple ordinary abstraction parents are allowed, but multiple
+physical struct bases are rejected. `MessageFM` overrides inherited fluent
+setters with a covariant `MessageFM` return type, so a chain can set base and
+derived fields without falling back to `HeaderFM`.
 
 Declare each scalar native field with a zero-argument getter only. Inline array
 fields use the indexed getter form described below. Do not declare setter or

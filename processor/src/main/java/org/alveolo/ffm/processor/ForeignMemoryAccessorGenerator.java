@@ -53,6 +53,34 @@ final class ForeignMemoryAccessorGenerator {
     writeUnsupportedMethods(out, fields);
   }
 
+  void writeInheritedFluentSetters(Writer out, String className,
+      ForeignMemoryAnalyzer.Fields fields) throws IOException {
+    var target = AccessorTarget.fluent(className);
+    for (var field : fields.fields()) {
+      var indexed = fields.indexedFields().get(field.name());
+      if (indexed != null) {
+        indexedFieldGenerator.writeInheritedFluentSetters(
+            out, className, indexed);
+        continue;
+      }
+      if (!hasFluentSetter(field)) continue;
+
+      var needsAllocator = analyzer.needsAllocatorWrite(field);
+      var arguments = needsAllocator ? "allocator, value" : "value";
+      out.write("""
+
+            @Override
+            <head> {
+              return (<class>) super.<name>(<arguments>);
+            }
+          """
+          .replace("<head>", target.setterHead(field, needsAllocator))
+          .replace("<arguments>", arguments)
+          .replace("<class>", className)
+          .replace("<name>", field.name()));
+    }
+  }
+
   void writeRecordFields(Writer out, ForeignMemoryAnalyzer.Fields fields)
       throws IOException {
     for (var field : fields.fields()) {
@@ -532,6 +560,13 @@ final class ForeignMemoryAccessorGenerator {
     return field.isString()
         || field.unsupported()
         || (target.isStatic() && field.isArrayOrBuffer());
+  }
+
+  private boolean hasFluentSetter(VariableGenerator field) {
+    return !field.isNioBuffer()
+        && !field.isPrimitiveAddress()
+        && !(isNestedAddress(field)
+            && field.typeElement.getKind() == ElementKind.RECORD);
   }
 
   private void reportMemoryBackedRecordAddressField(

@@ -1,7 +1,7 @@
 package org.alveolo.ffm;
 
 import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.CLASS;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
 /// inspected before another call uses the same instance and must not be used
 /// concurrently.
 @Target(TYPE)
-@Retention(SOURCE)
+@Retention(CLASS)
 public @interface CallState {
   /// Native capture-state name used unless a platform override matches.
   String value();

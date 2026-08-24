@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class ObjFM implements Obj {
+public class ObjFM implements Obj {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(

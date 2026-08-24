@@ -1,7 +1,7 @@
 package org.alveolo.ffm;
 
 import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.CLASS;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 /// @see [Struct] for C structs
 /// @see [Sequence] for fixed-size inline array fields.
 @Target(TYPE)
-@Retention(SOURCE)
+@Retention(CLASS)
 public @interface Union {
   /// Override the generated simple class name. The generated class stays in the
   /// same package as the annotated type. By default, a trailing `Spec` is removed

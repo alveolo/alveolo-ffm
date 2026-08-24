@@ -1,7 +1,7 @@
 package org.alveolo.ffm;
 
 import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.CLASS;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
 ///
 /// `CountedBy` and [Sequence] cannot be combined on the same parameter.
 @Target(PARAMETER)
-@Retention(SOURCE)
+@Retention(CLASS)
 public @interface CountedBy {
   /// Name of the sibling parameter that supplies the element count.
   String value();

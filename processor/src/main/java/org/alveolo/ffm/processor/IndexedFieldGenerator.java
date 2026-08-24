@@ -155,6 +155,67 @@ final class IndexedFieldGenerator {
     }
   }
 
+  void writeInheritedFluentSetters(
+      Writer out, String className, IndexedField indexed)
+      throws IOException {
+    var field = indexed.element();
+    var name = field.name();
+    var params = indexed.accessorParameterDeclarations();
+    var args = indexed.accessorParameterNames();
+    var needsAllocator = analyzer.indexedElementNeedsAllocator(indexed);
+    var allocator = needsAllocator
+        ? "java.lang.foreign.SegmentAllocator allocator$f, " : "";
+    var allocatorArg = needsAllocator ? "allocator$f, " : "";
+
+    out.write("""
+
+          @Override
+          public <class> <name>(
+              <allocator><params>,
+              <type> value$f) {
+            return (<class>) super.<name>(
+                <allocatorArg><args>, value$f);
+          }
+        """
+        .replace("<class>", className)
+        .replace("<name>", name)
+        .replace("<allocator>", allocator)
+        .replace("<allocatorArg>", allocatorArg)
+        .replace("<params>", params)
+        .replace("<args>", args)
+        .replace("<type>", field.typeName()));
+
+    if (indexed.addressElement()) {
+      var helperParams = indexed.helperParameterDeclarations();
+      var helperArgs = indexed.helperParameterNames();
+      out.write("""
+
+            @Override
+            public <class> <name>AsAddress$F(
+                <params>, java.lang.foreign.MemorySegment value) {
+              return (<class>) super.<name>AsAddress$F(<args>, value);
+            }
+          """
+          .replace("<class>", className)
+          .replace("<name>", name)
+          .replace("<params>", helperParams)
+          .replace("<args>", helperArgs));
+    }
+
+    if (indexed.oneDimensional() && indexed.primitive()) {
+      out.write("""
+
+            @Override
+            public <class> <name>FromArray$F(<type>[] value) {
+              return (<class>) super.<name>FromArray$F(value);
+            }
+          """
+          .replace("<class>", className)
+          .replace("<name>", name)
+          .replace("<type>", field.typeName()));
+    }
+  }
+
   void writeStaticAccessors(Writer out, IndexedField indexed)
       throws IOException {
     writeSegmentHelpers(out, indexed, true);

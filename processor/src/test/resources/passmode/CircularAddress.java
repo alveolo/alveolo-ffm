@@ -2,7 +2,7 @@ package passmode;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class CircularAddress implements CircularAddressSpec {
+public class CircularAddress implements CircularAddressSpec {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(

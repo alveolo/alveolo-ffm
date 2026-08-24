@@ -1,7 +1,7 @@
 package org.alveolo.ffm;
 
 import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.CLASS;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -19,7 +19,7 @@ import java.lang.foreign.Linker;
 /// or after this index: `int` instead of `boolean`, `byte`, `char`, or `short`,
 /// and `double` instead of `float`.
 @Target(METHOD)
-@Retention(SOURCE)
+@Retention(CLASS)
 public @interface FirstVariadicArg {
   /// Zero-based index among the method's declared native parameters.
   int value();

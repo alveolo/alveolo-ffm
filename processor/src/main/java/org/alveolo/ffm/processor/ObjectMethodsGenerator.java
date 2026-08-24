@@ -10,7 +10,6 @@ import static org.alveolo.ffm.processor.ProcessorUtils.qualifyName;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -132,47 +131,12 @@ final class ObjectMethodsGenerator {
       }
     }
 
-    if (!vtable && objectMethods.hasVirtualMethods()) {
-      for (var method : objectMethods.virtualMethods()) {
-        processingEnv.getMessager().printError(
-            "@Virtual is only allowed on @Struct(vtable = true) methods",
-            method);
-      }
-      valid = false;
-    }
-
     for (var method : objectMethods.methods()) {
       if (indexedFieldShape(method)) {
         processingEnv.getMessager().printError(
             "Indexed field declarations cannot be annotated @Virtual or "
                 + "@Symbol",
             method);
-        valid = false;
-      }
-    }
-
-    var slots = new LinkedHashMap<Integer, ExecutableElement>();
-    for (var method : objectMethods.virtualMethods()) {
-      if (method.getAnnotation(Symbol.class) != null) {
-        processingEnv.getMessager().printError(
-            "@Virtual and @Symbol cannot be used on the same method", method);
-        valid = false;
-      }
-
-      var slot = method.getAnnotation(Virtual.class).value();
-      if (slot < 0) {
-        processingEnv.getMessager().printError(
-            "@Virtual value must be non-negative", method);
-        valid = false;
-        continue;
-      }
-
-      var previous = slots.putIfAbsent(slot, method);
-      if (previous != null) {
-        processingEnv.getMessager().printError(
-            "Duplicate @Virtual slot: " + slot, method);
-        processingEnv.getMessager().printError(
-            "Duplicate @Virtual slot: " + slot, previous);
         valid = false;
       }
     }

@@ -240,6 +240,185 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesInheritedStructFields() {
+    var c = compile("memory/inheritance/Derived.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.BaseFM", "memory/inheritance/BaseFM.java");
+    assertGenerated(c, "pkg.DerivedFM",
+        "memory/inheritance/DerivedFM.java");
+  }
+
+  @Test
+  void overridesInheritedIndexedFluentSetters() {
+    var c = compile("memory/inheritance/IndexedDerived.java");
+
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.IndexedDerivedFM",
+        "memory/inheritance/IndexedDerivedFM.java");
+  }
+
+  @Test
+  void generatesFieldsInheritedWithoutSource() {
+    var source = forSourceString("test.BinaryDerived", """
+        package test;
+
+        @org.alveolo.ffm.Struct
+        public interface BinaryDerived extends
+            org.alveolo.ffm.processor.fixture.BinaryFieldsParent {
+          byte own();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).succeeded();
+    assertGenerated(c, "test.BinaryDerivedFM",
+        "memory/inheritance/BinaryDerivedFM.java");
+  }
+
+  @Test
+  void failsFieldsOnStruct() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Fields("value")
+        @org.alveolo.ffm.Struct
+        interface Bad {
+          int value();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "@Fields is not allowed on @Struct or @Union interfaces");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsUnmappedInheritedStructMethod() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        interface Parent {
+          int value();
+        }
+        @org.alveolo.ffm.Struct
+        interface Bad extends Parent {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Inherited abstract method must be mapped by @Fields or "
+            + "overridden directly on @Struct");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsRedefinedFieldMapping() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Fields("value")
+        interface Parent {
+          int value();
+        }
+        @org.alveolo.ffm.Fields("value")
+        interface Child extends Parent {}
+        @org.alveolo.ffm.Struct
+        interface Bad extends Child {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Field mapping is already defined: value");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsChangingAnInheritedFieldToVirtual() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Fields("value")
+        interface Parent {
+          int value();
+        }
+        @org.alveolo.ffm.Struct(vtable = true)
+        interface Bad extends Parent {
+          @Override
+          @org.alveolo.ffm.Virtual(0)
+          int value();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Method mapping is already defined by @Fields or @Struct");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsRedefinedVirtualMapping() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        interface Parent {
+          @org.alveolo.ffm.Virtual(0)
+          int call();
+        }
+        @org.alveolo.ffm.Struct(vtable = true)
+        interface Bad extends Parent {
+          @Override
+          @org.alveolo.ffm.Virtual(1)
+          int call();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "Method mapping is already defined by @Virtual");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsChangingTheReturnTypeOfAnInheritedMapping() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Fields("value")
+        interface Parent {
+          Number value();
+        }
+        @org.alveolo.ffm.Struct
+        interface Bad extends Parent {
+          @Override
+          Integer value();
+        }
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "A mapped method override must preserve its return type");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
+  void failsMultipleStructBases() {
+    var source = forSourceString("test.Bad", """
+        package test;
+        @org.alveolo.ffm.Struct interface Left { int left(); }
+        @org.alveolo.ffm.Struct interface Right { int right(); }
+        @org.alveolo.ffm.Struct interface Bad extends Left, Right {}
+        """);
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorContaining(
+        "A @Struct may inherit from only one @Struct base");
+    assertThat(c).hadErrorCount(1);
+  }
+
+  @Test
   void generatesIndexedArrayFieldsAndRecordSnapshots() {
     var use = forSourceString("pkg.ArrayFieldsUse", """
         package pkg;
