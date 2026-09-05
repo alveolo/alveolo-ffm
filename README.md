@@ -406,6 +406,17 @@ Use `@Struct` for C structs. Records are convenient for value-style data:
 public record div_t(int quot, int rem) {}
 ```
 
+Record structs are intentionally limited to concise snapshot declarations.
+They cannot contain memory-backed struct or union interfaces, call-state
+wrappers, or generated memory-backed classes. Neither `@Value` nor `@Address`
+makes such a component valid. The same restriction applies inside nested
+records and record arrays. These declarations are rejected during annotation
+processing, even when no native call uses the record.
+
+Use another record struct for a nested snapshot. Use an interface for the
+containing struct when it needs memory-backed components or mixed layouts.
+Do not extend record conversion with hidden arenas or retained memory views.
+
 The processor generates a layout helper with:
 
 - `MemoryLayout$F`

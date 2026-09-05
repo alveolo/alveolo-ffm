@@ -184,7 +184,7 @@ class NativeSharedLibraryTest {
     try (var arena = Arena.ofConfined()) {
       var pair = new PairSFM(arena).left(7).right(11);
       assertEquals(18, AffmTestFFM.INSTANCE$F
-          .pair_box_interface_address_sum(new PairBoxIA(pair)));
+          .pair_box_interface_address_sum(new PairBoxIAFM(arena).pair(pair)));
     }
   }
 
@@ -193,7 +193,7 @@ class NativeSharedLibraryTest {
     try (var arena = Arena.ofConfined()) {
       var pair = new PairSFM(arena).left(7).right(11);
       assertEquals(18, AffmTestFFM.INSTANCE$F
-          .pair_box_interface_value_sum(new PairBoxIV(pair)));
+          .pair_box_interface_value_sum(new PairBoxIVFM(arena).pair(pair)));
     }
   }
 

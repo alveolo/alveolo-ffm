@@ -83,10 +83,10 @@ public interface AffmTest {
   int pair_box_record_address_sum(PairBoxRA value);
 
   @Symbol("pair_box_ptr_sum")
-  int pair_box_interface_address_sum(PairBoxIA value);
+  int pair_box_interface_address_sum(@Value PairBoxIA value);
 
   @Symbol("pair_box_value_sum")
-  int pair_box_interface_value_sum(PairBoxIV value);
+  int pair_box_interface_value_sum(@Value PairBoxIV value);
 
   void scale_ints(
       @CountedBy("count") int[] values, int count, int factor);

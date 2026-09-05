@@ -10,6 +10,12 @@ This project is a wrapper around Java Foreign Function and Memory API.
 - design with records / immutable objects
 - no stupid getters - just expose final field
 - test code generation with full equivalence, not contains
+- Record-based `@Struct` declarations are concise snapshots. Never support
+  memory-backed struct/union interfaces, call-state wrappers, or their generated
+  classes as record components, including with `@Value`, `@Address`, or through
+  nested records and arrays. Use an interface for mixed layouts. Preserve the
+  compile-rejection contract in `RecordStructContractTest`; do not replace it
+  with allocator or lifetime machinery to accommodate these shapes.
 - if you met problem unforeseen during planning and it doesn't solve in the
   most concise simple way - stop, explain the problem and ask for directions
   instead of falling back to introducing unexpected complexity.

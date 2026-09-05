@@ -368,8 +368,10 @@ final class ForeignMemoryAnalyzer {
     }
   }
 
-  /// Buffer snapshots are intentionally not part of the record model. Array
-  /// snapshots are validated while inferring their element and dimensions.
+  /// Records are snapshots, never containers for memory-backed wrappers.
+  /// Enforce this at the declaration, regardless of pass mode or call usage:
+  /// otherwise a converted record can retain a view into a closed call arena.
+  /// Array snapshots are validated while inferring their element and dimensions.
   void validateRecordComponents(TypeElement type) {
     if (type.getKind() != ElementKind.RECORD) return;
 
@@ -378,8 +380,15 @@ final class ForeignMemoryAnalyzer {
       if (componentType.getKind() == TypeKind.ARRAY) {
         continue;
       }
-      if (new TypeGenerator(processingEnv, generatedTypes,
-          componentType, component).isNioBuffer()) {
+      var generator = new TypeGenerator(processingEnv, generatedTypes,
+          componentType, component);
+      if (generator.isForeignMemory() && !generator.isRecord()) {
+        messager.printError(
+            "Record structs cannot contain memory-backed types;"
+                + " use a record struct component or declare the containing"
+                + " struct as an interface",
+            component);
+      } else if (generator.isNioBuffer()) {
         messager.printError(
             "NIO Buffer types are not supported as record components;"
                 + " use a one-dimensional array component annotated @Sequence",

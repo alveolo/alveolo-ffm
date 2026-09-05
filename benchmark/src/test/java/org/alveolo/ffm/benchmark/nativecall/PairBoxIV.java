@@ -4,4 +4,6 @@ import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Value;
 
 @Struct
-public record PairBoxIV(@Value PairS pair) {}
+public interface PairBoxIV {
+  @Value PairS pair();
+}

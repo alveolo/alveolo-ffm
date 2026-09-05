@@ -6,7 +6,12 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/// Marks an interface as a C struct definition. Direct, otherwise-unmapped
+/// Marks a record or interface as a C struct definition. Records provide concise
+/// snapshot declarations and cannot contain memory-backed struct/union types or
+/// their generated wrappers, even with [Value] or [Address]. This also applies
+/// through nested records and record arrays. Use an interface for mixed layouts.
+///
+/// Direct, otherwise-unmapped
 /// interface accessors define fields in declaration order. Reusable parent
 /// interfaces can define inherited field placement with [Fields].
 ///

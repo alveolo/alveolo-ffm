@@ -25,11 +25,8 @@ interface TypeValueInterface {
 @Struct
 public record FieldModes(
     InnerRecord recordDefault,
-    InnerInterface interfaceDefault,
     @Address InnerRecord recordTypeUseAddress,
-    @Value InnerInterface interfaceTypeUseValue,
-    @Value TypeAddressRecord fieldOverridesTypeAddress,
-    @Address TypeValueInterface fieldOverridesTypeValue
+    @Value TypeAddressRecord fieldOverridesTypeAddress
 ) {}
 
 @Struct

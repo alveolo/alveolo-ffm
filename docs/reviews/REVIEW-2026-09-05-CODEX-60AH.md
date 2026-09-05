@@ -12,7 +12,7 @@ I also compiled small independent Java specifications and a local C library to e
 
 The first three findings deserve priority because valid declarations produce incorrect runtime behavior.
 
-1. **[P1] Returned records can contain views into an already-closed arena.**
+1. **[P1] ✅ Returned records can contain views into an already-closed arena.**
 
    The processor treats every record returned by value as a detached snapshot and allocates its return storage in a confined call arena. However, a record component can be an inline `@Value` interface struct. Its converter constructs a wrapper over a slice of that return storage. Closing the call arena invalidates part of the returned Java object immediately.
 

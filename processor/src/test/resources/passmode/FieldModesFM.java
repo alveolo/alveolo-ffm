@@ -8,11 +8,8 @@ public final class FieldModesFM {
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
         passmode.InnerRecordFM.MemoryLayout$F.withName("recordDefault"),
-        java.lang.foreign.ValueLayout.ADDRESS.withName("interfaceDefault"),
         java.lang.foreign.ValueLayout.ADDRESS.withName("recordTypeUseAddress"),
-        passmode.InnerInterfaceFM.MemoryLayout$F.withName("interfaceTypeUseValue"),
         passmode.TypeAddressRecordFM.MemoryLayout$F.withName("fieldOverridesTypeAddress"),
-        java.lang.foreign.ValueLayout.ADDRESS.withName("fieldOverridesTypeValue"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(
@@ -62,11 +59,8 @@ public final class FieldModesFM {
       java.lang.foreign.MemorySegment memorySegment,
       java.lang.foreign.SegmentAllocator allocator) {
     recordDefault(memorySegment, source.recordDefault());
-    interfaceDefault(memorySegment, source.interfaceDefault());
     recordTypeUseAddress(memorySegment, allocator, source.recordTypeUseAddress());
-    interfaceTypeUseValue(memorySegment, source.interfaceTypeUseValue());
     fieldOverridesTypeAddress(memorySegment, source.fieldOverridesTypeAddress());
-    fieldOverridesTypeValue(memorySegment, source.fieldOverridesTypeValue());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
@@ -81,11 +75,8 @@ public final class FieldModesFM {
       java.lang.foreign.MemorySegment memorySegment) {
     return new FieldModes(
         recordDefault(memorySegment),
-        interfaceDefault(memorySegment),
         recordTypeUseAddress(memorySegment),
-        interfaceTypeUseValue(memorySegment),
-        fieldOverridesTypeAddress(memorySegment),
-        fieldOverridesTypeValue(memorySegment));
+        fieldOverridesTypeAddress(memorySegment));
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -109,22 +100,6 @@ public final class FieldModesFM {
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
-      interfaceDefault$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("interfaceDefault");
-
-  public static final java.lang.invoke.VarHandle interfaceDefault$VarHandle$F =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(interfaceDefault$PathElement$F), 1, 0L);
-
-  public static passmode.InnerInterface interfaceDefault(java.lang.foreign.MemorySegment memorySegment) {
-    return passmode.InnerInterfaceFM.reinterpret$F((java.lang.foreign.MemorySegment) interfaceDefault$VarHandle$F.get(memorySegment));
-  }
-
-  public static void interfaceDefault(java.lang.foreign.MemorySegment memorySegment, passmode.InnerInterface value) {
-    interfaceDefault$VarHandle$F.set(memorySegment, ((passmode.InnerInterfaceFM) value).MemorySegment$F);
-  }
-
-  public static final java.lang.foreign.MemoryLayout.PathElement
       recordTypeUseAddress$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
           .groupElement("recordTypeUseAddress");
 
@@ -140,27 +115,6 @@ public final class FieldModesFM {
       java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, passmode.InnerRecord value) {
     recordTypeUseAddress$VarHandle$F.set(memorySegment,
         passmode.InnerRecordFM.toMemorySegment$F(allocator, value));
-  }
-
-  public static final java.lang.foreign.MemoryLayout.PathElement
-      interfaceTypeUseValue$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("interfaceTypeUseValue");
-
-  public static passmode.InnerInterface interfaceTypeUseValue(java.lang.foreign.MemorySegment memorySegment) {
-    return new passmode.InnerInterfaceFM(memorySegment.asSlice(
-        MemoryLayout$F.byteOffset(interfaceTypeUseValue$PathElement$F),
-        MemoryLayout$F.select(interfaceTypeUseValue$PathElement$F).byteSize()));
-  }
-
-  public static void interfaceTypeUseValue(java.lang.foreign.MemorySegment memorySegment, passmode.InnerInterface value) {
-    var memoryLayout =
-        MemoryLayout$F.select(interfaceTypeUseValue$PathElement$F);
-    var slice = memorySegment.asSlice(
-        MemoryLayout$F.byteOffset(interfaceTypeUseValue$PathElement$F),
-        memoryLayout.byteSize());
-    java.lang.foreign.MemorySegment.copy(
-        ((passmode.InnerInterfaceFM) value).MemorySegment$F, 0,
-        slice, 0, memoryLayout.byteSize());
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -181,21 +135,5 @@ public final class FieldModesFM {
         memoryLayout.byteSize());
     passmode.TypeAddressRecordFM.toMemorySegment$F(
         value, slice);
-  }
-
-  public static final java.lang.foreign.MemoryLayout.PathElement
-      fieldOverridesTypeValue$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
-          .groupElement("fieldOverridesTypeValue");
-
-  public static final java.lang.invoke.VarHandle fieldOverridesTypeValue$VarHandle$F =
-      java.lang.invoke.MethodHandles.insertCoordinates(
-          MemoryLayout$F.varHandle(fieldOverridesTypeValue$PathElement$F), 1, 0L);
-
-  public static passmode.TypeValueInterface fieldOverridesTypeValue(java.lang.foreign.MemorySegment memorySegment) {
-    return passmode.TypeValueInterfaceFM.reinterpret$F((java.lang.foreign.MemorySegment) fieldOverridesTypeValue$VarHandle$F.get(memorySegment));
-  }
-
-  public static void fieldOverridesTypeValue(java.lang.foreign.MemorySegment memorySegment, passmode.TypeValueInterface value) {
-    fieldOverridesTypeValue$VarHandle$F.set(memorySegment, ((passmode.TypeValueInterfaceFM) value).MemorySegment$F);
   }
 }
