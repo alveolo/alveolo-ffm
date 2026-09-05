@@ -22,7 +22,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Sources: [ExecutableGenerator.java:346](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:346), [ExecutableGenerator.java:398](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:398), [ForeignMemoryAccessorGenerator.java:358](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ForeignMemoryAccessorGenerator.java:358). Runtime evidence: [record_lifetime/run.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/record_lifetime/run.log).
 
-2. **[P1] Virtual methods lose `@CountedBy`, corrupting array entries outside the requested prefix.**
+2. **[P1] ✅ Virtual methods lose `@CountedBy`, corrupting array entries outside the requested prefix.**
 
    The intermediate dispatch-table specification copies parameter types and names through `bridgeSignature()`. `CountedBy` is a declaration annotation targeted only at parameters, so it is omitted. The generated dispatch method consequently transfers the entire array and loses the count validation.
 

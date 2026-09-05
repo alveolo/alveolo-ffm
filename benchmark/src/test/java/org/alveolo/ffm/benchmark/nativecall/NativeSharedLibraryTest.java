@@ -57,6 +57,47 @@ class NativeSharedLibraryTest {
   }
 
   @Test
+  void copiesOutVirtualArrayPrefix() {
+    var object = AffmTestFFM.INSTANCE$F.get_counted_virtual();
+    var values = new int[] {1, 2, 3};
+
+    object.fill(values, 1);
+    assertArrayEquals(new int[] {10, 2, 3}, values);
+
+    object.fill(values, 0);
+    assertArrayEquals(new int[] {10, 2, 3}, values);
+
+    object.fill(values, 3);
+    assertArrayEquals(new int[] {10, 11, 12}, values);
+  }
+
+  @Test
+  void copiesOutVirtualBufferPrefixWithoutChangingPosition() {
+    var object = AffmTestFFM.INSTANCE$F.get_counted_virtual();
+    var values = new int[] {1, 2, 3, 4};
+    var buffer = IntBuffer.wrap(values).position(1).limit(3);
+
+    object.fill(buffer, 1);
+
+    assertArrayEquals(new int[] {1, 10, 3, 4}, values);
+    assertEquals(1, buffer.position());
+    assertEquals(3, buffer.limit());
+  }
+
+  @Test
+  void rejectsVirtualCountsOutsideArrayBounds() {
+    var object = AffmTestFFM.INSTANCE$F.get_counted_virtual();
+    var values = new int[] {1, 2, 3};
+
+    assertThrows(IllegalArgumentException.class,
+        () -> object.count(values, -1));
+    assertThrows(IllegalArgumentException.class,
+        () -> object.count(values, 4));
+    assertEquals(0, object.count(values, 0));
+    assertEquals(3, object.count(values, 3));
+  }
+
+  @Test
   void callsPrimitiveFunction() {
     assertEquals(42, AffmTestFFM.INSTANCE$F.add_ints(19, 23));
   }

@@ -810,6 +810,50 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void preservesCountedByInVirtualMethodBridges() {
+    var source = forSourceString("test.CountedVirtual", """
+        package test;
+        import org.alveolo.ffm.*;
+
+        @Struct(vtable = true)
+        interface CountedVirtual {
+          @Virtual(0)
+          void fill(@Out @CountedBy("count") int[] values, int count);
+
+          @Virtual(1)
+          int count(@CountedBy("length") int[] values, long length);
+        }
+        """);
+    var expected = forSourceString("test.CountedVirtualVtbl", """
+        package test;
+
+        @javax.annotation.processing.Generated(
+            "org.alveolo.ffm.processor.ForeignMemoryProcessor")
+        @org.alveolo.ffm.DispatchTable
+        interface CountedVirtualVtbl {
+          @org.alveolo.ffm.Slot(0)
+          void fill(
+              CountedVirtual self$f,
+              @org.alveolo.ffm.CountedBy("count")
+              @org.alveolo.ffm.Out int[] values,
+              int count);
+
+          @org.alveolo.ffm.Slot(1)
+          int count(
+              CountedVirtual self$f,
+              @org.alveolo.ffm.CountedBy("length") int[] values,
+              long length);
+        }
+        """);
+
+    var compilation = compile(source);
+
+    assertThat(compilation).succeeded();
+    assertThat(compilation).generatedSourceFile("test.CountedVirtualVtbl")
+        .hasSourceEquivalentTo(expected);
+  }
+
+  @Test
   void generatesObjectVtblStruct() {
     var c = compile(
         "memory/object/NativeApi.java",

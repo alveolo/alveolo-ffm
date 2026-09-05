@@ -33,6 +33,35 @@ typedef struct int3_value {
   int32_t values[3];
 } int3_value;
 
+static void virtual_fill(void* self, int32_t* values, int32_t count) {
+  for (int32_t i = 0; i < count; i++) {
+    values[i] = 10 + i;
+  }
+}
+
+// Count validation tests must remain safe even if Java validation regresses.
+static int32_t virtual_count(void* self, int32_t* values, int32_t count) {
+  return count;
+}
+
+typedef struct counted_vtable {
+  void (*fill_array)(void*, int32_t*, int32_t);
+  void (*fill_buffer)(void*, int32_t*, int32_t);
+  int32_t (*count)(void*, int32_t*, int32_t);
+} counted_vtable;
+
+typedef struct counted_virtual {
+  const counted_vtable* vtable;
+} counted_virtual;
+
+EXPORT const counted_virtual* get_counted_virtual(void) {
+  static const counted_vtable vtable = {
+    virtual_fill, virtual_fill, virtual_count
+  };
+  static const counted_virtual object = {&vtable};
+  return &object;
+}
+
 EXPORT int add_ints(int left, int right) {
   return left + right;
 }

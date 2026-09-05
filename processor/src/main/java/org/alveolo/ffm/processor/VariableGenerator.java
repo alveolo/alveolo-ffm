@@ -59,7 +59,12 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String bridgeSignature() {
-    return bridgeTypeName() + " " + name();
+    var signature = bridgeTypeName() + " " + name();
+    // @CountedBy is a parameter annotation, not part of the type mirror.
+    return hasCountedBy()
+        ? "@org.alveolo.ffm.CountedBy("
+            + ProcessorUtils.quote(countedBy) + ") " + signature
+        : signature;
   }
 
   String argumentLayout() {

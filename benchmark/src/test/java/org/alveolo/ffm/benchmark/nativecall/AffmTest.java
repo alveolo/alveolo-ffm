@@ -22,6 +22,8 @@ import org.alveolo.ffm.WCharT;
 @Library("affm_test")
 @ForeignInterface
 public interface AffmTest {
+  CountedVirtual get_counted_virtual();
+
   int add_ints(int left, int right);
 
   @SLong long echo_slong(@SLong long value);
