@@ -24,6 +24,8 @@ import org.alveolo.ffm.WCharT;
 public interface AffmTest {
   CountedVirtual get_counted_virtual();
 
+  VirtualPairs get_virtual_pairs();
+
   int add_ints(int left, int right);
 
   @SLong long echo_slong(@SLong long value);

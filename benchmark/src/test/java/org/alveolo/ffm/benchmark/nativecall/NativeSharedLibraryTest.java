@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.lang.foreign.Arena;
+import java.lang.foreign.SegmentAllocator;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -54,6 +55,32 @@ class NativeSharedLibraryTest {
     fail("No usable C compiler found. Install cc, gcc, clang, or cl, "
         + "or set CC to a usable compiler." + System.lineSeparator()
         + String.join(System.lineSeparator(), failures));
+  }
+
+  @Test
+  void returnsVirtualInterfaceStructInCallerProvidedStorage() {
+    var object = AffmTestFFM.INSTANCE$F.get_virtual_pairs();
+    try (var arena = Arena.ofConfined()) {
+      var storage = PairSFM.allocate$F(arena);
+      var pair = object.make(SegmentAllocator.prefixAllocator(storage), 7, 11);
+
+      assertEquals(storage, ((PairSFM) pair).MemorySegment$F);
+      assertEquals(7, pair.left());
+      assertEquals(11, pair.right());
+    }
+  }
+
+  @Test
+  void capturesCallStateForVirtualInterfaceStructReturn() {
+    var object = AffmTestFFM.INSTANCE$F.get_virtual_pairs();
+    try (var arena = Arena.ofConfined()) {
+      var capture = new Errno(arena);
+      var pair = object.makeWithError(arena, capture, 7, 11, 2468);
+
+      assertEquals(7, pair.left());
+      assertEquals(11, pair.right());
+      assertEquals(2468, capture.errno());
+    }
   }
 
   @Test

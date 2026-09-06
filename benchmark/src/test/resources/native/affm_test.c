@@ -128,6 +128,32 @@ EXPORT pair make_pair_and_set_errno(int left, int right, int error) {
   return result;
 }
 
+static pair virtual_make_pair(void* self, int left, int right) {
+  return make_pair(left, right);
+}
+
+static pair virtual_make_pair_with_error(
+    void* self, int left, int right, int error) {
+  return make_pair_and_set_errno(left, right, error);
+}
+
+typedef struct virtual_pairs_vtable {
+  pair (*make)(void*, int, int);
+  pair (*make_with_error)(void*, int, int, int);
+} virtual_pairs_vtable;
+
+typedef struct virtual_pairs {
+  const virtual_pairs_vtable* vtable;
+} virtual_pairs;
+
+EXPORT const virtual_pairs* get_virtual_pairs(void) {
+  static const virtual_pairs_vtable vtable = {
+    virtual_make_pair, virtual_make_pair_with_error
+  };
+  static const virtual_pairs object = {&vtable};
+  return &object;
+}
+
 EXPORT int pair_sum(pair value) {
   return value.left + value.right;
 }

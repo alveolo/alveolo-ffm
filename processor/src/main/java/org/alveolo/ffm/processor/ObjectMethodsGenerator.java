@@ -339,11 +339,11 @@ final class ObjectMethodsGenerator {
 
     var method = generator.element;
     var args = new ArrayList<String>();
-    args.add("this");
     args.addAll(method.getParameters().stream()
         .map(VariableElement::getSimpleName)
         .map(Object::toString)
         .toList());
+    args.add(virtualReceiverIndex(generator), "this");
     var call = "Vtable$F()." + method.getSimpleName()
         + args.stream().collect(joining(", ", "(", ")"));
 
@@ -365,14 +365,22 @@ final class ObjectMethodsGenerator {
       TypeElement iface, ExecutableGenerator generator) {
     var method = generator.element;
     var params = new ArrayList<String>();
-    params.add(iface.getSimpleName() + " self$f");
     params.addAll(generator.parameterGenerators.stream()
         .map(VariableGenerator::bridgeSignature)
         .toList());
+    params.add(virtualReceiverIndex(generator),
+        iface.getSimpleName() + " self$f");
 
     return generator.bridgeReturnTypeName()
         + " " + method.getSimpleName()
         + params.stream().collect(joining(",\n      ", "(\n      ", ")"));
+  }
+
+  /// Keep the Java-only return allocator first, ahead of the native receiver.
+  private int virtualReceiverIndex(ExecutableGenerator generator) {
+    var parameters = generator.parameterGenerators;
+    return !parameters.isEmpty() && parameters.getFirst().isSegmentAllocator()
+        ? 1 : 0;
   }
 
   private int virtualSlot(ExecutableElement method) {

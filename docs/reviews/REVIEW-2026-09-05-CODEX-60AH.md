@@ -52,7 +52,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Sources: [CanonicalLayout.java:10](/Users/igor/work/alveolo/alveolo-ffm/core/src/main/java/org/alveolo/ffm/CanonicalLayout.java:10), [TypeGenerator.java:488](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/TypeGenerator.java:488), [TypeGenerator.java:506](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/TypeGenerator.java:506). Evidence: [sizeptr/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/sizeptr/compile.log).
 
-5. **[P2] Virtual methods cannot return interface structs by value with an allocator.**
+5. **[P2] ✅ Virtual methods cannot return interface structs by value with an allocator.**
 
    A source declaration such as `@Virtual(0) @Value Point get(SegmentAllocator allocator)` passes the initial checks. The generated dispatch-table specification inserts `self$f` before the allocator. Its next processing round then rejects the method because the allocator is no longer the first Java parameter.
 
