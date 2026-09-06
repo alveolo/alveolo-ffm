@@ -38,7 +38,7 @@ public final class InheritedVtblFD implements InheritedVtbl {
       org.alveolo.ffm.NativeType.adaptDowncall(
           Linker$F.downcallHandle(
               java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  org.alveolo.ffm.NativeType.SIZE_T.layout,
                   java.lang.foreign.ValueLayout.ADDRESS)),
           org.alveolo.ffm.NativeType.SIZE_T,
           new org.alveolo.ffm.NativeType[] {

@@ -1,9 +1,8 @@
 package org.alveolo.ffm;
 
+import static java.lang.foreign.Linker.nativeLinker;
 import static java.lang.invoke.MethodHandles.identity;
 import static java.lang.invoke.MethodType.methodType;
-import static org.alveolo.ffm.CanonicalLayout.LONG;
-import static org.alveolo.ffm.CanonicalLayout.WCHAR_T;
 
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -19,17 +18,17 @@ import java.lang.invoke.VarHandle;
 /// [ForeignUtils] avoids initializing the native linker for fixed-layout structs
 /// that only use padding helpers.
 public enum NativeType {
-  SLONG(LONG, long.class),
-  ULONG(LONG, long.class),
-  SIZE_T(CanonicalLayout.SIZE_T, long.class),
-  WCHAR(WCHAR_T, int.class);
+  SLONG(canonicalLayout("long"), long.class),
+  ULONG(canonicalLayout("long"), long.class),
+  SIZE_T(canonicalLayout("size_t"), long.class),
+  WCHAR_T(canonicalLayout("wchar_t"), int.class);
 
-  private final ValueLayout layout;
-  private final Class<?> javaCarrier;
+  public final ValueLayout layout;
+  private final Class<?> carrier;
 
-  NativeType(ValueLayout layout, Class<?> javaCarrier) {
+  NativeType(ValueLayout layout, Class<?> carrier) {
     this.layout = layout;
-    this.javaCarrier = javaCarrier;
+    this.carrier = carrier;
   }
 
   private static final MethodHandle LONG_TO_SIGNED_INT_EXACT = methodHandle(
@@ -47,21 +46,21 @@ public enum NativeType {
       NativeType.class, "charToInt", methodType(int.class, char.class));
 
   private static final MethodHandle SLONG_GET =
-      SLONG.adaptGetter(LONG.varHandle());
+      SLONG.adaptGetter(SLONG.layout.varHandle());
   private static final MethodHandle SLONG_SET =
-      SLONG.adaptSetter(LONG.varHandle());
+      SLONG.adaptSetter(SLONG.layout.varHandle());
   private static final MethodHandle ULONG_GET =
-      ULONG.adaptGetter(LONG.varHandle());
+      ULONG.adaptGetter(ULONG.layout.varHandle());
   private static final MethodHandle ULONG_SET =
-      ULONG.adaptSetter(LONG.varHandle());
+      ULONG.adaptSetter(ULONG.layout.varHandle());
   private static final MethodHandle SIZE_T_GET =
-      SIZE_T.adaptGetter(CanonicalLayout.SIZE_T.varHandle());
+      SIZE_T.adaptGetter(SIZE_T.layout.varHandle());
   private static final MethodHandle SIZE_T_SET =
-      SIZE_T.adaptSetter(CanonicalLayout.SIZE_T.varHandle());
+      SIZE_T.adaptSetter(SIZE_T.layout.varHandle());
   private static final MethodHandle WCHAR_T_GET =
-      WCHAR.adaptGetter(WCHAR_T.varHandle());
+      WCHAR_T.adaptGetter(WCHAR_T.layout.varHandle());
   private static final MethodHandle WCHAR_T_SET =
-      WCHAR.adaptSetter(WCHAR_T.varHandle());
+      WCHAR_T.adaptSetter(WCHAR_T.layout.varHandle());
 
   /// Adapts a raw downcall handle to stable Java carriers.
   ///
@@ -226,23 +225,27 @@ public enum NativeType {
     return value;
   }
 
+  private static ValueLayout canonicalLayout(String name) {
+    return (ValueLayout) nativeLinker().canonicalLayouts().get(name);
+  }
+
   private MethodHandle argumentFilter(Class<?> nativeCarrier) {
-    if (nativeCarrier == javaCarrier) return null;
+    if (nativeCarrier == carrier) return null;
 
     return switch (this) {
       case SLONG -> LONG_TO_SIGNED_INT_EXACT;
       case ULONG, SIZE_T -> LONG_TO_UNSIGNED_INT_EXACT;
-      case WCHAR -> INT_TO_CHAR_EXACT;
+      case WCHAR_T -> INT_TO_CHAR_EXACT;
     };
   }
 
   private MethodHandle returnFilter(Class<?> nativeCarrier) {
-    if (nativeCarrier == javaCarrier) return null;
+    if (nativeCarrier == carrier) return null;
 
     return switch (this) {
       case SLONG -> INT_TO_SIGNED_LONG;
       case ULONG, SIZE_T -> INT_TO_UNSIGNED_LONG;
-      case WCHAR -> CHAR_TO_INT;
+      case WCHAR_T -> CHAR_TO_INT;
     };
   }
 

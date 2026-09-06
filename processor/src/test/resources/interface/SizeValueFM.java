@@ -7,7 +7,7 @@ public final class SizeValueFM {
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        org.alveolo.ffm.CanonicalLayout.SIZE_T.withName("value"),
+        org.alveolo.ffm.NativeType.SIZE_T.layout.withName("value"),
         java.lang.foreign.ValueLayout.ADDRESS.withName("pointer"),
       }));
 
@@ -119,12 +119,12 @@ public final class SizeValueFM {
           MemoryLayout$F.varHandle(pointer$PathElement$F), 1, 0L);
 
   public static long pointer(java.lang.foreign.MemorySegment memorySegment) {
-    return org.alveolo.ffm.NativeType.getSizeT(((java.lang.foreign.MemorySegment) pointer$VarHandle$F.get(memorySegment)).reinterpret(org.alveolo.ffm.CanonicalLayout.SIZE_T.byteSize()), 0L);
+    return org.alveolo.ffm.NativeType.getSizeT(((java.lang.foreign.MemorySegment) pointer$VarHandle$F.get(memorySegment)).reinterpret(org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize()), 0L);
   }
 
   public static void pointer(
       java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, long value) {
-    var address = allocator.allocate(org.alveolo.ffm.CanonicalLayout.SIZE_T);
+    var address = allocator.allocate(org.alveolo.ffm.NativeType.SIZE_T.layout);
     org.alveolo.ffm.NativeType.setSizeT(address, 0L, value);
     pointer$VarHandle$F.set(memorySegment, address);
   }

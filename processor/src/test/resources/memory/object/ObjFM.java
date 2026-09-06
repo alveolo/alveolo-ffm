@@ -92,7 +92,7 @@ public class ObjFM implements Obj {
           pkg.NativeApiFFM.Linker$F.downcallHandle(
               pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_strlen"),
               java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  org.alveolo.ffm.NativeType.SIZE_T.layout,
                   java.lang.foreign.ValueLayout.ADDRESS,
                   java.lang.foreign.ValueLayout.ADDRESS)),
           org.alveolo.ffm.NativeType.SIZE_T,

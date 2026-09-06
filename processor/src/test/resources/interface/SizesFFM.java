@@ -18,8 +18,8 @@ public final class SizesFFM implements Sizes {
           Linker$F.downcallHandle(
               SymbolLookup$F.findOrThrow("echo"),
               java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T)),
+                  org.alveolo.ffm.NativeType.SIZE_T.layout,
+                  org.alveolo.ffm.NativeType.SIZE_T.layout)),
           org.alveolo.ffm.NativeType.SIZE_T,
           new org.alveolo.ffm.NativeType[] {
               org.alveolo.ffm.NativeType.SIZE_T
@@ -42,7 +42,7 @@ public final class SizesFFM implements Sizes {
           Linker$F.downcallHandle(
               SymbolLookup$F.findOrThrow("read"),
               java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  org.alveolo.ffm.NativeType.SIZE_T.layout,
                   java.lang.foreign.ValueLayout.ADDRESS)),
           org.alveolo.ffm.NativeType.SIZE_T,
           new org.alveolo.ffm.NativeType[] {
@@ -52,7 +52,7 @@ public final class SizesFFM implements Sizes {
   public long read(
       long value) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var value$MemorySegment$f = arena$f.allocate(org.alveolo.ffm.CanonicalLayout.SIZE_T);
+      var value$MemorySegment$f = arena$f.allocate(org.alveolo.ffm.NativeType.SIZE_T.layout);
       org.alveolo.ffm.NativeType.setSizeT(value$MemorySegment$f, 0L, value);
       return (long) MethodHandle$1$F.invokeExact(
           value$MemorySegment$f);
@@ -68,7 +68,7 @@ public final class SizesFFM implements Sizes {
           Linker$F.downcallHandle(
               SymbolLookup$F.findOrThrow("sum"),
               java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  org.alveolo.ffm.NativeType.SIZE_T.layout,
                   java.lang.foreign.ValueLayout.ADDRESS,
                   java.lang.foreign.ValueLayout.ADDRESS)),
           org.alveolo.ffm.NativeType.SIZE_T,
@@ -82,20 +82,20 @@ public final class SizesFFM implements Sizes {
       long second) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var first$allocationOffset$f = 0L;
-      var allocationOffset$f = org.alveolo.ffm.CanonicalLayout.SIZE_T.byteSize();
+      var allocationOffset$f = org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize();
       allocationOffset$f = Math.addExact(
           allocationOffset$f,
-          Math.floorMod(-allocationOffset$f, org.alveolo.ffm.CanonicalLayout.SIZE_T.byteAlignment()));
+          Math.floorMod(-allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteAlignment()));
       var second$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, org.alveolo.ffm.CanonicalLayout.SIZE_T.byteSize());
+          allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize());
       var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, org.alveolo.ffm.CanonicalLayout.SIZE_T.byteAlignment());
+          allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteAlignment());
       var first$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          first$allocationOffset$f, org.alveolo.ffm.CanonicalLayout.SIZE_T.byteSize());
+          first$allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize());
       org.alveolo.ffm.NativeType.setSizeT(first$MemorySegment$f, 0L, first);
       var second$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          second$allocationOffset$f, org.alveolo.ffm.CanonicalLayout.SIZE_T.byteSize());
+          second$allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize());
       org.alveolo.ffm.NativeType.setSizeT(second$MemorySegment$f, 0L, second);
       return (long) MethodHandle$2$F.invokeExact(
           first$MemorySegment$f,
@@ -118,7 +118,7 @@ public final class SizesFFM implements Sizes {
     try {
       var addressResult$f = (java.lang.foreign.MemorySegment) MethodHandle$3$F.invokeExact(
           );
-      return org.alveolo.ffm.NativeType.getSizeT(addressResult$f.reinterpret(org.alveolo.ffm.CanonicalLayout.SIZE_T.byteSize()), 0L);
+      return org.alveolo.ffm.NativeType.getSizeT(addressResult$f.reinterpret(org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize()), 0L);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

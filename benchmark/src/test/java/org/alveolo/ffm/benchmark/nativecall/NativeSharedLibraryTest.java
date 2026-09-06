@@ -21,8 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.alveolo.ffm.CanonicalLayout;
-
+import org.alveolo.ffm.NativeType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -150,14 +149,14 @@ class NativeSharedLibraryTest {
   @Test
   void adaptsSizeTCallsAndPointersToNativeWidth() {
     var api = AffmTestFFM.INSTANCE$F;
-    var maximum = CanonicalLayout.SIZE_T.byteSize() == 4
+    var maximum = NativeType.SIZE_T.layout.byteSize() == 4
         ? 0xffff_ffffL : -1L;
     assertEquals(maximum, api.size_t_address());
     assertEquals(0, api.echo_size_t(0));
     assertEquals(maximum, api.echo_size_t(maximum));
     assertEquals(maximum, api.read_size_t(maximum));
     assertEquals(0xffff_ffffL, api.sum_size_t(0x8000_0000L, 0x7fff_ffffL));
-    if (CanonicalLayout.SIZE_T.byteSize() == 4) {
+    if (NativeType.SIZE_T.layout.byteSize() == 4) {
       for (var value : new long[] {-1, 0x1_0000_0000L}) {
         assertThrows(ArithmeticException.class, () -> api.echo_size_t(value));
         assertThrows(ArithmeticException.class, () -> api.read_size_t(value));
@@ -172,7 +171,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void adaptsSizeTStructFieldsAndRecordSnapshots() {
-    var maximum = CanonicalLayout.SIZE_T.byteSize() == 4
+    var maximum = NativeType.SIZE_T.layout.byteSize() == 4
         ? 0xffff_ffffL : -1L;
     SizeValue snapshot;
     try (var arena = Arena.ofConfined()) {
@@ -183,7 +182,7 @@ class NativeSharedLibraryTest {
       var segment = SizeValueFM.toMemorySegment$F(arena, value);
       snapshot = SizeValueFM.fromMemorySegment$F(segment);
       assertEquals(value, snapshot);
-      if (CanonicalLayout.SIZE_T.byteSize() == 4) {
+      if (NativeType.SIZE_T.layout.byteSize() == 4) {
         for (var invalid : new long[] {-1, 0x1_0000_0000L}) {
           assertThrows(ArithmeticException.class, () -> field.value(invalid));
           assertThrows(ArithmeticException.class,
@@ -349,13 +348,13 @@ class NativeSharedLibraryTest {
   void copiesCountedRecordPrefixInAndOut() {
     var untouched = new PairR(5, 6);
     var values = new PairR[] {
-        new PairR(1, 2), new PairR(3, 4), untouched
+      new PairR(1, 2), new PairR(3, 4), untouched
     };
 
     AffmTestFFM.INSTANCE$F.offset_pairs(values, 2, 10);
 
     assertArrayEquals(new PairR[] {
-        new PairR(11, 12), new PairR(13, 14), untouched
+      new PairR(11, 12), new PairR(13, 14), untouched
     }, values);
     assertSame(untouched, values[2]);
   }
@@ -368,7 +367,7 @@ class NativeSharedLibraryTest {
     AffmTestFFM.INSTANCE$F.fill_pairs(values, 2, 20);
 
     assertArrayEquals(new PairR[] {
-        new PairR(20, 21), new PairR(22, 23), untouched
+      new PairR(20, 21), new PairR(22, 23), untouched
     }, values);
     assertSame(untouched, values[2]);
   }
@@ -547,7 +546,9 @@ class NativeSharedLibraryTest {
     result.add(List.of("cc"));
     result.add(List.of("gcc"));
     result.add(List.of("clang"));
-    if (isWindows()) result.add(List.of("cl"));
+    if (isWindows()) {
+      result.add(List.of("cl"));
+    }
 
     return result;
   }
@@ -565,10 +566,15 @@ class NativeSharedLibraryTest {
       return command;
     }
 
-    if (isMac()) command.add("-dynamiclib");
-    else command.add("-shared");
+    if (isMac()) {
+      command.add("-dynamiclib");
+    } else {
+      command.add("-shared");
+    }
 
-    if (!isWindows()) command.add("-fPIC");
+    if (!isWindows()) {
+      command.add("-fPIC");
+    }
 
     command.add(source.toString());
     command.add("-o");

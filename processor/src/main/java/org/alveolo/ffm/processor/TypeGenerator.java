@@ -34,29 +34,23 @@ import org.alveolo.ffm.macos.CFString;
 sealed class TypeGenerator permits VariableGenerator {
   enum CanonicalScalar {
     SLONG(SLong.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.CanonicalLayout.LONG",
         "org.alveolo.ffm.NativeType.SLONG"),
     ULONG(ULong.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.CanonicalLayout.LONG",
         "org.alveolo.ffm.NativeType.ULONG"),
     SIZE_T(SizeT.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.CanonicalLayout.SIZE_T",
         "org.alveolo.ffm.NativeType.SIZE_T"),
     WCHAR_T(WCharT.class.getCanonicalName(), TypeKind.INT,
-        "org.alveolo.ffm.CanonicalLayout.WCHAR_T",
-        "org.alveolo.ffm.NativeType.WCHAR");
+        "org.alveolo.ffm.NativeType.WCHAR_T");
 
     final String annotation;
     final TypeKind javaKind;
-    final String layout;
-    final String runtimeType;
+    final String nativeType;
 
-    CanonicalScalar(String annotation, TypeKind javaKind, String layout,
+    CanonicalScalar(String annotation, TypeKind javaKind,
         String runtimeType) {
       this.annotation = annotation;
       this.javaKind = javaKind;
-      this.layout = layout;
-      this.runtimeType = runtimeType;
+      this.nativeType = runtimeType;
     }
 
     String simpleAnnotationName() {
@@ -301,7 +295,8 @@ sealed class TypeGenerator permits VariableGenerator {
 
   String valueLayout() {
     var canonical = canonicalScalar();
-    if (canonical != null) return canonical.layout;
+    if (canonical != null)
+      return canonical.nativeType + ".layout";
 
     return switch (typeMirror.getKind()) {
       case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
@@ -462,7 +457,7 @@ sealed class TypeGenerator permits VariableGenerator {
   boolean needsDowncallAdaptation() {
     var canonical = canonicalScalar();
     return isPrimitive() && !isPrimitiveAddress()
-        && canonical != null && canonical.runtimeType != null;
+        && canonical != null && canonical.nativeType != null;
   }
 
   boolean isWCharT() {
@@ -471,7 +466,7 @@ sealed class TypeGenerator permits VariableGenerator {
 
   String canonicalRuntimeType() {
     var canonical = canonicalScalar();
-    return canonical == null ? "null" : canonical.runtimeType;
+    return canonical == null ? "null" : canonical.nativeType;
   }
 
   String canonicalGet(String segment, String offset) {

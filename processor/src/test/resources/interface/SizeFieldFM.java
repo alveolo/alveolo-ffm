@@ -7,7 +7,7 @@ public class SizeFieldFM implements SizeField {
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(
               new java.lang.foreign.MemoryLayout [] {
-        org.alveolo.ffm.CanonicalLayout.SIZE_T.withName("value"),
+        org.alveolo.ffm.NativeType.SIZE_T.layout.withName("value"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(

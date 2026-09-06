@@ -9,8 +9,8 @@ public class StructAFM implements StructA {
               new java.lang.foreign.MemoryLayout [] {
         java.lang.foreign.ValueLayout.JAVA_INT.withName("x"),
         java.lang.foreign.ValueLayout.JAVA_INT.withName("y"),
-        org.alveolo.ffm.CanonicalLayout.LONG.withName("signed"),
-        org.alveolo.ffm.CanonicalLayout.LONG.withName("unsigned"),
+        org.alveolo.ffm.NativeType.SLONG.layout.withName("signed"),
+        org.alveolo.ffm.NativeType.ULONG.layout.withName("unsigned"),
       }));
 
   public static java.lang.foreign.MemorySegment allocate$F(

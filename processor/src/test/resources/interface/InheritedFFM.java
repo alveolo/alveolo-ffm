@@ -18,7 +18,7 @@ public final class InheritedFFM implements Inherited {
           Linker$F.downcallHandle(
               SymbolLookup$F.findOrThrow("length"),
               java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  org.alveolo.ffm.NativeType.SIZE_T.layout,
                   java.lang.foreign.ValueLayout.ADDRESS)),
           org.alveolo.ffm.NativeType.SIZE_T,
           new org.alveolo.ffm.NativeType[] {

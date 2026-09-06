@@ -80,8 +80,8 @@ public final class LibCFFM implements LibC {
           SymbolLookup$F.findOrThrow("ldiv"),
           java.lang.foreign.FunctionDescriptor.of(
               pkg.ldiv_tFM.MemoryLayout$F,
-              org.alveolo.ffm.CanonicalLayout.LONG,
-              org.alveolo.ffm.CanonicalLayout.LONG)),
+              org.alveolo.ffm.NativeType.SLONG.layout,
+              org.alveolo.ffm.NativeType.SLONG.layout)),
           null,
           new org.alveolo.ffm.NativeType[] {
               null,
@@ -110,7 +110,7 @@ public final class LibCFFM implements LibC {
           Linker$F.downcallHandle(
               SymbolLookup$F.findOrThrow("strlen"),
               java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  org.alveolo.ffm.NativeType.SIZE_T.layout,
                   java.lang.foreign.ValueLayout.ADDRESS)),
           org.alveolo.ffm.NativeType.SIZE_T,
           new org.alveolo.ffm.NativeType[] {
@@ -135,7 +135,7 @@ public final class LibCFFM implements LibC {
           SymbolLookup$F.findOrThrow("l64a"),
           java.lang.foreign.FunctionDescriptor.of(
               java.lang.foreign.ValueLayout.ADDRESS,
-              org.alveolo.ffm.CanonicalLayout.LONG)),
+              org.alveolo.ffm.NativeType.SLONG.layout)),
           null,
           new org.alveolo.ffm.NativeType[] {
               org.alveolo.ffm.NativeType.SLONG

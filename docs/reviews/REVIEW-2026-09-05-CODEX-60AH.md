@@ -44,7 +44,7 @@ The first three findings deserve priority because valid declarations produce inc
 
 4. **[P2] ✅ `@Address @SizeT` generates Java that does not compile.**
 
-   `CanonicalLayout.SIZE_T` is declared as the base `ValueLayout` type. The generated pointee reads and writes pass that field directly to `MemorySegment.get/set`, whose overloads require a carrier-specific layout such as `ValueLayout.OfLong`.
+   `NativeType.SIZE_T.layout` is declared as the base `ValueLayout` type. The generated pointee reads and writes pass that field directly to `MemorySegment.get/set`, whose overloads require a carrier-specific layout such as `ValueLayout.OfLong`.
 
    Reproduction: `@Address @SizeT long read(@Address @SizeT long value)`. Javac rejects both the generated read and write. `SizeT` JavaDoc explicitly advertises combining it with `Address`. Ordinary by-value size_t calls pass the existing tests because their descriptors accept the base layout type.
 
