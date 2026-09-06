@@ -1,10 +1,9 @@
 package org.alveolo.ffm.macos;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
@@ -20,35 +19,24 @@ public final class CFStringSupport {
       "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
       Arena.global());
 
-  private static final MethodHandle CFStringCreateWithCString =
+  private static final MethodHandle CFStringCreateWithCharacters =
       LINKER.downcallHandle(
-          LOOKUP.findOrThrow("CFStringCreateWithCString"),
+          LOOKUP.findOrThrow("CFStringCreateWithCharacters"),
           FunctionDescriptor.of(ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
-
-  private static final MethodHandle CFStringGetCStringPtr =
-      LINKER.downcallHandle(
-          LOOKUP.findOrThrow("CFStringGetCStringPtr"),
-          FunctionDescriptor.of(ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
   private static final MethodHandle CFStringGetLength =
       LINKER.downcallHandle(
           LOOKUP.findOrThrow("CFStringGetLength"),
           FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-  private static final MethodHandle CFStringGetMaximumSizeForEncoding =
+  private static final MethodHandle CFStringGetCharacters =
       LINKER.downcallHandle(
-          LOOKUP.findOrThrow("CFStringGetMaximumSizeForEncoding"),
-          FunctionDescriptor.of(ValueLayout.JAVA_LONG,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
-
-  private static final MethodHandle CFStringGetCString =
-      LINKER.downcallHandle(
-          LOOKUP.findOrThrow("CFStringGetCString"),
-          FunctionDescriptor.of(ValueLayout.JAVA_BYTE,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
+          LOOKUP.findOrThrow("CFStringGetCharacters"),
+          FunctionDescriptor.ofVoid(ValueLayout.ADDRESS,
+              MemoryLayout.structLayout(
+                  ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+              ValueLayout.ADDRESS));
 
   private static final MethodHandle CFRelease =
       LINKER.downcallHandle(
@@ -61,9 +49,10 @@ public final class CFStringSupport {
     if (value == null) return MemorySegment.NULL;
 
     try (var arena = Arena.ofConfined()) {
-      return (MemorySegment) CFStringCreateWithCString.invokeExact(
+      return (MemorySegment) CFStringCreateWithCharacters.invokeExact(
           MemorySegment.NULL,
-          arena.allocateFrom(value, UTF_8), kCFStringEncodingUTF8);
+          arena.allocateFrom(ValueLayout.JAVA_CHAR, value.toCharArray()),
+          (long) value.length());
     } catch (RuntimeException | Error e) {
       throw e;
     } catch (Throwable t) {
@@ -74,31 +63,14 @@ public final class CFStringSupport {
   public static String toJavaString(MemorySegment value) {
     if (isNull(value)) return null;
 
-    try {
-      var cString = (MemorySegment) CFStringGetCStringPtr.invokeExact(
-          value, kCFStringEncodingUTF8);
-      if (!isNull(cString))
-        return cString.reinterpret(Long.MAX_VALUE).getString(0L, UTF_8);
+    try (var arena = Arena.ofConfined()) {
+      var length = Math.toIntExact((long) CFStringGetLength.invokeExact(value));
+      if (length == 0) return "";
 
-      var length = (long) CFStringGetLength.invokeExact(value);
-
-      var maxBytes = (long) CFStringGetMaximumSizeForEncoding.invokeExact(
-          length, kCFStringEncodingUTF8);
-      if (maxBytes < 0)
-        throw new IllegalArgumentException(
-            "CFString cannot be encoded as UTF-8");
-
-      try (var arena = Arena.ofConfined()) {
-        var buffer = arena.allocate(maxBytes + 1L, 1L);
-
-        var ok = ((byte) CFStringGetCString.invokeExact(
-            value, buffer, maxBytes + 1L, kCFStringEncodingUTF8)) != 0;
-        if (!ok)
-          throw new IllegalArgumentException(
-              "CFString cannot be encoded as UTF-8");
-
-        return buffer.getString(0L, UTF_8);
-      }
+      var buffer = arena.allocate(ValueLayout.JAVA_CHAR, length);
+      var range = arena.allocateFrom(ValueLayout.JAVA_LONG, 0L, (long) length);
+      CFStringGetCharacters.invokeExact(value, range, buffer);
+      return new String(buffer.toArray(ValueLayout.JAVA_CHAR));
     } catch (RuntimeException | Error e) {
       throw e;
     } catch (Throwable t) {

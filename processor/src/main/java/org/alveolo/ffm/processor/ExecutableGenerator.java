@@ -539,10 +539,10 @@ class ExecutableGenerator {
 
   private Stream<String> plannedInitializers() {
     return parameterGenerators.stream()
-        .filter(VariableGenerator::needsLocalAllocation)
-        .map(parameter -> parameter.plannedInitializer(
-            plannedAllocationSegment(parameter)))
-        .flatMap(String::lines);
+        .flatMap(parameter -> parameter.needsLocalAllocation()
+            ? parameter.plannedInitializer(
+                plannedAllocationSegment(parameter)).lines()
+            : paramInitializers(parameter));
   }
 
   private String plannedAllocationSegment(VariableGenerator parameter) {

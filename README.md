@@ -823,6 +823,8 @@ public interface CoreStrings {
 Parameter `@CFString String` values are converted before the call and released
 afterwards. Return values are borrowed by default; set `owned = true` for
 CoreFoundation Create/Copy-rule returns that the generated wrapper must release.
+Conversions preserve UTF-16 characters, including embedded NULs. A Java `null`
+maps to a null `CFStringRef` and vice versa.
 
 ## Development
 

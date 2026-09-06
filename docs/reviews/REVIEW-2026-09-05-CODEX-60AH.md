@@ -32,7 +32,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Sources: [VariableGenerator.java:61](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/VariableGenerator.java:61), [ObjectMethodsGenerator.java:364](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ObjectMethodsGenerator.java:364). Runtime evidence: [virtual_count/run.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/virtual_count/run.log).
 
-3. **[P1] The shared-allocation path silently passes null for non-null `CFString` arguments.**
+3. **[P1] ✅ The shared-allocation path silently passes null for non-null `CFString` arguments.**
 
    When at least two temporary allocations can share backing storage, `methodBody()` uses `plannedInitializers()` instead of `paramInitializers()`. The former filters on `needsLocalAllocation()`, which excludes `CFString`. The CFString local remains initialized to `MemorySegment.NULL`, and the native invocation receives it unchanged.
 
@@ -108,7 +108,7 @@ The first three findings deserve priority because valid declarations produce inc
 
     Source: [ExecutableGenerator.java:606](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:606). Evidence: [resultname/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/resultname/compile.log).
 
-11. **[P2] CFString conversion truncates embedded NUL characters.**
+11. **[P2] ✅ CFString conversion truncates embedded NUL characters.**
 
     Both directions go through NUL-terminated UTF-8 strings. CFString is a length-bearing string type, so this loses content representable in both Java and CoreFoundation.
 
