@@ -16,6 +16,51 @@ import org.junit.jupiter.api.Test;
 
 class NativeTypeTest {
   @Test
+  void adaptsSizeTCallsAndMemoryAccess() throws Throwable {
+    var layout = CanonicalLayout.SIZE_T;
+    var raw = identity(layout.carrier());
+    var call = NativeType.adaptDowncall(
+        raw, NativeType.SIZE_T, NativeType.SIZE_T);
+    assertEquals(MethodType.methodType(long.class, long.class), call.type());
+    if (layout.carrier() == long.class) assertSame(raw, call);
+
+    var getter = NativeType.SIZE_T.adaptGetter(layout.varHandle());
+    var setter = NativeType.SIZE_T.adaptSetter(layout.varHandle());
+    assertEquals(MethodType.methodType(long.class,
+        MemorySegment.class, long.class), getter.type());
+    assertEquals(MethodType.methodType(void.class,
+        MemorySegment.class, long.class, long.class), setter.type());
+
+    var values = layout.carrier() == long.class
+        ? new long[] {0, 0x8000_0000L, 0xffff_ffffL,
+            0x1_0000_0000L, Long.MAX_VALUE, Long.MIN_VALUE, -1}
+        : new long[] {0, 0x8000_0000L, 0xffff_ffffL};
+    try (var arena = Arena.ofConfined()) {
+      var segment = arena.allocate(layout, 2);
+      var offset = layout.byteSize();
+      for (var value : values) {
+        assertEquals(value, (long) call.invokeExact(value));
+        setter.invokeExact(segment, offset, value);
+        assertEquals(value, NativeType.getSizeT(segment, offset));
+        NativeType.setSizeT(segment, 0L, value);
+        assertEquals(value, (long) getter.invokeExact(segment, 0L));
+      }
+      if (layout.carrier() == int.class) {
+        for (var value : new long[] {-1, 0x1_0000_0000L}) {
+          assertThrows(ArithmeticException.class, () -> {
+            var ignored = (long) call.invokeExact(value);
+          });
+          assertThrows(ArithmeticException.class, () -> {
+            setter.invokeExact(segment, offset, value);
+          });
+          assertThrows(ArithmeticException.class,
+              () -> NativeType.setSizeT(segment, 0L, value));
+        }
+      }
+    }
+  }
+
+  @Test
   void adaptsNativeScalarHandleCarriers() throws Throwable {
     var sLongRaw = identity(LONG.carrier());
     var sLong = NativeType.adaptDowncall(sLongRaw, SLONG, SLONG);
@@ -50,8 +95,6 @@ class NativeTypeTest {
         () -> NativeType.longToUnsignedIntExact(-1L));
     assertThrows(ArithmeticException.class,
         () -> NativeType.longToUnsignedIntExact(0x1_0000_0000L));
-
-    assertSame(long.class, CanonicalLayout.SIZE_T.carrier());
 
     var wcharRaw = identity(CanonicalLayout.WCHAR_T.carrier());
     var wchar = NativeType.adaptDowncall(

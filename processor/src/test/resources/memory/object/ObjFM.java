@@ -88,12 +88,18 @@ public class ObjFM implements Obj {
           java.lang.foreign.ValueLayout.JAVA_INT));
 
   private static final java.lang.invoke.MethodHandle SymbolMethodHandle$1$F =
-      pkg.NativeApiFFM.Linker$F.downcallHandle(
-          pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_strlen"),
-          java.lang.foreign.FunctionDescriptor.of(
-              org.alveolo.ffm.CanonicalLayout.SIZE_T,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      org.alveolo.ffm.NativeType.adaptDowncall(
+          pkg.NativeApiFFM.Linker$F.downcallHandle(
+              pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_strlen"),
+              java.lang.foreign.FunctionDescriptor.of(
+                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.ADDRESS)),
+          org.alveolo.ffm.NativeType.SIZE_T,
+          new org.alveolo.ffm.NativeType[] {
+              null,
+              null
+          });
 
   public int call(
       int arg) {

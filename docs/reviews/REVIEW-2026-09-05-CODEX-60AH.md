@@ -42,7 +42,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Sources: [ExecutableGenerator.java:200](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:200), [ExecutableGenerator.java:540](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:540), [VariableGenerator.java:120](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/VariableGenerator.java:120). Runtime evidence: [cf_runtime/run.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/cf_runtime/run.log).
 
-4. **[P2] `@Address @SizeT` generates Java that does not compile.**
+4. **[P2] ✅ `@Address @SizeT` generates Java that does not compile.**
 
    `CanonicalLayout.SIZE_T` is declared as the base `ValueLayout` type. The generated pointee reads and writes pass that field directly to `MemorySegment.get/set`, whose overloads require a carrier-specific layout such as `ValueLayout.OfLong`.
 

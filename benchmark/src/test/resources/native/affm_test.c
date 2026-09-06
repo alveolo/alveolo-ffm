@@ -78,6 +78,19 @@ EXPORT size_t echo_size_t(size_t value) {
   return value;
 }
 
+EXPORT size_t read_size_t(const size_t* value) {
+  return *value;
+}
+
+EXPORT size_t sum_size_t(const size_t* first, const size_t* second) {
+  return *first + *second;
+}
+
+EXPORT const size_t* size_t_address(void) {
+  static const size_t value = (size_t)-1;
+  return &value;
+}
+
 EXPORT wchar_t echo_wchar(wchar_t value) {
   return value;
 }

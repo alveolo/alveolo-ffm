@@ -21,6 +21,7 @@ import java.lang.invoke.VarHandle;
 public enum NativeType {
   SLONG(LONG, long.class),
   ULONG(LONG, long.class),
+  SIZE_T(CanonicalLayout.SIZE_T, long.class),
   WCHAR(WCHAR_T, int.class);
 
   private final ValueLayout layout;
@@ -53,6 +54,10 @@ public enum NativeType {
       ULONG.adaptGetter(LONG.varHandle());
   private static final MethodHandle ULONG_SET =
       ULONG.adaptSetter(LONG.varHandle());
+  private static final MethodHandle SIZE_T_GET =
+      SIZE_T.adaptGetter(CanonicalLayout.SIZE_T.varHandle());
+  private static final MethodHandle SIZE_T_SET =
+      SIZE_T.adaptSetter(CanonicalLayout.SIZE_T.varHandle());
   private static final MethodHandle WCHAR_T_GET =
       WCHAR.adaptGetter(WCHAR_T.varHandle());
   private static final MethodHandle WCHAR_T_SET =
@@ -163,6 +168,27 @@ public enum NativeType {
     }
   }
 
+  public static long getSizeT(MemorySegment segment, long offset) {
+    try {
+      return (long) SIZE_T_GET.invokeExact(segment, offset);
+    } catch (RuntimeException | Error exception) {
+      throw exception;
+    } catch (Throwable throwable) {
+      throw new AssertionError(throwable);
+    }
+  }
+
+  public static void setSizeT(
+      MemorySegment segment, long offset, long value) {
+    try {
+      SIZE_T_SET.invokeExact(segment, offset, value);
+    } catch (RuntimeException | Error exception) {
+      throw exception;
+    } catch (Throwable throwable) {
+      throw new AssertionError(throwable);
+    }
+  }
+
   public static int getWCharT(MemorySegment segment, long offset) {
     try {
       return (int) WCHAR_T_GET.invokeExact(segment, offset);
@@ -186,7 +212,7 @@ public enum NativeType {
 
   public static int longToUnsignedIntExact(long value) {
     if (value < 0 || value > 0xffff_ffffL) throw new ArithmeticException(
-        "unsigned long value does not fit 32 bits: " + value);
+        "unsigned value does not fit 32 bits: " + value);
     return (int) value;
   }
 
@@ -205,7 +231,7 @@ public enum NativeType {
 
     return switch (this) {
       case SLONG -> LONG_TO_SIGNED_INT_EXACT;
-      case ULONG -> LONG_TO_UNSIGNED_INT_EXACT;
+      case ULONG, SIZE_T -> LONG_TO_UNSIGNED_INT_EXACT;
       case WCHAR -> INT_TO_CHAR_EXACT;
     };
   }
@@ -215,7 +241,7 @@ public enum NativeType {
 
     return switch (this) {
       case SLONG -> INT_TO_SIGNED_LONG;
-      case ULONG -> INT_TO_UNSIGNED_LONG;
+      case ULONG, SIZE_T -> INT_TO_UNSIGNED_LONG;
       case WCHAR -> CHAR_TO_INT;
     };
   }

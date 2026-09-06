@@ -66,6 +66,15 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void adaptsSizeTCallsPointersAndFields() {
+    var c = compile("interface/Sizes.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.SizesFFM", "interface/SizesFFM.java");
+    assertGenerated(c, "pkg.SizeValueFM", "interface/SizeValueFM.java");
+    assertGenerated(c, "pkg.SizeFieldFM", "interface/SizeFieldFM.java");
+  }
+
+  @Test
   void generatesInheritedInterfaceMethods() {
     var c = compile("interface/Inherited.java");
     assertThat(c).succeeded();

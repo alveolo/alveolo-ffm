@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.alveolo.ffm.CanonicalLayout;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -143,6 +145,56 @@ class NativeSharedLibraryTest {
   void combinesAddressWithCanonicalScalarPointees() {
     assertEquals(321L, AffmTestFFM.INSTANCE$F.read_c_long(321L));
     assertEquals(123L, AffmTestFFM.INSTANCE$F.c_long_address());
+  }
+
+  @Test
+  void adaptsSizeTCallsAndPointersToNativeWidth() {
+    var api = AffmTestFFM.INSTANCE$F;
+    var maximum = CanonicalLayout.SIZE_T.byteSize() == 4
+        ? 0xffff_ffffL : -1L;
+    assertEquals(maximum, api.size_t_address());
+    assertEquals(0, api.echo_size_t(0));
+    assertEquals(maximum, api.echo_size_t(maximum));
+    assertEquals(maximum, api.read_size_t(maximum));
+    assertEquals(0xffff_ffffL, api.sum_size_t(0x8000_0000L, 0x7fff_ffffL));
+    if (CanonicalLayout.SIZE_T.byteSize() == 4) {
+      for (var value : new long[] {-1, 0x1_0000_0000L}) {
+        assertThrows(ArithmeticException.class, () -> api.echo_size_t(value));
+        assertThrows(ArithmeticException.class, () -> api.read_size_t(value));
+        assertThrows(ArithmeticException.class, () -> api.sum_size_t(0, value));
+      }
+    } else {
+      assertEquals(Long.MIN_VALUE, api.echo_size_t(Long.MIN_VALUE));
+      assertEquals(Long.MIN_VALUE, api.read_size_t(Long.MIN_VALUE));
+      assertEquals(Long.MIN_VALUE, api.sum_size_t(Long.MAX_VALUE, 1));
+    }
+  }
+
+  @Test
+  void adaptsSizeTStructFieldsAndRecordSnapshots() {
+    var maximum = CanonicalLayout.SIZE_T.byteSize() == 4
+        ? 0xffff_ffffL : -1L;
+    SizeValue snapshot;
+    try (var arena = Arena.ofConfined()) {
+      var field = new SizeFieldFM(arena);
+      field.value(maximum);
+      assertEquals(maximum, field.value());
+      var value = new SizeValue(maximum, maximum);
+      var segment = SizeValueFM.toMemorySegment$F(arena, value);
+      snapshot = SizeValueFM.fromMemorySegment$F(segment);
+      assertEquals(value, snapshot);
+      if (CanonicalLayout.SIZE_T.byteSize() == 4) {
+        for (var invalid : new long[] {-1, 0x1_0000_0000L}) {
+          assertThrows(ArithmeticException.class, () -> field.value(invalid));
+          assertThrows(ArithmeticException.class,
+              () -> SizeValueFM.value(segment, invalid));
+          assertThrows(ArithmeticException.class,
+              () -> SizeValueFM.pointer(segment, arena, invalid));
+        }
+      }
+    }
+    assertEquals(maximum, snapshot.value());
+    assertEquals(maximum, snapshot.pointer());
   }
 
   @Test

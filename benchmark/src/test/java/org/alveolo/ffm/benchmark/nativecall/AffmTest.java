@@ -34,6 +34,13 @@ public interface AffmTest {
 
   @SizeT long echo_size_t(@SizeT long value);
 
+  @SizeT long read_size_t(@Address @SizeT long value);
+
+  @SizeT long sum_size_t(
+      @Address @SizeT long first, @Address @SizeT long second);
+
+  @Address @SizeT long size_t_address();
+
   @WCharT int echo_wchar(@WCharT int value);
 
   @Symbol("read_c_long")

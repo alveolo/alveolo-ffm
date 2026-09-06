@@ -14,11 +14,16 @@ public final class InheritedFFM implements Inherited {
       SymbolLookup$F = Linker$F.defaultLookup();
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("length"),
-          java.lang.foreign.FunctionDescriptor.of(
-              org.alveolo.ffm.CanonicalLayout.SIZE_T,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      org.alveolo.ffm.NativeType.adaptDowncall(
+          Linker$F.downcallHandle(
+              SymbolLookup$F.findOrThrow("length"),
+              java.lang.foreign.FunctionDescriptor.of(
+                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  java.lang.foreign.ValueLayout.ADDRESS)),
+          org.alveolo.ffm.NativeType.SIZE_T,
+          new org.alveolo.ffm.NativeType[] {
+              null
+          });
 
   public long length(
       java.lang.String value) {

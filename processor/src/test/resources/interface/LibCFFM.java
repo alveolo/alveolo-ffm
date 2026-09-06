@@ -106,11 +106,16 @@ public final class LibCFFM implements LibC {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$4$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("strlen"),
-          java.lang.foreign.FunctionDescriptor.of(
-              org.alveolo.ffm.CanonicalLayout.SIZE_T,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      org.alveolo.ffm.NativeType.adaptDowncall(
+          Linker$F.downcallHandle(
+              SymbolLookup$F.findOrThrow("strlen"),
+              java.lang.foreign.FunctionDescriptor.of(
+                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  java.lang.foreign.ValueLayout.ADDRESS)),
+          org.alveolo.ffm.NativeType.SIZE_T,
+          new org.alveolo.ffm.NativeType[] {
+              null
+          });
 
   public long strlen(
       java.lang.String utf8z) {

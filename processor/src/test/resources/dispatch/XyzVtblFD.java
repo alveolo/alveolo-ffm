@@ -87,10 +87,16 @@ public final class XyzVtblFD implements XyzVtbl {
   }
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$2$F =
-      Linker$F.downcallHandle(
-          java.lang.foreign.FunctionDescriptor.of(
-              org.alveolo.ffm.CanonicalLayout.SIZE_T,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      org.alveolo.ffm.NativeType.adaptDowncall(
+          Linker$F.downcallHandle(
+              java.lang.foreign.FunctionDescriptor.of(
+                  org.alveolo.ffm.CanonicalLayout.SIZE_T,
+                  java.lang.foreign.ValueLayout.ADDRESS)),
+          org.alveolo.ffm.NativeType.SIZE_T,
+          new org.alveolo.ffm.NativeType[] {
+              null,
+              null
+          });
 
   private final java.lang.invoke.MethodHandle MethodHandle$2$F;
 

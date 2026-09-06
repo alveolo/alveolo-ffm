@@ -194,21 +194,20 @@ public record LDiv(@SLong long quot, @SLong long rem) {}
 
 `@SLong`, `@ULong`, and `@SizeT` use Java `long`; `@WCharT` uses Java `int`.
 Generated descriptors use the corresponding layout from
-`Linker.nativeLinker().canonicalLayouts()`. For signed and unsigned C `long`
-and `wchar_t`, the generated class adapts a differing raw carrier once during
-class initialization and the call site still uses `invokeExact` with the
+`Linker.nativeLinker().canonicalLayouts()`. For signed and unsigned C `long`,
+`size_t`, and `wchar_t`, the generated class adapts a differing raw carrier once
+during class initialization and the call site still uses `invokeExact` with the
 stable Java carrier. Matching ABIs retain the raw downcall handle unchanged.
-`size_t` uses its native layout directly with the 64-bit Java `long` carrier
-supported by current JDK runtimes.
 
 `@SLong` performs checked signed narrowing on an ABI with a 32-bit C `long`.
 On the same ABI, `@ULong` accepts Java values from `0` through
 `0xffff_ffffL` and zero-extends native results. With a 64-bit C
 `unsigned long`, Java `long` carries the raw bits, so its negative values
-represent the upper half of the unsigned range. `@SizeT` preserves every Java
-`long` bit pattern. A 16-bit `wchar_t` accepts values from `0` through
-`0xffff`; the annotation describes one scalar and does not choose a wide-string
-encoding.
+represent the upper half of the unsigned range. `@SizeT` applies the same
+unsigned rules according to the native `size_t` width: checked narrowing and
+zero-extension at 32 bits, preservation of every Java `long` bit pattern at
+64 bits. A 16-bit `wchar_t` accepts values from `0` through `0xffff`; the
+annotation describes one scalar and does not choose a wide-string encoding.
 
 `@Address` remains a separate pass-mode annotation and composes with these
 annotations. For example, `@Address @SLong long` passes a pointer to a native

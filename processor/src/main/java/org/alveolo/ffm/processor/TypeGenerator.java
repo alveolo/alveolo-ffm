@@ -41,7 +41,7 @@ sealed class TypeGenerator permits VariableGenerator {
         "org.alveolo.ffm.NativeType.ULONG"),
     SIZE_T(SizeT.class.getCanonicalName(), TypeKind.LONG,
         "org.alveolo.ffm.CanonicalLayout.SIZE_T",
-        null),
+        "org.alveolo.ffm.NativeType.SIZE_T"),
     WCHAR_T(WCharT.class.getCanonicalName(), TypeKind.INT,
         "org.alveolo.ffm.CanonicalLayout.WCHAR_T",
         "org.alveolo.ffm.NativeType.WCHAR");
@@ -485,8 +485,8 @@ sealed class TypeGenerator permits VariableGenerator {
           + segment + ", " + offset + ")";
       case ULONG -> "org.alveolo.ffm.NativeType.getULong("
           + segment + ", " + offset + ")";
-      case SIZE_T -> segment + ".get(" + canonical.layout
-          + ", " + offset + ")";
+      case SIZE_T -> "org.alveolo.ffm.NativeType.getSizeT("
+          + segment + ", " + offset + ")";
       case WCHAR_T -> "org.alveolo.ffm.NativeType.getWCharT("
           + segment + ", " + offset + ")";
     };
@@ -503,8 +503,8 @@ sealed class TypeGenerator permits VariableGenerator {
           + segment + ", " + offset + ", " + value + ");";
       case ULONG -> "org.alveolo.ffm.NativeType.setULong("
           + segment + ", " + offset + ", " + value + ");";
-      case SIZE_T -> segment + ".set(" + canonical.layout
-          + ", " + offset + ", " + value + ");";
+      case SIZE_T -> "org.alveolo.ffm.NativeType.setSizeT("
+          + segment + ", " + offset + ", " + value + ");";
       case WCHAR_T -> "org.alveolo.ffm.NativeType.setWCharT("
           + segment + ", " + offset + ", " + value + ");";
     };
