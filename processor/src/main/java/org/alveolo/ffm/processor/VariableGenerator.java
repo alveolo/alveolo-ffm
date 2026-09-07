@@ -2,7 +2,6 @@ package org.alveolo.ffm.processor;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -107,19 +106,23 @@ final class VariableGenerator extends TypeGenerator {
       return cfStringName();
 
     if (isString())
-      return "arena$f.allocateFrom(" + name() + ")";
+      return nullableInvoke("arena$f.allocateFrom(" + name() + ")");
 
-    if (isForeignMemoryImplementation())
-      return name() + ".MemorySegment$F";
+    var expression = isForeignMemoryImplementation()
+        ? name() + ".MemorySegment$F"
+        : isRecord()
+            ? foreignMemoryClassName()
+                + ".toMemorySegment$F(arena$f, " + name() + ")"
+            : "((" + foreignMemoryClassName() + ") " + name()
+                + ").MemorySegment$F";
+    return isAddress() && !isCallState() ? nullableInvoke(expression) : expression;
+  }
 
-    if (isRecord())
-      return foreignMemoryClassName()
-          + ".toMemorySegment$F(arena$f, " + name() + ")";
-
-    return (typeElement.getKind() == ElementKind.INTERFACE)
-        ? "((" + foreignMemoryClassName() + ") " + name()
-            + ").MemorySegment$F"
-        : name() + ".MemorySegment$F";
+  private String nullableInvoke(String expression) {
+    // A reference conditional passed to invokeExact otherwise has type Object.
+    return "(java.lang.foreign.MemorySegment) (" + name
+        + " == null ? java.lang.foreign.MemorySegment.NULL : "
+        + expression + ")";
   }
 
   boolean needsLocalAllocation() {
@@ -131,8 +134,8 @@ final class VariableGenerator extends TypeGenerator {
 
   String plannedPreparation() {
     if (isString() && !isCFString())
-      return "var " + bytesName() + " = " + name()
-          + ".getBytes(java.nio.charset.StandardCharsets.UTF_8);";
+      return "var " + bytesName() + " = " + name() + " == null ? null : "
+          + name() + ".getBytes(java.nio.charset.StandardCharsets.UTF_8);";
 
     if (!isCallArrayOrBuffer()) return "";
 
@@ -183,29 +186,32 @@ final class VariableGenerator extends TypeGenerator {
 
     if (isString() && !isCFString())
       return """
-          var <segment> = <memorySegment>;
-          java.lang.foreign.MemorySegment.copy(
-              <bytes>, 0, <segment>,
-              java.lang.foreign.ValueLayout.JAVA_BYTE, 0, <bytes>.length);
-          <segment>.set(
-              java.lang.foreign.ValueLayout.JAVA_BYTE, <bytes>.length,
-              (byte) 0);
+          var <segment> = <name> == null
+              ? java.lang.foreign.MemorySegment.NULL : <memorySegment>;
+          if (<name> != null) {
+            java.lang.foreign.MemorySegment.copy(
+                <bytes>, 0, <segment>,
+                java.lang.foreign.ValueLayout.JAVA_BYTE, 0, <bytes>.length);
+            <segment>.set(
+                java.lang.foreign.ValueLayout.JAVA_BYTE, <bytes>.length,
+                (byte) 0);
+          }
           """
           .replace("<segment>", segmentName())
+          .replace("<name>", name)
           .replace("<memorySegment>", memorySegment)
           .replace("<bytes>", bytesName())
           .stripTrailing();
 
-    if (isRecord())
-      return """
-          var <segment> = <memorySegment>;
-          <foreignClass>.toMemorySegment$F(<name>, <segment>);
-          """
-          .replace("<segment>", segmentName())
-          .replace("<memorySegment>", memorySegment)
-          .replace("<foreignClass>", foreignMemoryClassName())
-          .replace("<name>", name)
-          .stripTrailing();
+    if (isRecord()) {
+      var conversion = foreignMemoryClassName()
+          + ".toMemorySegment$F(" + name + ", " + segmentName() + ");";
+      return "var " + segmentName() + " = "
+          + (isAddress() ? nullableInvoke(memorySegment) : memorySegment)
+          + ";\n"
+          + (isAddress() ? "if (" + name + " != null) {\n  "
+              + conversion + "\n}" : conversion);
+    }
 
     if (isValueStructRecordArray())
       return """
@@ -251,7 +257,8 @@ final class VariableGenerator extends TypeGenerator {
 
   String allocationByteSize() {
     if (isString() && !isCFString())
-      return "Math.addExact((long) " + bytesName() + ".length, 1L)";
+      return "(" + name + " == null ? 0L : Math.addExact((long) "
+          + bytesName() + ".length, 1L))";
 
     if (isNioBuffer())
       return directName() + " ? 0L : Math.multiplyExact("
@@ -261,7 +268,9 @@ final class VariableGenerator extends TypeGenerator {
       return "Math.multiplyExact(" + allocationLayout()
           + ".byteSize(), (long) " + sizeName() + ")";
 
-    return allocationLayout() + ".byteSize()";
+    var size = allocationLayout() + ".byteSize()";
+    return isRecord() && isAddress()
+        ? "(" + name + " == null ? 0L : " + size + ")" : size;
   }
 
   String allocationAlignment() {

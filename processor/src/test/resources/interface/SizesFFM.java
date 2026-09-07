@@ -118,6 +118,7 @@ public final class SizesFFM implements Sizes {
     try {
       var addressResult$f = (java.lang.foreign.MemorySegment) MethodHandle$3$F.invokeExact(
           );
+      org.alveolo.ffm.ForeignUtils.requireNonNullAddress(addressResult$f);
       return org.alveolo.ffm.NativeType.getSizeT(addressResult$f.reinterpret(org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize()), 0L);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;

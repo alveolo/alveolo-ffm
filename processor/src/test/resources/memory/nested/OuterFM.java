@@ -27,7 +27,8 @@ public class OuterFM implements Outer {
 
   public static OuterFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new OuterFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new OuterFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -76,7 +77,7 @@ public class OuterFM implements Outer {
   }
 
   public OuterFM inner(pkg.Inner value) {
-    inner$VarHandle$F.set(MemorySegment$F, ((pkg.InnerFM) value).MemorySegment$F);
+    inner$VarHandle$F.set(MemorySegment$F, value == null ? java.lang.foreign.MemorySegment.NULL : ((pkg.InnerFM) value).MemorySegment$F);
     return this;
   }
 

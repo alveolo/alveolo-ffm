@@ -32,7 +32,8 @@ public class StructBFM implements StructB {
 
   public static StructBFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new StructBFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new StructBFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

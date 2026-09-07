@@ -26,7 +26,8 @@ public class ObjFM implements Obj {
 
   public static ObjFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new ObjFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new ObjFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -119,7 +120,7 @@ public class ObjFM implements Obj {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       return (long) SymbolMethodHandle$1$F.invokeExact(
           this.MemorySegment$F,
-          arena$f.allocateFrom(value));
+          (java.lang.foreign.MemorySegment) (value == null ? java.lang.foreign.MemorySegment.NULL : arena$f.allocateFrom(value)));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.alveolo.ffm.ForeignUtils;
 import org.alveolo.ffm.NativeType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -123,6 +125,138 @@ class NativeSharedLibraryTest {
         () -> object.count(values, 4));
     assertEquals(0, object.count(values, 0));
     assertEquals(3, object.count(values, 3));
+  }
+
+  @Test
+  void mapsNativeNullReturnsToJavaNull() {
+    var api = AffmTestFFM.INSTANCE$F;
+    assertNull(api.absentPair());
+    assertNull(api.absentUnion());
+    assertNull(api.absentWrapper());
+    assertNull(api.absentRecord());
+    assertNull(api.absentVirtual());
+    assertNull(api.absentString());
+  }
+
+  @Test
+  void distinguishesNativeNullFromHeapStorage() {
+    var zeroAddress = MemorySegment.NULL.asReadOnly();
+    assertNull(PairSFM.reinterpret$F(zeroAddress));
+    assertNull(PairRFM.reinterpret$F(zeroAddress));
+    assertNull(PairRFM.reinterpret$F(zeroAddress.reinterpret(8)));
+    assertNull(VirtualPairsFM.reinterpret$F(zeroAddress));
+    assertNull(NullableUnionFM.reinterpret$F(zeroAddress));
+    assertThrows(NullPointerException.class,
+        () -> PairSFM.reinterpret$F(null));
+
+    var heap = MemorySegment.ofArray(new int[] {7, 11});
+    assertEquals(0, heap.address());
+    assertSame(heap, ForeignUtils.requireNonNullAddress(heap));
+    assertThrows(NullPointerException.class,
+        () -> ForeignUtils.requireNonNullAddress(zeroAddress.reinterpret(8)));
+    assertEquals(7, new PairSFM(heap).left());
+    assertEquals(new PairR(7, 11), PairRFM.fromMemorySegment$F(heap));
+    assertThrows(UnsupportedOperationException.class,
+        () -> PairSFM.reinterpret$F(heap));
+    assertThrows(UnsupportedOperationException.class,
+        () -> PairRFM.reinterpret$F(heap));
+  }
+
+  @Test
+  void handlesNullInOrdinaryPointerFields() {
+    try (var arena = Arena.ofConfined()) {
+      var pair = new PairSFM(arena).left(7).right(11);
+      var box = new PairBoxIAFM(arena);
+      var wrappers = new NullableFieldsFM(arena);
+      assertNull(box.pair());
+      assertNull(wrappers.pair());
+      box.pair(pair);
+      wrappers.pair(pair);
+      assertEquals(7, box.pair().left());
+      assertEquals(11, wrappers.pair().right());
+      box.pair(null);
+      wrappers.pair(null);
+      assertNull(box.pair());
+      assertNull(wrappers.pair());
+
+      var storage = PairBoxRAFM.allocate$F(arena);
+      assertEquals(new PairBoxRA(null), PairBoxRAFM.fromMemorySegment$F(storage));
+      PairBoxRAFM.pair(storage, arena, new PairR(7, 11));
+      assertEquals(new PairR(7, 11), PairBoxRAFM.pair(storage));
+      PairBoxRAFM.pair(storage, arena, null);
+      assertNull(PairBoxRAFM.pair(storage));
+    }
+  }
+
+  @Test
+  void passesNullableStringsAndStructPointers() {
+    var api = AffmTestFFM.INSTANCE$F;
+    assertEquals(0, api.optionalPair(null));
+    assertEquals(0, api.optionalWrapper(null));
+    assertEquals(0, api.optionalRecord(null));
+    assertEquals(0, api.optionalString(null));
+    assertEquals(1000, api.optionalString(""));
+    assertEquals(1003, api.optionalString("abc"));
+    assertEquals(118, api.optionalRecord(new PairR(7, 11)));
+    try (var arena = Arena.ofConfined()) {
+      var pair = new PairSFM(arena).left(7).right(11);
+      assertEquals(118, api.optionalPair(pair));
+      assertEquals(118, api.optionalWrapper(pair));
+      assertEquals(1003, api.optionalInterfaceValues(null, "abc"));
+      assertEquals(118, api.optionalInterfaceValues(pair, null));
+    }
+  }
+
+  @Test
+  void handlesNullableValuesWithSharedAndDirectAllocation() {
+    var api = AffmTestFFM.INSTANCE$F;
+    for (var pair : new PairR[] {null, new PairR(7, 11)}) {
+      for (var text : new String[] {null, "", "abc"}) {
+        var expected = (pair == null ? 0 : 118)
+            + (text == null ? 0 : 1000 + text.length());
+        assertEquals(expected, api.optionalValues(pair, text));
+        assertEquals(expected, api.optionalAllocatingValues(
+            pair == null ? null : new PairBoxRA(pair), text));
+      }
+    }
+    assertEquals(1003, api.optionalAllocatingValues(new PairBoxRA(null), "abc"));
+  }
+
+  @Test
+  void rejectsNullByValueStructs() {
+    var api = AffmTestFFM.INSTANCE$F;
+    assertThrows(NullPointerException.class, () -> api.pair_sum(null));
+    assertThrows(NullPointerException.class, () -> api.requiredValues(null, "abc"));
+    assertEquals(118, api.requiredValues(new PairR(7, 11), null));
+    assertEquals(1121, api.requiredValues(new PairR(7, 11), "abc"));
+    assertThrows(NullPointerException.class,
+        () -> api.pair_sum_interface_value(null));
+    try (var arena = Arena.ofConfined()) {
+      var box = new PairBoxIVFM(arena);
+      assertThrows(NullPointerException.class, () -> box.pair(null));
+      assertThrows(NullPointerException.class,
+          () -> PairRFM.toMemorySegment$F(arena, null));
+    }
+  }
+
+  @Test
+  void rejectsNativeNullBeforePrimitivePointerAccess() {
+    var api = AffmTestFFM.INSTANCE$F;
+    var plain = assertThrows(NullPointerException.class, api::absentInt);
+    var canonical = assertThrows(NullPointerException.class, api::absentSize);
+    assertEquals("Cannot dereference a native NULL pointer", plain.getMessage());
+    assertEquals(plain.getMessage(), canonical.getMessage());
+    try (var arena = Arena.ofConfined()) {
+      var primitive = PrimitivePointerFM.allocate$F(arena);
+      var size = SizeValueFM.allocate$F(arena);
+      assertThrows(NullPointerException.class,
+          () -> PrimitivePointerFM.value(primitive));
+      assertThrows(NullPointerException.class, () -> SizeValueFM.pointer(size));
+      PrimitivePointerFM.value(primitive, arena, 0);
+      SizeValueFM.pointer(size, arena, 0);
+      assertEquals(0, PrimitivePointerFM.value(primitive));
+      assertEquals(0, SizeValueFM.pointer(size));
+    }
   }
 
   @Test

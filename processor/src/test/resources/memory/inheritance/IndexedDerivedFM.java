@@ -27,8 +27,8 @@ public class IndexedDerivedFM extends pkg.IndexedBaseFM
 
   public static IndexedDerivedFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new IndexedDerivedFM(
-        memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new IndexedDerivedFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

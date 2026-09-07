@@ -50,7 +50,7 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
       long arg) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
-          ((pkg.VirtualObjFM) self$f).MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (self$f == null ? java.lang.foreign.MemorySegment.NULL : ((pkg.VirtualObjFM) self$f).MemorySegment$F),
           arg);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
@@ -81,7 +81,7 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
       java.lang.foreign.MemorySegment.copy(
           values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
       return (int) MethodHandle$1$F.invokeExact(
-          ((pkg.VirtualObjFM) self$f).MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (self$f == null ? java.lang.foreign.MemorySegment.NULL : ((pkg.VirtualObjFM) self$f).MemorySegment$F),
           values$MemorySegment$f);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;

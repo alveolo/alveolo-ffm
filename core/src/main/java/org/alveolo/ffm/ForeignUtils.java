@@ -5,6 +5,7 @@ import static java.lang.foreign.MemoryLayout.paddingLayout;
 import java.io.File;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -18,6 +19,13 @@ import java.util.stream.Stream;
 
 public class ForeignUtils {
   private ForeignUtils() {/* Utility class */}
+
+  /// Requires a non-NULL pointer before generated primitive pointee access.
+  public static MemorySegment requireNonNullAddress(MemorySegment segment) {
+    if (segment.equals(MemorySegment.NULL))
+      throw new NullPointerException("Cannot dereference a native NULL pointer");
+    return segment;
+  }
 
   public record LibrarySpec(
       String value, String version, Library.OS[] os, Library.Kind kind,

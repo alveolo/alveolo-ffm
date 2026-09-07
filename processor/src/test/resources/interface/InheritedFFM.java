@@ -29,7 +29,7 @@ public final class InheritedFFM implements Inherited {
       java.lang.String value) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       return (long) MethodHandle$0$F.invokeExact(
-          arena$f.allocateFrom(value));
+          (java.lang.foreign.MemorySegment) (value == null ? java.lang.foreign.MemorySegment.NULL : arena$f.allocateFrom(value)));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

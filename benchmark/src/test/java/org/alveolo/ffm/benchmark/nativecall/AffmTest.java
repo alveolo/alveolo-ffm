@@ -28,6 +28,29 @@ public interface AffmTest {
 
   int add_ints(int left, int right);
 
+  @Symbol("null_pointer") PairS absentPair();
+  @Symbol("null_pointer") NullableUnion absentUnion();
+  @Symbol("null_pointer") PairSFM absentWrapper();
+  @Symbol("null_pointer") @Address PairR absentRecord();
+  @Symbol("null_pointer") VirtualPairs absentVirtual();
+  @Symbol("null_pointer") String absentString();
+  @Symbol("null_pointer") @Address int absentInt();
+  @Symbol("null_pointer") @Address @SizeT long absentSize();
+
+  @Symbol("nullable_pair") int optionalPair(PairS value);
+  @Symbol("nullable_pair") int optionalWrapper(PairSFM value);
+  @Symbol("nullable_pair") int optionalRecord(@Address PairR value);
+  @Symbol("nullable_string") int optionalString(String value);
+  @Symbol("nullable_values")
+  int optionalValues(@Address PairR value, String text);
+  @Symbol("required_values")
+  int requiredValues(PairR value, String text);
+  @Symbol("nullable_values")
+  int optionalInterfaceValues(PairS value, String text);
+  @Symbol("nullable_box")
+  int optionalAllocatingValues(@Address PairBoxRA value, String text);
+
+
   @SLong long echo_slong(@SLong long value);
 
   @ULong long echo_ulong(@ULong long value);

@@ -27,7 +27,8 @@ public final class RenamedChoice implements SimpleChoice {
 
   public static RenamedChoice reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new RenamedChoice(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new RenamedChoice(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

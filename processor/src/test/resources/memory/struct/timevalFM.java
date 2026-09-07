@@ -27,7 +27,8 @@ public class timevalFM implements timeval {
 
   public static timevalFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new timevalFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new timevalFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

@@ -27,7 +27,8 @@ public final class UnionFM implements Union {
 
   public static UnionFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new UnionFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new UnionFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

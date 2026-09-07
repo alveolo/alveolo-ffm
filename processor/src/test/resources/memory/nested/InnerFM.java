@@ -27,7 +27,8 @@ public class InnerFM implements Inner {
 
   public static InnerFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new InnerFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new InnerFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

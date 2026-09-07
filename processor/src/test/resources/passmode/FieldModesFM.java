@@ -28,7 +28,8 @@ public final class FieldModesFM {
 
   public static FieldModes reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -114,7 +115,8 @@ public final class FieldModesFM {
   public static void recordTypeUseAddress(
       java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, passmode.InnerRecord value) {
     recordTypeUseAddress$VarHandle$F.set(memorySegment,
-        passmode.InnerRecordFM.toMemorySegment$F(allocator, value));
+        value == null ? java.lang.foreign.MemorySegment.NULL
+            : passmode.InnerRecordFM.toMemorySegment$F(allocator, value));
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement

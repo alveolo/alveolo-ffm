@@ -50,9 +50,9 @@ public final class FunctionsFD implements Functions {
       passmode.AddressStructFM address) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
-          defaultValue.MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (defaultValue == null ? java.lang.foreign.MemorySegment.NULL : defaultValue.MemorySegment$F),
           value.MemorySegment$F,
-          address.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : address.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -76,9 +76,9 @@ public final class FunctionsFD implements Functions {
       passmode.CircularAddress address) {
     try {
       return (int) MethodHandle$1$F.invokeExact(
-          defaultValue.MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (defaultValue == null ? java.lang.foreign.MemorySegment.NULL : defaultValue.MemorySegment$F),
           value.MemorySegment$F,
-          address.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : address.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -114,7 +114,7 @@ public final class FunctionsFD implements Functions {
           Math.floorMod(-allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
       var address$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
+          allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize()));
       var allocation$MemorySegment$f = arena$f.allocate(
           allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
       var defaultValue$MemorySegment$f = allocation$MemorySegment$f.asSlice(
@@ -123,9 +123,11 @@ public final class FunctionsFD implements Functions {
       var value$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           value$allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteSize());
       passmode.ValueRecordFM.toMemorySegment$F(value, value$MemorySegment$f);
-      var address$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          address$allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
-      passmode.AddressRecordFM.toMemorySegment$F(address, address$MemorySegment$f);
+      var address$MemorySegment$f = (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
+          address$allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize())));
+      if (address != null) {
+        passmode.AddressRecordFM.toMemorySegment$F(address, address$MemorySegment$f);
+      }
       return (int) MethodHandle$2$F.invokeExact(
           defaultValue$MemorySegment$f,
           value$MemorySegment$f,
@@ -152,7 +154,7 @@ public final class FunctionsFD implements Functions {
     try {
       return (int) MethodHandle$3$F.invokeExact(
           interfaceValue.MemorySegment$F,
-          interfaceAddress.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (interfaceAddress == null ? java.lang.foreign.MemorySegment.NULL : interfaceAddress.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

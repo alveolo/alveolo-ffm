@@ -26,7 +26,8 @@ public class BaseFM implements Base {
 
   public static BaseFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new BaseFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new BaseFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

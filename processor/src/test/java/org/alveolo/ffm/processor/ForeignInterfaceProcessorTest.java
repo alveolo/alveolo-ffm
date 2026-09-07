@@ -75,6 +75,13 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesNullablePointerConversions() {
+    var c = compile("interface/NullableCalls.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.NullableCallsFFM", "interface/NullableCallsFFM.java");
+  }
+
+  @Test
   void generatesInheritedInterfaceMethods() {
     var c = compile("interface/Inherited.java");
     assertThat(c).succeeded();

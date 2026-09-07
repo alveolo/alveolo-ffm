@@ -30,7 +30,8 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
 
   public static FieldModeAccessorsFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new FieldModeAccessorsFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new FieldModeAccessorsFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -100,7 +101,7 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public FieldModeAccessorsFM interfaceDefault(passmode.InnerInterface value) {
-    interfaceDefault$VarHandle$F.set(MemorySegment$F, ((passmode.InnerInterfaceFM) value).MemorySegment$F);
+    interfaceDefault$VarHandle$F.set(MemorySegment$F, value == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.InnerInterfaceFM) value).MemorySegment$F);
     return this;
   }
 
@@ -160,7 +161,7 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public FieldModeAccessorsFM fieldOverridesTypeValue(passmode.TypeValueInterface value) {
-    fieldOverridesTypeValue$VarHandle$F.set(MemorySegment$F, ((passmode.TypeValueInterfaceFM) value).MemorySegment$F);
+    fieldOverridesTypeValue$VarHandle$F.set(MemorySegment$F, value == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.TypeValueInterfaceFM) value).MemorySegment$F);
     return this;
   }
 }

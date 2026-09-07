@@ -27,7 +27,8 @@ public final class ArrayUnionFM implements ArrayUnion {
 
   public static ArrayUnionFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new ArrayUnionFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new ArrayUnionFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

@@ -28,9 +28,9 @@ public final class PassModeFFM implements PassMode {
       passmode.AddressStruct address) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
-          ((passmode.DefaultStructFM) defaultValue).MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (defaultValue == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.DefaultStructFM) defaultValue).MemorySegment$F),
           ((passmode.ValueStructFM) value).MemorySegment$F,
-          ((passmode.AddressStructFM) address).MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.AddressStructFM) address).MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -53,9 +53,9 @@ public final class PassModeFFM implements PassMode {
       passmode.AddressStructFM address) {
     try {
       return (int) MethodHandle$1$F.invokeExact(
-          defaultValue.MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (defaultValue == null ? java.lang.foreign.MemorySegment.NULL : defaultValue.MemorySegment$F),
           value.MemorySegment$F,
-          address.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : address.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -78,9 +78,9 @@ public final class PassModeFFM implements PassMode {
       passmode.CircularAddressSpec address) {
     try {
       return (int) MethodHandle$2$F.invokeExact(
-          ((passmode.CircularDefault) defaultValue).MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (defaultValue == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.CircularDefault) defaultValue).MemorySegment$F),
           ((passmode.CircularValue) value).MemorySegment$F,
-          ((passmode.CircularAddress) address).MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.CircularAddress) address).MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -103,9 +103,9 @@ public final class PassModeFFM implements PassMode {
       passmode.CircularAddress address) {
     try {
       return (int) MethodHandle$3$F.invokeExact(
-          defaultValue.MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (defaultValue == null ? java.lang.foreign.MemorySegment.NULL : defaultValue.MemorySegment$F),
           value.MemorySegment$F,
-          address.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : address.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -140,7 +140,7 @@ public final class PassModeFFM implements PassMode {
           Math.floorMod(-allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
       var address$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
+          allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize()));
       var allocation$MemorySegment$f = arena$f.allocate(
           allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
       var defaultValue$MemorySegment$f = allocation$MemorySegment$f.asSlice(
@@ -149,9 +149,11 @@ public final class PassModeFFM implements PassMode {
       var value$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           value$allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteSize());
       passmode.ValueRecordFM.toMemorySegment$F(value, value$MemorySegment$f);
-      var address$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          address$allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
-      passmode.AddressRecordFM.toMemorySegment$F(address, address$MemorySegment$f);
+      var address$MemorySegment$f = (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
+          address$allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize())));
+      if (address != null) {
+        passmode.AddressRecordFM.toMemorySegment$F(address, address$MemorySegment$f);
+      }
       return (int) MethodHandle$4$F.invokeExact(
           defaultValue$MemorySegment$f,
           value$MemorySegment$f,
@@ -186,18 +188,20 @@ public final class PassModeFFM implements PassMode {
           Math.floorMod(-allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()));
       var recordAddress$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteSize());
+          allocationOffset$f, (recordAddress == null ? 0L : passmode.ValueRecordFM.MemoryLayout$F.byteSize()));
       var allocation$MemorySegment$f = arena$f.allocate(
           allocationOffset$f, Math.max(passmode.AddressRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()));
       var recordValue$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           recordValue$allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
       passmode.AddressRecordFM.toMemorySegment$F(recordValue, recordValue$MemorySegment$f);
-      var recordAddress$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          recordAddress$allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteSize());
-      passmode.ValueRecordFM.toMemorySegment$F(recordAddress, recordAddress$MemorySegment$f);
+      var recordAddress$MemorySegment$f = (java.lang.foreign.MemorySegment) (recordAddress == null ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
+          recordAddress$allocationOffset$f, (recordAddress == null ? 0L : passmode.ValueRecordFM.MemoryLayout$F.byteSize())));
+      if (recordAddress != null) {
+        passmode.ValueRecordFM.toMemorySegment$F(recordAddress, recordAddress$MemorySegment$f);
+      }
       return (int) MethodHandle$5$F.invokeExact(
           ((passmode.AddressStructFM) interfaceValue).MemorySegment$F,
-          ((passmode.ValueStructFM) interfaceAddress).MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (interfaceAddress == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.ValueStructFM) interfaceAddress).MemorySegment$F),
           recordValue$MemorySegment$f,
           recordAddress$MemorySegment$f);
     } catch (RuntimeException|Error exception$f) {
@@ -221,7 +225,7 @@ public final class PassModeFFM implements PassMode {
     try {
       return (int) MethodHandle$6$F.invokeExact(
           interfaceValue.MemorySegment$F,
-          interfaceAddress.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (interfaceAddress == null ? java.lang.foreign.MemorySegment.NULL : interfaceAddress.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -275,7 +279,7 @@ public final class PassModeFFM implements PassMode {
       passmode.DefaultRecord value) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       return passmode.DefaultRecordFM.reinterpret$F((java.lang.foreign.MemorySegment) MethodHandle$8$F.invokeExact(
-          passmode.DefaultRecordFM.toMemorySegment$F(arena$f, value)));
+          (java.lang.foreign.MemorySegment) (value == null ? java.lang.foreign.MemorySegment.NULL : passmode.DefaultRecordFM.toMemorySegment$F(arena$f, value))));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -294,7 +298,7 @@ public final class PassModeFFM implements PassMode {
       passmode.DefaultStruct value) {
     try {
       return passmode.DefaultStructFM.reinterpret$F((java.lang.foreign.MemorySegment) MethodHandle$9$F.invokeExact(
-          ((passmode.DefaultStructFM) value).MemorySegment$F));
+          (java.lang.foreign.MemorySegment) (value == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.DefaultStructFM) value).MemorySegment$F)));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -355,6 +359,7 @@ public final class PassModeFFM implements PassMode {
     try {
       var addressResult$f = (java.lang.foreign.MemorySegment) MethodHandle$12$F.invokeExact(
           );
+      org.alveolo.ffm.ForeignUtils.requireNonNullAddress(addressResult$f);
       return org.alveolo.ffm.NativeType.getWCharT(addressResult$f.reinterpret(org.alveolo.ffm.NativeType.WCHAR_T.layout.byteSize()), 0L);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;

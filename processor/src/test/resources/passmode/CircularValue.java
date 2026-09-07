@@ -26,7 +26,8 @@ public class CircularValue implements CircularValueSpec {
 
   public static CircularValue reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new CircularValue(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new CircularValue(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -75,7 +76,7 @@ public class CircularValue implements CircularValueSpec {
   }
 
   public CircularValue value(passmode.CircularAddress value) {
-    value$VarHandle$F.set(MemorySegment$F, value.MemorySegment$F);
+    value$VarHandle$F.set(MemorySegment$F, value == null ? java.lang.foreign.MemorySegment.NULL : value.MemorySegment$F);
     return this;
   }
 }

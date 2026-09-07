@@ -28,7 +28,8 @@ public class BinaryDerivedFM implements BinaryDerived {
 
   public static BinaryDerivedFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new BinaryDerivedFM(
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new BinaryDerivedFM(
         memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 

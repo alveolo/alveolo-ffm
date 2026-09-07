@@ -26,7 +26,8 @@ public class SizeFieldFM implements SizeField {
 
   public static SizeFieldFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new SizeFieldFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new SizeFieldFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

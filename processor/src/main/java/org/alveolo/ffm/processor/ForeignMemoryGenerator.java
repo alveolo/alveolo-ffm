@@ -207,7 +207,8 @@ final class ForeignMemoryGenerator {
 
           public static <type> reinterpret$F(
               java.lang.foreign.MemorySegment memorySegment) {
-            return <expression>;
+            return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+                ? null : <expression>;
           }
 
           public static java.lang.foreign.MemorySegment reinterpret$F(

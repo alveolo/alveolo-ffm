@@ -26,7 +26,8 @@ public final class IntBoxFM {
 
   public static IntBox reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -82,7 +83,7 @@ public final class IntBoxFM {
           MemoryLayout$F.varHandle(value$PathElement$F), 1, 0L);
 
   public static int value(java.lang.foreign.MemorySegment memorySegment) {
-    return org.alveolo.ffm.NativeType.getWCharT(((java.lang.foreign.MemorySegment) value$VarHandle$F.get(memorySegment)).reinterpret(org.alveolo.ffm.NativeType.WCHAR_T.layout.byteSize()), 0L);
+    return org.alveolo.ffm.NativeType.getWCharT(org.alveolo.ffm.ForeignUtils.requireNonNullAddress((java.lang.foreign.MemorySegment) value$VarHandle$F.get(memorySegment)).reinterpret(org.alveolo.ffm.NativeType.WCHAR_T.layout.byteSize()), 0L);
   }
 
   public static void value(

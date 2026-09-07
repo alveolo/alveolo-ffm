@@ -29,7 +29,8 @@ public class DerivedFM extends pkg.BaseFM implements Derived {
 
   public static DerivedFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new DerivedFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new DerivedFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

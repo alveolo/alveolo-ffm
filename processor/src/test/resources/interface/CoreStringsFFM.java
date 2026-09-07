@@ -168,7 +168,7 @@ public final class CoreStringsFFM implements CoreStrings {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var cfStringResult$f = (java.lang.foreign.MemorySegment) MethodHandle$3$F.invokeExact(
           allocator,
-          arena$f.allocateFrom(cString),
+          (java.lang.foreign.MemorySegment) (cString == null ? java.lang.foreign.MemorySegment.NULL : arena$f.allocateFrom(cString)),
           encoding);
       try {
         return org.alveolo.ffm.macos.CFStringSupport

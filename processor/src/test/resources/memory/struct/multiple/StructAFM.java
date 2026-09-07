@@ -29,7 +29,8 @@ public class StructAFM implements StructA {
 
   public static StructAFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new StructAFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new StructAFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

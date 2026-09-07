@@ -121,7 +121,7 @@ public final class LibCFFM implements LibC {
       java.lang.String utf8z) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       return (long) MethodHandle$4$F.invokeExact(
-          arena$f.allocateFrom(utf8z));
+          (java.lang.foreign.MemorySegment) (utf8z == null ? java.lang.foreign.MemorySegment.NULL : arena$f.allocateFrom(utf8z)));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -146,7 +146,7 @@ public final class LibCFFM implements LibC {
     try {
       var stringResult$f = (java.lang.foreign.MemorySegment) MethodHandle$5$F.invokeExact(
           n);
-      return stringResult$f.address() == 0L ? null
+      return stringResult$f.equals(java.lang.foreign.MemorySegment.NULL) ? null
           : stringResult$f.reinterpret(Long.MAX_VALUE).getString(0L);
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;

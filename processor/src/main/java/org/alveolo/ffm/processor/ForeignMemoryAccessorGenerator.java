@@ -396,7 +396,8 @@ final class ForeignMemoryAccessorGenerator {
       if (typeElement.getKind() == ElementKind.RECORD) {
         writeSetter(out, target, field, true, """
             <name>$VarHandle$F.set(<segment>,
-                <foreignClassName>.toMemorySegment$F(allocator, value));
+                value == null ? java.lang.foreign.MemorySegment.NULL
+                    : <foreignClassName>.toMemorySegment$F(allocator, value));
             """
             .stripTrailing()
             .replace("<foreignClassName>", field.foreignMemoryClassName())
@@ -404,7 +405,8 @@ final class ForeignMemoryAccessorGenerator {
             .replace("<name>", name));
       } else {
         writeSetter(out, target, field, false,
-            "<name>$VarHandle$F.set(<segment>, <sourceSegment>);"
+            ("<name>$VarHandle$F.set(<segment>, value == null"
+                + " ? java.lang.foreign.MemorySegment.NULL : <sourceSegment>);")
                 .replace("<sourceSegment>",
                     nestedMemorySegment(field))
                 .replace("<segment>", segment)
@@ -606,9 +608,9 @@ final class ForeignMemoryAccessorGenerator {
   private String primitiveAddressGetter(
       VariableGenerator field, String segment) {
     var layout = field.valueLayout();
-    var address = "((java.lang.foreign.MemorySegment) " + field.name()
-        + "$VarHandle$F"
-        + ".get(" + segment + "))";
+    var address = "org.alveolo.ffm.ForeignUtils.requireNonNullAddress("
+        + "(java.lang.foreign.MemorySegment) " + field.name()
+        + "$VarHandle$F.get(" + segment + "))";
 
     if (field.hasCanonicalScalar())
       return field.canonicalGet(

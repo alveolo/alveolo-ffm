@@ -27,7 +27,8 @@ public class ldiv_tFM implements ldiv_t {
 
   public static ldiv_tFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new ldiv_tFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new ldiv_tFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

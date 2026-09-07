@@ -46,10 +46,10 @@ public final class VirtualStructVtbl implements VirtualStructVtblSpec {
       passmode.CircularAddress address) {
     try {
       return (int) MethodHandle$0$F.invokeExact(
-          ((passmode.VirtualStruct) self$f).MemorySegment$F,
-          defaultValue.MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (self$f == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.VirtualStruct) self$f).MemorySegment$F),
+          (java.lang.foreign.MemorySegment) (defaultValue == null ? java.lang.foreign.MemorySegment.NULL : defaultValue.MemorySegment$F),
           value.MemorySegment$F,
-          address.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : address.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {
@@ -73,9 +73,9 @@ public final class VirtualStructVtbl implements VirtualStructVtblSpec {
       passmode.CircularValue address) {
     try {
       return (int) MethodHandle$1$F.invokeExact(
-          ((passmode.VirtualStruct) self$f).MemorySegment$F,
+          (java.lang.foreign.MemorySegment) (self$f == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.VirtualStruct) self$f).MemorySegment$F),
           value.MemorySegment$F,
-          address.MemorySegment$F);
+          (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : address.MemorySegment$F));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

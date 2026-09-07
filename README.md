@@ -214,6 +214,10 @@ annotations. For example, `@Address @SLong long` passes a pointer to a native
 signed C `long`, while `@Address @ULong long` points to an unsigned C `long`.
 The Java carrier remains `long` in both cases.
 
+A native NULL returned through a primitive `@Address` mapping, or read from a
+primitive pointer record field, throws `NullPointerException` before the pointer
+is dereferenced. Use `MemorySegment` when absence must be represented explicitly.
+
 Canonical scalar parameters, returns, and ordinary struct or union fields are
 supported. Canonical scalar array and indexed-field elements are currently
 rejected because a native element-width change requires explicit bulk
@@ -423,6 +427,17 @@ The processor generates a layout helper with:
 - `allocate$F(...)`
 - `toMemorySegment$F(...)` and `fromMemorySegment$F(...)` record conversion
   helpers
+
+Pointer-valued struct parameters and fields accept Java `null` as native NULL;
+pointer returns and field reads map native NULL back to Java `null`. Ordinary
+string parameters and returns use the same mapping. By-value structs require a
+non-null value. Raw `MemorySegment` bindings use `MemorySegment.NULL` explicitly.
+
+The single-object `reinterpret$F(segment)` helper returns Java `null` when
+`segment.equals(MemorySegment.NULL)`. Passing Java `null` to this helper throws
+`NullPointerException`. Heap segments at offset zero are not null pointers:
+use constructors or `fromMemorySegment$F(...)` for heap-backed struct storage;
+`reinterpret$F(...)` requires a native segment.
 
 For mutable memory-backed wrappers, use an interface:
 

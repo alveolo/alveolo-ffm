@@ -412,7 +412,7 @@ class ExecutableGenerator {
             + call + ";").lines(),
         copyOut.stream(),
         """
-            return stringResult$f.address() == 0L ? null
+            return stringResult$f.equals(java.lang.foreign.MemorySegment.NULL) ? null
                 : stringResult$f.reinterpret(Long.MAX_VALUE).getString(0L);
             """
             .stripTrailing()
@@ -467,6 +467,8 @@ class ExecutableGenerator {
         ("var addressResult$f = (java.lang.foreign.MemorySegment) "
             + call + ";").lines(),
         copyOut.stream(),
+        Stream.of("org.alveolo.ffm.ForeignUtils.requireNonNullAddress("
+            + "addressResult$f);"),
         "return <result>;"
             .stripTrailing()
             .replace("<result>", result)

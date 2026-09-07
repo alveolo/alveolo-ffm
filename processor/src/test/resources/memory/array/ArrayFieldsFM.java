@@ -40,7 +40,8 @@ public class ArrayFieldsFM implements ArrayFields {
 
   public static ArrayFieldsFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return new ArrayFieldsFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new ArrayFieldsFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

@@ -27,7 +27,8 @@ public final class OuterFM {
 
   public static Outer reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(

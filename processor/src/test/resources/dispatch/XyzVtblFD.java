@@ -104,7 +104,7 @@ public final class XyzVtblFD implements XyzVtbl {
       java.lang.String utf8z) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       return (long) MethodHandle$2$F.invokeExact(
-          arena$f.allocateFrom(utf8z));
+          (java.lang.foreign.MemorySegment) (utf8z == null ? java.lang.foreign.MemorySegment.NULL : arena$f.allocateFrom(utf8z)));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
     } catch (Throwable throwable$f) {

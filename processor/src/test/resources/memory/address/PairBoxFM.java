@@ -26,7 +26,8 @@ public final class PairBoxFM {
 
   public static PairBox reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -88,6 +89,7 @@ public final class PairBoxFM {
   public static void pair(
       java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, pkg.Pair value) {
     pair$VarHandle$F.set(memorySegment,
-        pkg.PairFM.toMemorySegment$F(allocator, value));
+        value == null ? java.lang.foreign.MemorySegment.NULL
+            : pkg.PairFM.toMemorySegment$F(allocator, value));
   }
 }

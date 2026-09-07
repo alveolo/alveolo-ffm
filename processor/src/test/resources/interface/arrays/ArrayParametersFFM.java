@@ -498,10 +498,10 @@ public final class ArrayParametersFFM implements ArrayParameters {
       java.lang.String text,
       long[] values) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var text$bytes$f = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      var text$bytes$f = text == null ? null : text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
       var values$size$f = values.length;
       var text$allocationOffset$f = 0L;
-      var allocationOffset$f = Math.addExact((long) text$bytes$f.length, 1L);
+      var allocationOffset$f = (text == null ? 0L : Math.addExact((long) text$bytes$f.length, 1L));
       allocationOffset$f = Math.addExact(
           allocationOffset$f,
           Math.floorMod(-allocationOffset$f, java.lang.foreign.ValueLayout.JAVA_LONG.byteAlignment()));
@@ -510,14 +510,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
           allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) values$size$f));
       var allocation$MemorySegment$f = arena$f.allocate(
           allocationOffset$f, java.lang.foreign.ValueLayout.JAVA_LONG.byteAlignment());
-      var text$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          text$allocationOffset$f, Math.addExact((long) text$bytes$f.length, 1L));
-      java.lang.foreign.MemorySegment.copy(
-          text$bytes$f, 0, text$MemorySegment$f,
-          java.lang.foreign.ValueLayout.JAVA_BYTE, 0, text$bytes$f.length);
-      text$MemorySegment$f.set(
-          java.lang.foreign.ValueLayout.JAVA_BYTE, text$bytes$f.length,
-          (byte) 0);
+      var text$MemorySegment$f = text == null
+          ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
+          text$allocationOffset$f, (text == null ? 0L : Math.addExact((long) text$bytes$f.length, 1L)));
+      if (text != null) {
+        java.lang.foreign.MemorySegment.copy(
+            text$bytes$f, 0, text$MemorySegment$f,
+            java.lang.foreign.ValueLayout.JAVA_BYTE, 0, text$bytes$f.length);
+        text$MemorySegment$f.set(
+            java.lang.foreign.ValueLayout.JAVA_BYTE, text$bytes$f.length,
+            (byte) 0);
+      }
       var values$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           values$allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) values$size$f));
       java.lang.foreign.MemorySegment.copy(

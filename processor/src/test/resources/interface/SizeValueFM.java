@@ -27,7 +27,8 @@ public final class SizeValueFM {
 
   public static SizeValue reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
-    return fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : fromMemorySegment$F(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
   public static java.lang.foreign.MemorySegment reinterpret$F(
@@ -119,7 +120,7 @@ public final class SizeValueFM {
           MemoryLayout$F.varHandle(pointer$PathElement$F), 1, 0L);
 
   public static long pointer(java.lang.foreign.MemorySegment memorySegment) {
-    return org.alveolo.ffm.NativeType.getSizeT(((java.lang.foreign.MemorySegment) pointer$VarHandle$F.get(memorySegment)).reinterpret(org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize()), 0L);
+    return org.alveolo.ffm.NativeType.getSizeT(org.alveolo.ffm.ForeignUtils.requireNonNullAddress((java.lang.foreign.MemorySegment) pointer$VarHandle$F.get(memorySegment)).reinterpret(org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize()), 0L);
   }
 
   public static void pointer(

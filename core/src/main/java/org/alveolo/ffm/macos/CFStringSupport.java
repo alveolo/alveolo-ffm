@@ -91,6 +91,6 @@ public final class CFStringSupport {
   }
 
   private static boolean isNull(MemorySegment value) {
-    return value == null || value.address() == 0L;
+    return value == null || value.equals(MemorySegment.NULL);
   }
 }

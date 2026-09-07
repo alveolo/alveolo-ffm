@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <wchar.h>
+#include <string.h>
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -60,6 +61,30 @@ EXPORT const counted_virtual* get_counted_virtual(void) {
   };
   static const counted_virtual object = {&vtable};
   return &object;
+}
+
+EXPORT void* null_pointer(void) {
+  return NULL;
+}
+
+EXPORT int nullable_pair(const pair* value) {
+  return value ? 100 + value->left + value->right : 0;
+}
+
+EXPORT int nullable_string(const char* value) {
+  return value ? 1000 + (int)strlen(value) : 0;
+}
+
+EXPORT int nullable_values(const pair* value, const char* text) {
+  return nullable_pair(value) + nullable_string(text);
+}
+
+EXPORT int required_values(pair value, const char* text) {
+  return nullable_values(&value, text);
+}
+
+EXPORT int nullable_box(const pair_box_ptr* value, const char* text) {
+  return (value ? nullable_pair(value->pair) : 0) + nullable_string(text);
 }
 
 EXPORT int add_ints(int left, int right) {
