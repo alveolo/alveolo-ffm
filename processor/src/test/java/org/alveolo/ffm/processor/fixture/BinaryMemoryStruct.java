@@ -11,6 +11,9 @@ public interface BinaryMemoryStruct {
 }
 
 /// Minimal compiled wrapper shape; validation must not depend on source rounds.
-final class BinaryMemoryWrapper {
+class BinaryMemoryBase {
   public final MemorySegment MemorySegment$F = MemorySegment.NULL;
 }
+
+/// Derived wrappers inherit their backing segment from the base wrapper.
+final class BinaryMemoryWrapper extends BinaryMemoryBase {}

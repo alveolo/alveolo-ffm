@@ -85,7 +85,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Source: [StructInterfaceModel.java:106](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/StructInterfaceModel.java:106). Evidence: [vtablechain/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/vtablechain/compile.log).
 
-7. **[P2] Precompiled derived wrapper classes are not recognized as foreign memory.**
+7. **[P2] ✅ Precompiled derived wrapper classes are not recognized as foreign memory.**
 
    Wrapper detection requires a declared `MemorySegment$F` field. A generated derived struct wrapper inherits that field from its base. Once compiled, the derived wrapper therefore fails detection when another binding uses it directly.
 

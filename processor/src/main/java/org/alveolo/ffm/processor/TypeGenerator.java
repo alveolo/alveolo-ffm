@@ -587,7 +587,7 @@ sealed class TypeGenerator permits VariableGenerator {
 
   private boolean hasWrapperMemorySegment(TypeElement type) {
     return type != null && type.getKind() == ElementKind.CLASS
-        && type.getEnclosedElements().stream()
+        && elements.getAllMembers(type).stream()
             .anyMatch(field -> field.getKind() == ElementKind.FIELD
                 && field.getSimpleName().contentEquals("MemorySegment$F")
                 && field.asType().toString().equals(MEMORY_SEGMENT));
