@@ -77,7 +77,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Sources: [ObjectMethodsGenerator.java:342](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ObjectMethodsGenerator.java:342), [ObjectMethodsGenerator.java:364](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ObjectMethodsGenerator.java:364), [ExecutableGenerator.java:743](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:743). Evidence: [virtual_allocator/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/virtual_allocator/compile.log).
 
-6. **[P2] Vtable inheritance breaks at the third struct level.**
+6. ✅ **[P2] Vtable inheritance breaks at the third struct level.**
 
    The model derives vtable presence from the immediate physical base's annotation rather than its effective inherited layout. For `Base` marked `@Struct(vtable=true)`, ordinary `@Struct Mid extends Base`, and `@Struct Leaf extends Mid`, `Mid` inherits the vtable but its annotation still says false. `Leaf` then loses the inherited vtable flag and rejects inherited or newly declared virtual methods.
 

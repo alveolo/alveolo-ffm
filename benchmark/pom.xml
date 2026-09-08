@@ -52,6 +52,12 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
       <version>5.11.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>5.11.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

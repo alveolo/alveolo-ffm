@@ -33,6 +33,11 @@ public @interface Struct {
   String name() default "";
 
   /// Reserve the first struct field for a native dispatch table pointer.
+  /// The foreign library must initialize the object before it is wrapped.
+  /// Vtable structs and their derived structs have no generated allocator
+  /// constructor or `allocate$F` helpers. Wrapping an object with a NULL vtable
+  /// throws [IllegalArgumentException]. Virtual entries are bound when wrapping;
+  /// the object must remain alive and its dispatch table stable while in use.
   boolean vtable() default false;
 
   /// Foreign interface that owns direct native symbols used by this struct.

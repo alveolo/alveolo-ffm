@@ -9,6 +9,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   @Test
@@ -823,6 +825,37 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.ArrayVirtualVtbl",
         "memory/object/ArrayVirtualVtbl.java");
+  }
+
+  @Test
+  void generatesVtableHierarchyWithoutAllocationHelpers() {
+    var c = compile("memory/object/VtableHierarchy.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.VtableBaseFM", "memory/object/VtableBaseFM.java");
+    assertGenerated(c, "pkg.VtableMidFM", "memory/object/VtableMidFM.java");
+    assertGenerated(c, "pkg.VtableLeafFM", "memory/object/VtableLeafFM.java");
+    assertGenerated(c, "pkg.VtableMidVtbl", "memory/object/VtableMidVtbl.java");
+    assertGenerated(c, "pkg.VtableLeafVtbl", "memory/object/VtableLeafVtbl.java");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"VtableBaseFM", "VtableMidFM", "VtableLeafFM"})
+  void rejectsVtableAllocation(String wrapper) {
+    var use = forSourceString("pkg.Allocation", """
+        package pkg;
+        class Allocation {
+          void allocate(java.lang.foreign.Arena arena) {
+            new %1$s(arena);
+            %1$s.allocate$F(arena);
+            %1$s.allocate$F(arena, 2);
+          }
+        }
+        """.formatted(wrapper));
+
+    var c = compile(forTestResource("memory/object/VtableHierarchy.java"), use);
+
+    assertThat(c).failed();
+    assertThat(c).hadErrorCount(3);
   }
 
   @Test

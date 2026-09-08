@@ -106,7 +106,7 @@ final class StructInterfaceModel {
     var struct = target.getAnnotation(Struct.class);
     var vtable = struct.vtable();
     if (baseStruct != null) {
-      var baseVtable = baseStruct.getAnnotation(Struct.class).vtable();
+      var baseVtable = effectiveVtable(baseStruct);
       if (vtable && !baseVtable) {
         error("A derived @Struct cannot add a vtable to its inherited "
             + "layout", target);
@@ -304,6 +304,12 @@ final class StructInterfaceModel {
         error("Duplicate @Virtual slot: " + slot, previous);
       }
     }
+  }
+
+  private boolean effectiveVtable(TypeElement type) {
+    var base = baseStruct(type);
+    return base == null ? type.getAnnotation(Struct.class).vtable()
+        : effectiveVtable(base);
   }
 
   private TypeElement baseStruct(TypeElement target) {

@@ -11,7 +11,7 @@ annotation-processing edge cases that produce invalid source.
 
 ## Findings
 
-### 1. Critical — Newly Allocated Vtable Structs Can Crash the JVM
+### 1. ✅ Critical — Newly Allocated Vtable Structs Can Crash the JVM
 
 The generated allocator constructor creates zero-filled storage, then
 immediately reads the null vtable pointer and binds every virtual method from

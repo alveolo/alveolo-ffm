@@ -403,6 +403,20 @@ public interface NativeObject {
 }
 ```
 
+Vtable structs wrap objects already initialized by the foreign library. Their
+generated wrappers, including derived wrappers, provide neither a
+`SegmentAllocator` constructor nor `allocate$F(...)` helpers. Obtain an initialized
+object pointer from the library and wrap it with
+`NativeObjectFM.reinterpret$F(pointer)`, or use the `MemorySegment` constructor
+when the segment already has sufficient bounds. A NULL object pointer maps to
+Java `null` through `reinterpret$F`; a non-null object with a NULL vtable throws
+`IllegalArgumentException` before any table entries are read.
+
+Virtual entries are bound when the object is wrapped. The foreign object must
+remain alive and its dispatch table stable while the wrapper is used. The
+declared layout describes the view; it need not describe the complete native
+object or provide enough information to allocate one.
+
 ## Structs and Unions
 
 Use `@Struct` for C structs. Records are convenient for value-style data:

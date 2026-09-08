@@ -110,14 +110,14 @@ final class ForeignMemoryGenerator {
       if (vtable && baseStruct == null) {
         objectGenerator.writeVtableMetadata(out);
       }
-      writeAllocators(out);
+      if (!vtable) writeAllocators(out);
       writeReinterprets(out, source, simpleClassName);
       writeArrayElementHelpers(out, source, simpleClassName);
 
       switch (source.getKind()) {
         case INTERFACE -> {
           writeConstructors(out, simpleClassName, vtableSimpleName,
-              objectMethods.hasUsableVirtualMethods(), baseClassName);
+              vtable, objectMethods.hasUsableVirtualMethods(), baseClassName);
           if (baseFields != null) {
             accessorGenerator.writeInheritedFluentSetters(
                 out, simpleClassName, baseFields);
@@ -262,7 +262,7 @@ final class ForeignMemoryGenerator {
   }
 
   private void writeConstructors(Writer out, String className,
-      String vtableTypeName, boolean hasVirtualMethods,
+      String vtableTypeName, boolean vtable, boolean hasVirtualMethods,
       String baseClassName)
       throws IOException {
     if (baseClassName == null) out.write("""
@@ -278,28 +278,39 @@ final class ForeignMemoryGenerator {
           .replace("<vtableType>", vtableTypeName));
     }
 
-    var vtableInitializer = hasVirtualMethods
-        ? "    this.Vtable$F = " + vtableTypeName
-            + ".reinterpret$F((java.lang.foreign.MemorySegment) "
-            + "vtable$F$VarHandle$F.get(MemorySegment$F));\n"
-        : "";
+    if (!vtable) out.write("""
+
+          public <class>(java.lang.foreign.SegmentAllocator allocator) {
+            this(allocate$F(allocator));
+          }
+        """.replace("<class>", className));
+
     var memoryInitializer = baseClassName == null
         ? "this.MemorySegment$F = memorySegment;"
         : "super(memorySegment);";
     out.write("""
 
-          public <class>(java.lang.foreign.SegmentAllocator allocator) {
-            this(allocate$F(allocator));
-          }
-
           public <class>(java.lang.foreign.MemorySegment memorySegment) {
             <memoryInitializer>
-            <vtableInitializer>
-          }
         """
         .replace("<class>", className)
-        .replace("<memoryInitializer>", memoryInitializer)
-        .replace("    <vtableInitializer>\n", vtableInitializer));
+        .replace("<memoryInitializer>", memoryInitializer));
+
+    if (vtable && (baseClassName == null || hasVirtualMethods)) {
+      out.write("""
+              var vtable$f = (java.lang.foreign.MemorySegment)
+                  vtable$F$VarHandle$F.get(MemorySegment$F);
+              if (vtable$f.equals(java.lang.foreign.MemorySegment.NULL)) {
+                throw new IllegalArgumentException("Object has a NULL vtable");
+              }
+          """);
+    }
+    if (hasVirtualMethods) {
+      out.write("""
+              this.Vtable$F = <vtableType>.reinterpret$F(vtable$f);
+          """.replace("<vtableType>", vtableTypeName));
+    }
+    out.write("  }\n");
 
     if (hasVirtualMethods) {
       out.write("""

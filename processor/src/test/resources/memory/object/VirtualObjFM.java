@@ -21,20 +21,6 @@ public class VirtualObjFM implements VirtualObj {
       java.lang.invoke.MethodHandles.insertCoordinates(
           MemoryLayout$F.varHandle(vtable$F$PathElement$F), 1, 0L);
 
-  public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator) {
-    return allocator.allocate(
-      MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
-  }
-
-  public static java.lang.foreign.MemorySegment allocate$F(
-      java.lang.foreign.SegmentAllocator allocator, long count) {
-    if (count < 0) {
-      throw new IllegalArgumentException("count must be non-negative");
-    }
-    return allocator.allocate(MemoryLayout$F, count);
-  }
-
   public static VirtualObjFM reinterpret$F(
       java.lang.foreign.MemorySegment memorySegment) {
     return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
@@ -68,13 +54,14 @@ public class VirtualObjFM implements VirtualObj {
 
   private final VirtualObjVtblFD Vtable$F;
 
-  public VirtualObjFM(java.lang.foreign.SegmentAllocator allocator) {
-    this(allocate$F(allocator));
-  }
-
   public VirtualObjFM(java.lang.foreign.MemorySegment memorySegment) {
     this.MemorySegment$F = memorySegment;
-    this.Vtable$F = VirtualObjVtblFD.reinterpret$F((java.lang.foreign.MemorySegment) vtable$F$VarHandle$F.get(MemorySegment$F));
+    var vtable$f = (java.lang.foreign.MemorySegment)
+        vtable$F$VarHandle$F.get(MemorySegment$F);
+    if (vtable$f.equals(java.lang.foreign.MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Object has a NULL vtable");
+    }
+    this.Vtable$F = VirtualObjVtblFD.reinterpret$F(vtable$f);
   }
 
   private VirtualObjVtblFD Vtable$F() {

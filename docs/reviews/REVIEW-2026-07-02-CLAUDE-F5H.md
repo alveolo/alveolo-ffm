@@ -99,7 +99,7 @@ pointer — a use-after-free that will reproduce rarely and be brutal to debug.
 The generated allocator-taking overload is the safe variant; remove the
 auto-arena one or make it keep a Java-side reference to the segment.
 
-### 8. Vtable pointer is captured once at construction
+### 8. ✅ Vtable pointer is captured once at construction
 
 The generated constructor (`writeConstructors`,
 `ForeignMemoryProcessor.java:798`) reads `ff$vtbl` and builds the dispatch

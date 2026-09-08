@@ -22,11 +22,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.alveolo.ffm.ForeignUtils;
 import org.alveolo.ffm.NativeType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class NativeSharedLibraryTest {
   private static final String LIBRARY_NAME = "affm_test";
@@ -59,6 +63,40 @@ class NativeSharedLibraryTest {
     fail("No usable C compiler found. Install cc, gcc, clang, or cl, "
         + "or set CC to a usable compiler." + System.lineSeparator()
         + String.join(System.lineSeparator(), failures));
+  }
+
+  @Test
+  void callsInheritedAndNewVirtualSlotsThroughDerivedWrapper() {
+    var original = (VirtualPairsFM) AffmTestFFM.INSTANCE$F.get_virtual_pairs();
+    var object = new VtableLeafFM(original.MemorySegment$F);
+    try (var arena = Arena.ofConfined()) {
+      var first = object.make(arena, 7, 11);
+      assertEquals(7, first.left());
+      assertEquals(11, first.right());
+
+      var capture = new Errno(arena);
+      var second = object.makeWithError(arena, capture, 13, 17, 2468);
+      assertEquals(13, second.left());
+      assertEquals(17, second.right());
+      assertEquals(2468, capture.errno());
+    }
+  }
+
+  static Stream<Function<MemorySegment, ?>> vtableWrappers() {
+    return Stream.of(VtableBaseFM::new, VtableMidFM::new, VtableLeafFM::new,
+        VirtualPairsFM::new, VirtualPairsFM::reinterpret$F,
+        segment -> VirtualPairsFM.at$F(segment, 0));
+  }
+
+  @ParameterizedTest
+  @MethodSource("vtableWrappers")
+  void rejectsNullVtableBeforeReadingEntries(Function<MemorySegment, ?> wrap) {
+    try (var arena = Arena.ofConfined()) {
+      var storage = arena.allocate(VirtualPairsFM.MemoryLayout$F);
+      var error = assertThrows(IllegalArgumentException.class,
+          () -> wrap.apply(storage));
+      assertEquals("Object has a NULL vtable", error.getMessage());
+    }
   }
 
   @Test
