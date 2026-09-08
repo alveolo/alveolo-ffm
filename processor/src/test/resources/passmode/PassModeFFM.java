@@ -248,18 +248,18 @@ public final class PassModeFFM implements PassMode {
       allocationOffset$f = Math.addExact(
           allocationOffset$f,
           Math.floorMod(-allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment()));
-      var result$allocationOffset$f = allocationOffset$f;
+      var return$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
       var allocation$MemorySegment$f = arena$f.allocate(
           allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment());
-      var result$allocation$f = allocation$MemorySegment$f.asSlice(
-          result$allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
+      var return$allocation$f = allocation$MemorySegment$f.asSlice(
+          return$allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
       var value$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           value$allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
       passmode.DefaultRecordFM.toMemorySegment$F(value, value$MemorySegment$f);
       return passmode.DefaultRecordFM.fromMemorySegment$F((java.lang.foreign.MemorySegment) MethodHandle$7$F.invokeExact(
-          (java.lang.foreign.SegmentAllocator) java.lang.foreign.SegmentAllocator.prefixAllocator(result$allocation$f),
+          (java.lang.foreign.SegmentAllocator) java.lang.foreign.SegmentAllocator.prefixAllocator(return$allocation$f),
           value$MemorySegment$f));
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;
@@ -391,13 +391,13 @@ public final class PassModeFFM implements PassMode {
       allocationOffset$f = Math.addExact(
           allocationOffset$f,
           Math.floorMod(-allocationOffset$f, passmode.LongRecordFM.MemoryLayout$F.byteAlignment()));
-      var result$allocationOffset$f = allocationOffset$f;
+      var return$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, passmode.LongRecordFM.MemoryLayout$F.byteSize());
       var allocation$MemorySegment$f = arena$f.allocate(
           allocationOffset$f, Math.max(passmode.ByteRecordFM.MemoryLayout$F.byteAlignment(), passmode.LongRecordFM.MemoryLayout$F.byteAlignment()));
-      var result$allocation$f = allocation$MemorySegment$f.asSlice(
-          result$allocationOffset$f, passmode.LongRecordFM.MemoryLayout$F.byteSize());
+      var return$allocation$f = allocation$MemorySegment$f.asSlice(
+          return$allocationOffset$f, passmode.LongRecordFM.MemoryLayout$F.byteSize());
       var small$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           small$allocationOffset$f, passmode.ByteRecordFM.MemoryLayout$F.byteSize());
       passmode.ByteRecordFM.toMemorySegment$F(small, small$MemorySegment$f);
@@ -405,7 +405,7 @@ public final class PassModeFFM implements PassMode {
           aligned$allocationOffset$f, passmode.LongRecordFM.MemoryLayout$F.byteSize());
       passmode.LongRecordFM.toMemorySegment$F(aligned, aligned$MemorySegment$f);
       return passmode.LongRecordFM.fromMemorySegment$F((java.lang.foreign.MemorySegment) MethodHandle$13$F.invokeExact(
-          (java.lang.foreign.SegmentAllocator) java.lang.foreign.SegmentAllocator.prefixAllocator(result$allocation$f),
+          (java.lang.foreign.SegmentAllocator) java.lang.foreign.SegmentAllocator.prefixAllocator(return$allocation$f),
           small$MemorySegment$f,
           aligned$MemorySegment$f));
     } catch (RuntimeException|Error exception$f) {

@@ -77,7 +77,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Sources: [ObjectMethodsGenerator.java:342](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ObjectMethodsGenerator.java:342), [ObjectMethodsGenerator.java:364](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ObjectMethodsGenerator.java:364), [ExecutableGenerator.java:743](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:743). Evidence: [virtual_allocator/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/virtual_allocator/compile.log).
 
-6. ✅ **[P2] Vtable inheritance breaks at the third struct level.**
+6. **[P2] ✅ Vtable inheritance breaks at the third struct level.**
 
    The model derives vtable presence from the immediate physical base's annotation rather than its effective inherited layout. For `Base` marked `@Struct(vtable=true)`, ordinary `@Struct Mid extends Base`, and `@Struct Leaf extends Mid`, `Mid` inherits the vtable but its annotation still says false. `Leaf` then loses the inherited vtable flag and rejects inherited or newly declared virtual methods.
 
@@ -119,7 +119,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Sources: [ForeignMemoryGenerator.java:97](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ForeignMemoryGenerator.java:97), [README.md:145](/Users/igor/work/alveolo/alveolo-ffm/README.md:145). Evidence: [modules/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/modules/compile.log).
 
-10. **[P2] A legal parameter named `result` collides with generated return-allocation names.**
+10. **[P2] ✅ A legal parameter named `result` collides with generated return-allocation names.**
 
     The allocation plan uses parameter names as allocation identities and also uses the literal identity `result` for record return storage. The reserved-suffix validation does not prohibit the ordinary name `result`, nor should it need to.
 

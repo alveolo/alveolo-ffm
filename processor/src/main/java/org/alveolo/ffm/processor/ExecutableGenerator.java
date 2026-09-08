@@ -353,7 +353,7 @@ class ExecutableGenerator {
             ? "(java.lang.foreign.SegmentAllocator) "
                 + (plannedAllocations
                     ? "java.lang.foreign.SegmentAllocator.prefixAllocator("
-                        + "result$allocation$f)"
+                        + "return$allocation$f)"
                     : "arena$f")
             : null),
         parameterGenerators.stream()
@@ -593,11 +593,11 @@ class ExecutableGenerator {
         .replace("<alignment>", maximumAlignment(allocations)));
 
     for (var allocation : allocations) {
-      if (!allocation.name().equals("result")) continue;
+      if (!allocation.name().equals("return")) continue;
 
       plan.append("""
-          var result$allocation$f = allocation$MemorySegment$f.asSlice(
-              result$allocationOffset$f, <size>);
+          var return$allocation$f = allocation$MemorySegment$f.asSlice(
+              return$allocationOffset$f, <size>);
           """
           .replace("<size>", allocation.byteSize()));
     }
@@ -618,8 +618,9 @@ class ExecutableGenerator {
     if (returnGenerator.isRecord() && returnGenerator.isValue()) {
       var layout = returnGenerator.foreignMemoryClassName()
           + ".MemoryLayout$F";
+      // A Java keyword cannot collide with a parameter name.
       allocations.add(new LocalAllocation(
-          "result",
+          "return",
           layout + ".byteSize()",
           layout + ".byteAlignment()"));
     }
