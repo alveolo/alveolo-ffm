@@ -56,7 +56,7 @@ Suggested fix: add the processor as a provided/optional dependency in benchmark,
 or document that partial benchmark builds require installing the processor first.
 The cleaner build fix is to make Maven's reactor aware of the module.
 
-### P2: Inherited abstract methods are ignored
+### P2: ✅ Inherited abstract methods are ignored
 
 `@ForeignInterface`, `@Struct`, and `@DispatchTable` processors inspect only
 `getEnclosedElements()`. Interfaces that extend a base interface can therefore
@@ -73,7 +73,7 @@ Suggested fix: either explicitly reject inherited abstract members with a clear
 diagnostic, or use `Elements.getAllMembers(...)` and filter carefully for
 abstract interface methods while preserving deterministic ordering.
 
-### P2: User names can collide with generated locals
+### P2: ✅ User names can collide with generated locals
 
 Generated method bodies use fixed names such as `ff$arena`, `ff$e`, `ff$t`,
 `ff$ms$<name>`, and related temporaries. Java permits `$` in identifiers, so a
@@ -161,7 +161,15 @@ Primitive, array, buffer, and layout mapping logic is spread across:
 A small shared descriptor, for example `ForeignType`, would reduce duplication
 and make bugs like the buffer-field layout issue harder to introduce.
 
-### Reduce duplicated accessor generation
+Partially addressed: buffer classification and array/buffer element layouts
+now live in `TypeGenerator`; broader scalar/layout consolidation remains a
+maintainability suggestion.
+
+### ✅ Reduce duplicated accessor generation
+
+Current status: `ForeignMemoryAccessorGenerator` uses `AccessorTarget` to share
+ordinary static and instance field bodies while selecting receiver and return
+style. Indexed fields retain their own shared generator.
 
 Static and instance memory accessors contain large parallel branches for nested
 value, nested address, primitive, and unsupported fields.
@@ -204,8 +212,9 @@ Relevant code:
   pointer-sized integers, and platform-specific canonical layouts.
 - ✅ Fixed-size array fields in structs/unions, including arrays of nested
   structs.
-- Nullable and ownership controls for returned C strings and pointer values,
-  including custom releasers.
+- ✅ Nullable ordinary C strings and struct pointers now have documented mappings.
+- Ownership controls for returned C strings and pointer values, including
+  custom releasers, remain open; `@CFString(owned = true)` is specific to CFString.
 - ✅ `errno` and `GetLastError` capture support.
 - Upcalls, callbacks, and function pointer fields.
 - Better library lookup controls: lazy symbol resolution, optional libraries,

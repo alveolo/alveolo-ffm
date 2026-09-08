@@ -14,6 +14,11 @@ The first three findings deserve priority because valid declarations produce inc
 
 1. **[P1] ✅ Returned records can contain views into an already-closed arena.**
 
+   Current status: resolved by rejecting memory-backed interface/union/call-state
+   components and generated wrappers in record snapshots, including nested and
+   array forms. `RecordStructContractTest` preserves this intentional rejection;
+   allocator/lifetime machinery is not the intended fix for these shapes.
+
    The processor treats every record returned by value as a detached snapshot and allocates its return storage in a confined call arena. However, a record component can be an inline `@Value` interface struct. Its converter constructs a wrapper over a slice of that return storage. Closing the call arena invalidates part of the returned Java object immediately.
 
    Reproduction: `@Struct record Outer(@Value Inner inner) {}`, where `Inner` is a memory-backed struct interface, returned by a native `make_outer()`. The native function returns an inner integer of 42. Immediately after the generated call, the inner segment reports `isAlive() == false`, and `outer.inner().value()` throws `IllegalStateException: Already closed`. Record-array copy-out uses the same snapshot assumption and needs the same transitive analysis.
@@ -23,6 +28,13 @@ The first three findings deserve priority because valid declarations produce inc
    Sources: [ExecutableGenerator.java:346](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:346), [ExecutableGenerator.java:398](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:398), [ForeignMemoryAccessorGenerator.java:358](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ForeignMemoryAccessorGenerator.java:358). Runtime evidence: [record_lifetime/run.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/record_lifetime/run.log).
 
 2. **[P1] ✅ Virtual methods lose `@CountedBy`, corrupting array entries outside the requested prefix.**
+
+   Current status: the annotation and count-based transfer machinery have been
+   removed. All call paths transfer the full array or buffer window. Explicit
+   native counts remain ordinary arguments; default methods can derive them.
+   The old prefix-copy expectation is retired, not a contract to restore.
+   `ArrayVirtual` and native tests cover the current behavior, including full
+   `@Out` copy-out when native code writes only part of the supplied storage.
 
    The intermediate dispatch-table specification copies parameter types and names through `bridgeSignature()`. `CountedBy` is a declaration annotation targeted only at parameters, so it is omitted. The generated dispatch method consequently transfers the entire array and loses the count validation.
 
@@ -43,6 +55,11 @@ The first three findings deserve priority because valid declarations produce inc
    Sources: [ExecutableGenerator.java:200](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:200), [ExecutableGenerator.java:540](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:540), [VariableGenerator.java:120](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/VariableGenerator.java:120). Runtime evidence: [cf_runtime/run.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/cf_runtime/run.log).
 
 4. **[P2] ✅ `@Address @SizeT` generates Java that does not compile.**
+
+   Current status: `NativeType` provides carrier adaptation and typed `SizeT`
+   reads/writes symmetrically with the other canonical scalars. The earlier
+   `CanonicalLayout` class is gone. Compilation and native pointee tests pass;
+   no fixed 64-bit-only `size_t` restriction was introduced.
 
    `NativeType.SIZE_T.layout` is declared as the base `ValueLayout` type. The generated pointee reads and writes pass that field directly to `MemorySegment.get/set`, whose overloads require a carrier-specific layout such as `ValueLayout.OfLong`.
 
@@ -78,7 +95,11 @@ The first three findings deserve priority because valid declarations produce inc
 
    Source: [TypeGenerator.java:593](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/TypeGenerator.java:593). Evidence: [binary_wrapper/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/binary_wrapper/compile.log).
 
-8. **[P2] Inherited `@CountedBy` methods require undocumented parameter-name retention.**
+8. **[P2] ✅ Inherited `@CountedBy` methods require undocumented parameter-name retention.**
+
+   Current status: no longer applicable because `@CountedBy` was removed.
+   Native count arguments no longer depend on a sibling parameter's source
+   name. No `-parameters` requirement or count-index metadata is needed.
 
    The annotation stores a sibling's source name, and validation compares it against `VariableElement` names. When a parent interface is compiled without `-parameters`, a later compilation sees names such as `arg0` and `arg1`, while the annotation still contains `"count"`.
 
@@ -133,7 +154,7 @@ For maintainability, I would make a few targeted changes before adding more conv
 - **Preserve method metadata once.** Direct calls, dispatch tables, and virtual bridges should consume the same resolved parameter description. Include declaration annotations, Java-only arguments, native positions, and inherited information. This addresses the counted-prefix and allocator-order bugs without adding special cases to each writer.
 - **Consolidate hierarchy analysis.** Several classes independently collect abstract methods and inspect declared members. The differences matter: call states miss inherited methods, wrapper detection misses inherited fields, and vtables lose effective ancestry. Share only the mechanics that are truly common and keep struct field-order rules explicit.
 - **Remove unused code and stale comments.** `ObjectMethodsGenerator.objectMethods(TypeElement)` has no caller. `ForeignUtils.loadPlatformLibrary()` takes an unused `defaultLookup`. `TypeGenerator.layout()` still has a TODO describing nested structures/reference arrays too broadly, despite existing support for several such forms. Processor module `requires java.logging` appears unused. These are small cleanups, not reasons for a broad rewrite.
-- **Normalize scalar versus indexed field generation.** Pointer null handling and nested record conversion are repeated in the scalar and indexed writers. Share their conversion expressions where practical, while retaining separate field-layout and indexing logic.
+- **Normalize scalar versus indexed field generation.** Pointer null handling and nested record conversion are repeated in the scalar and indexed writers. Share their conversion expressions where practical, while retaining separate field-layout and indexing logic. Current status: ✅ pointer-null behavior is now consistent; the suggested code consolidation remains open.
 - **Avoid repeated analysis inside generation.** Allocation eligibility and allocation lists are recomputed, and record conversion requirements repeatedly traverse component graphs. Compute an immutable result once per method or type. This is a simplification opportunity; I did not measure processor performance.
 - **Tighten immutable helper contracts.** `ForeignUtils.LibrarySpec`, `LibraryOverride`, and `CallStateOverride` expose mutable arrays through record components. Generated code uses them transiently, so this is not one of the demonstrated runtime failures. If these remain public value objects, defensively copy array inputs and outputs or choose immutable collections.
 
@@ -141,10 +162,10 @@ The tests provide a useful foundation, but the gaps are concentrated in combinat
 
 | Area | Useful additional verification |
 | --- | --- |
-| Temporary allocation | The same binding shapes with one allocation and with enough allocations to activate batching; mixed CFString and ordinary arguments |
-| Native return lifetime | Nested record/interface combinations, record-array copy-out, and access after the call returns |
-| Virtual calls | Counted arrays, output-only arrays, allocator-backed returns, call state, and three-level inheritance |
-| Separate compilation | Binary parents with and without parameter names, generated derived wrappers, and annotated inherited method signatures |
+| Temporary allocation | ✅ Native tests cover direct/shared allocation, mixed CFString and ordinary arguments, and nullable string/record pointers. |
+| Native return lifetime | ✅ Unsupported record/interface combinations are rejected by `RecordStructContractTest`; native tests cover detached record snapshots and copy-out. |
+| Virtual calls | ✅ Array/buffer windows, output-only arrays, allocator-backed returns, and call state are covered. Three-level inheritance remains open; count-controlled transfer was retired. |
+| Separate compilation | ✅ The `CountedBy` parameter-name dependency was retired. Generated derived wrappers still fail in separately compiled clients; other binary-boundary coverage remains useful. |
 | JPMS | A tiny application built exactly as README instructs, including generated annotations and native access |
 | Canonical scalars | Positive scalar, pointee, record-field, and wrapper-field coverage for each supported annotation |
 | Platforms | Linux, macOS, and Windows native execution; current CI runs only Ubuntu |
@@ -161,7 +182,7 @@ The following features would be useful after the runtime and compilation defects
 | 1 | Injectable symbol lookup and optional symbols | Allow a binding instance to use a caller-provided `SymbolLookup`. This supports tests, multiple library versions, and caller-controlled library arenas. Add explicit availability checks for optional entry points so one missing symbol need not disable an entire binding class. |
 | 2 | Generated callbacks and upcall stubs | Complete the native interoperation path for event handlers, comparators, and visitor APIs. Start with fixed signatures, explicit arena ownership, and a defined exception policy at the native boundary. |
 | 3 | Canonical scalar arrays | Support `@SLong`, `@ULong`, `@SizeT`, and `@WCharT` in inline arrays and call arrays. Reuse scalar conversion rules and establish Windows coverage first. This removes manual C-long array marshalling. |
-| 4 | Explicit string contracts | Add nullable C-string parameters, bounded pointer-return decoding, and encoding choices where native APIs require them. Keep raw MemorySegment bindings available when lifetime or termination is external. |
+| 4 | Explicit string contracts | ✅ Nullable C-string parameters and returns are supported. Bounded pointer-return decoding and additional encoding choices remain open. Raw MemorySegment bindings remain available. |
 | 5 | Native layout verification | Generate or expose enough metadata for a small C-side ABI conformance test to compare `sizeof`, alignment, and field offsets. This gives binding authors a concrete way to check a declaration before production use. |
 | 6 | Flexible array members and controlled packing | Start with one trailing flexible member whose count comes from the caller. Add explicit packing/alignment only for real target ABIs and verify against C; avoid attempting every layout extension at once. |
 

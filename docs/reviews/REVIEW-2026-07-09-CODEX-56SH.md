@@ -42,7 +42,7 @@ Relevant code:
 Set `.order(ByteOrder.nativeOrder())` before creating typed views and add
 runtime tests for every buffer type.
 
-### 3. Medium — Inherited Abstract Methods Generate Uncompilable Implementations
+### 3. ✅ Medium — Inherited Abstract Methods Generate Uncompilable Implementations
 
 All three processors inspect `getEnclosedElements()` rather than inherited
 members. A generated class implementing a child interface consequently fails
@@ -74,7 +74,7 @@ Relevant code:
 Validate that `@Sequence` is used only on arrays and buffers, or implement
 actual scalar-array field semantics.
 
-### 5. Medium — Generated Names Are Not Hygienic
+### 5. ✅ Medium — Generated Names Are Not Hygienic
 
 Legal parameter names such as `ff$arena` and `ff$ms$value` collide with
 generated locals. Both cases produced compilation failures. Generated
@@ -119,6 +119,11 @@ type only once.
 
 ### 8. Safety Concern — Returned Native Strings Are Scanned Without a Bound
 
+Partially resolved: ✅ CFString conversion now uses explicit UTF-16 lengths
+and `CFStringGetCharacters`, tested with embedded NULs and supplementary
+characters. Ordinary C-string returns still use `reinterpret(Long.MAX_VALUE)`
+and terminator scanning, so this finding remains open for them.
+
 Both ordinary strings and CFStrings reinterpret pointers to `Long.MAX_VALUE`
 before scanning. A missing terminator can read well outside the intended
 allocation and potentially crash the process.
@@ -159,19 +164,21 @@ Relevant code:
 
 ## Smaller Inconsistencies
 
-- Invalid generated-name diagnostics are attached to the annotation type
+- ✅ Invalid generated-name diagnostics are attached to the annotation type
   rather than the user declaration because processors call
   `validateSimpleClassName(annotation, ...)` instead of passing the annotated
-  type.
+  type. Current calls pass the annotated declaration into
+  `validateSimpleClassName(type, annotation, name)`.
 - Unknown operating systems are silently treated as Linux in
   `ForeignUtils.os()`.
 - Named-module instructions are incomplete: generated code needs native access
   for the application module, while library loading and CFString support
   execute restricted operations from `org.alveolo.ffm` itself.
 - `java.logging` is required by the processor module but unused.
-- The long-division benchmark uses an `int` mask,
+- ✅ The long-division benchmark uses an `int` mask,
   `(random.nextInt() & 0xFFFFFFFF) + 1`, rather than a long mask. It can remain
-  negative and has a tiny chance of producing zero.
+  negative and has a tiny chance of producing zero. The current expression is
+  `(random.nextInt() & 0xffff_ffffL) + 1`, producing a positive long denominator.
 - `${uberjar.name}` is referenced in `benchmark/pom.xml` but never defined.
 
 ## Duplication and Maintainability
@@ -199,10 +206,11 @@ code.
 
 In priority order:
 
-1. ✅ Explicit C ABI types and layout overrides: `SLong`, `ULong`, `SizeT`,
-   platform canonical layouts, packing, and alignment.
-2. Nullable pointer and ownership semantics, including bounded or owned
-   returned strings and explicit borrowed or owned native objects.
+1. ✅ Explicit C ABI scalar types: `SLong`, `ULong`, `SizeT`, `WCharT`, and
+   platform canonical layouts. Explicit packing/alignment overrides remain open.
+2. ✅ Nullable ordinary C strings and struct pointers.
+   Bounded or owned C-string returns and general borrowed/owned native-object
+   semantics remain open.
 3. Upcalls and callbacks, including callback lifetime management.
 4. `Linker.Option` support
   * ✅ variadic calls
@@ -220,7 +228,7 @@ In priority order:
 - ✅ `mvn clean install` completed successfully.
 - ✅ Processor tests: 74, with 1 skipped.
 - ✅ Native and benchmark integration tests: 26 successful.
-- ⚠️ The core module has no tests.
+- ✅ The core module has no tests.
 - ✅ Focused external fixtures reproduced the vtable crash, endian corruption,
   inherited-method failures, scalar-`@Sequence` failure, symbol escaping,
   generated-name collisions, and dual-annotation failure.

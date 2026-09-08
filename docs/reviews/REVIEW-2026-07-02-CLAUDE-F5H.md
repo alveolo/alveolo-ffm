@@ -131,14 +131,14 @@ reading the vtable lazily.
 - ✅ **`Slot.value()` vs `Slot.index()`**: `Slot` now exposes only `value()`,
   matching `@Virtual` and removing the mirror-walking validation that policed
   duplicate attributes.
-- **Error duplication for virtual methods**: `writeVirtualMethod` constructs an
+- ✅ **Error duplication for virtual methods**: `writeVirtualMethod` constructs an
   `ExecutableGenerator` (which prints parameter-type errors) and the generated
   `*Vtbl` interface is then processed by `DispatchTableProcessor`, which prints
   the same errors again.
 
 ## Code duplication
 
-- **Buffer-type mapping exists in three places**: `NIO_BUFFER_TYPES` +
+- ✅ **Buffer-type mapping exists in three places**: `NIO_BUFFER_TYPES` +
   `extractBufferElementType` in `ForeignMemoryProcessor` (with its double
   switch through wrapper classes), `elementLayout()` in `VariableGenerator`, and
   the buffer cases of `primitiveLayout()` in `TypeGenerator`. One shared
@@ -159,7 +159,7 @@ reading the vtable lazily.
 
 ## Infrastructure
 
-- **The deploy pipeline targets a dead service.** `parent/pom.xml` and the CI
+- ✅ **The deploy pipeline targets a dead service.** `parent/pom.xml` and the CI
   deploy job publish to `oss.sonatype.org` (legacy OSSRH), which Sonatype shut
   down at the end of June 2025. Deploys can't be working. Migration to the
   Central Portal (`central-publishing-maven-plugin`) is required to release —
@@ -189,7 +189,7 @@ reading the vtable lazily.
    as generated static accessors.
 6. ✅ **Nested struct/union arrays** — TODO'd in `TypeGenerator`; needed for
    real-world C structs (`char name[32]` inside a struct is bug 4's use case).
-7. **Null-safety story for strings/segments** — currently `strlen(null)` NPEs
+7. ✅ **Null-safety story for strings/segments** — currently `strlen(null)` NPEs
    inside generated code; C APIs routinely accept NULL. An `@Nullable` mapping
    to `MemorySegment.NULL` would be cheap.
 8. **C enum mapping** — `@Enum`-annotated Java enums marshalled as `int`.

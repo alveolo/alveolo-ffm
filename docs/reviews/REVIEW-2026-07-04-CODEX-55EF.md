@@ -123,4 +123,7 @@ Details:
 - Pointer-to-pointer out parameters.
 - Upcall/callback generation.
 - Packed/aligned struct options.
-- Richer platform library lookup for app-local native libraries and frameworks.
+- ✅ Richer platform library lookup for app-local native libraries and frameworks.
+  `ForeignUtils.loadRelocatable()` searches `affm.library.path` and the source
+  JAR directory before the normal lookup; `@Library` also supports paths,
+  framework versions, and platform overrides.
