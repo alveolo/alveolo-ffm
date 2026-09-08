@@ -14,8 +14,7 @@ import java.lang.annotation.Target;
 /// declares one positive inline-array dimension. On an array component of a
 /// value-style record struct, it declares the exact inline-array extent.
 /// On a native-call parameter, the generated wrapper requires the array length
-/// or buffer remaining count to equal this value. Use [CountedBy] when another
-/// explicit call parameter supplies a variable prefix length.
+/// or buffer remaining count to equal this value.
 @Target({TYPE_USE, METHOD, PARAMETER})
 @Retention(CLASS)
 public @interface Sequence {

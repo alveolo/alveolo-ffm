@@ -16,8 +16,11 @@ public interface NativeMath {
   int add_ints(int left, int right);
 
   @Symbol("scale_ints")
-  void scale(
-      @CountedBy("count") int[] values, int count, int factor);
+  void scale(int[] values, int count, int factor);
+
+  default void scale(int[] values, int factor) {
+    scale(values, values.length, factor);
+  }
 }
 ```
 
@@ -27,7 +30,7 @@ The processor generates `NativeMathFFM`, with a ready-to-use singleton:
 var sum = NativeMathFFM.INSTANCE$F.add_ints(19, 23);
 
 var values = new int[] {1, 2, 3};
-NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
+NativeMathFFM.INSTANCE$F.scale(values, 10);
 // values == {10, 20, 30}
 ```
 
@@ -46,7 +49,7 @@ NativeMathFFM.INSTANCE$F.scale(values, values.length, 10);
 - Primitive-array, record-array, and `java.nio.*Buffer` pointer parameters.
 - Fixed, indexed inline arrays on memory-backed struct interfaces.
 - Input/output transfer control with `@In` and `@Out`.
-- Fixed and counted extents with `@Sequence` and `@CountedBy`.
+- Fixed extents with `@Sequence` and buffer windows for subregions.
 - UTF-8 native string parameters.
 - macOS CoreFoundation `CFStringRef` helpers.
 
@@ -698,15 +701,18 @@ public interface Samples {
   @Symbol("fill_two_ints")
   void fill(@Out @Sequence(2) IntBuffer values);
 
-  void scalePrefix(
-      @CountedBy("count") int[] values,
-      int count,
-      int factor);
+  @Symbol("scale_ints")
+  void scale(IntBuffer values, int count, int factor);
 
-  void offsetPairs(
-      @CountedBy("count") Pair[] values,
-      int count,
-      int delta);
+  default void scale(IntBuffer values, int factor) {
+    scale(values, values.remaining(), factor);
+  }
+
+  void offsetPairs(Pair[] values, int count, int delta);
+
+  default void offsetPairs(Pair[] values, int delta) {
+    offsetPairs(values, values.length, delta);
+  }
 
   void consumeVector(
       @Value @Sequence(4) float[] values);
@@ -744,8 +750,8 @@ native contract supplies a trustworthy element count.
 
 ### Extent
 
-An unannotated array uses its full `array.length`. An unannotated buffer uses
-the region from `position()` through `limit()`, without changing its position.
+An array uses its full `array.length`. A buffer uses the region from
+`position()` through `limit()`, without changing its position or limit.
 
 `@Sequence(n)` declares a fixed logical extent and requires the available
 element count to equal `n`. By default the ABI type remains a pointer and the
@@ -764,19 +770,29 @@ C array parameters still decay to pointers. Use `@Value` only when the target
 ABI actually defines a compatible aggregate-by-value parameter, such as an API
 from another language or a C-compatible single-array struct ABI.
 
-Use `@CountedBy("count")` when a sibling integral parameter carries the active
-element count:
+Native count, capacity, offset, and stride parameters remain ordinary explicit
+arguments. They do not change the region transferred by the generated wrapper,
+and the processor does not validate their relationship to that region. Default
+convenience methods can derive counts from `array.length` or
+`buffer.remaining()`, or validate API-specific relationships such as audio
+frames versus samples per channel.
 
-- the named count parameter must be a `byte`, `short`, `int`, or `long`
-- the count is an element count, not a byte count
-- the generated wrapper requires `0 <= count <= available elements`
-- only the prefix `[0, count)` is transferred, or exposed directly for a
-  direct buffer
-- the count remains an ordinary explicit argument in the native ABI
+Use a buffer window to select part of a primitive array without allocating
+another Java array:
 
-`@Sequence` and `@CountedBy` cannot be combined on one parameter. Use
-`@Sequence` for an exact fixed extent, `@CountedBy` for a runtime prefix, and
-neither for the complete Java carrier.
+```java
+var values = new int[] {1, 2, 3, 4};
+var window = IntBuffer.wrap(values, 1, 2);
+samples.scale(window, 10);
+// values == {1, 20, 30, 4}; window position and limit are unchanged
+```
+
+The low-level method still exposes the native count explicitly. Callers must
+ensure that the count and any other extent arguments satisfy the native API's
+storage requirements. A smaller count does not reduce wrapper copies; a larger
+count does not allocate additional storage. For record-array subregions or
+native APIs with related begin/end pointers, use explicitly managed native
+storage and `MemorySegment` slices.
 
 ### Copies and lifetime
 
@@ -786,25 +802,32 @@ Transfer direction controls copying:
   copied out after the call
 - `@In` copies in only
 - `@Out` copies out only
-- direct buffers are passed directly with `MemorySegment.ofBuffer(...)`; a
-  counted direct buffer passes a slice covering the selected prefix
+- direct buffers are passed directly with `MemorySegment.ofBuffer(...)`,
+  exposing the buffer's current position-to-limit region
 
 Buffers must be writable whenever copy-out is enabled. Direct typed buffers
 other than `ByteBuffer` must also use native byte order, because their storage
 is passed without element conversion. Heap typed buffers are copied as logical
 elements and do not have that direct-storage restriction.
 
-Copy-out for record arrays replaces the transferred entries with fresh record
-snapshots; entries outside a `@CountedBy` prefix remain untouched. With `@Out`,
-record-array entries in the transferred prefix may initially be `null` because
-the wrapper does not read them before the call.
+Copy-out for record arrays replaces every entry with a fresh record snapshot,
+even if native code modifies only part of the array. With `@Out`, record-array
+entries may initially be `null` because the wrapper does not read them before
+the call.
+
+Copy-out always covers the entire array or buffer window; native count
+arguments and return values do not shorten it. If an `@Out` call writes only
+part of a temporary buffer, copying back the unwritten part can overwrite
+existing Java contents. Use the default input/output transfer to preserve
+untouched contents, or use direct/native storage and handle the produced
+length explicitly.
 
 `@In` and `@Out` describe wrapper copies, not native `const` or memory
 protection. They do not change direct-buffer behavior: native code receives the
-buffer's storage and may read or write it regardless of the annotation. A
-counted direct buffer likewise remains zero-copy. Its Java segment view is
-bounded to the selected prefix, but native pointer arithmetic is outside Java's
-bounds checks, so native code must still honor the explicit count.
+buffer's storage and may read or write it regardless of the annotation.
+The Java segment view is bounded to the selected buffer window, but native
+pointer arithmetic is outside Java's bounds checks, so native code must still
+honor its storage limits.
 
 Temporary native copies live only for the duration of the call. Native code
 must not retain their addresses. Direct buffers are kept reachable for the

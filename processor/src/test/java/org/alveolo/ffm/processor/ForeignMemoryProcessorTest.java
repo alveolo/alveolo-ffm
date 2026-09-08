@@ -818,11 +818,11 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void preservesCountedByInVirtualMethodBridges() {
-    var c = compile("memory/object/CountedVirtual.java");
+  void generatesVirtualArrayBridgesWithDefaultConvenienceMethods() {
+    var c = compile("memory/object/ArrayVirtual.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.CountedVirtualVtbl",
-        "memory/object/CountedVirtualVtbl.java");
+    assertGenerated(c, "pkg.ArrayVirtualVtbl",
+        "memory/object/ArrayVirtualVtbl.java");
   }
 
   @Test

@@ -3,7 +3,6 @@ package pkg;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Out;
@@ -28,19 +27,27 @@ public interface ArrayParameters {
 
   void flags(boolean[] values);
 
-  void prefix(@CountedBy("count") int[] values, int count);
+  void process(int[] values, int count);
 
   int transform(
-      @CountedBy("count") CallPoint[] points,
+      CallPoint[] points,
       long count);
+
+  default int transform(CallPoint[] points) {
+    return transform(points, points.length);
+  }
 
   void produce(@Out CallPoint[] points);
 
   void consume(@In @Sequence(2) CallPoint[] points);
 
-  void readPrefix(
-      @In @CountedBy("count") IntBuffer values,
+  void read(
+      @In IntBuffer values,
       int count);
+
+  default void read(IntBuffer values) {
+    read(values, values.remaining());
+  }
 
   void valueArray(@Value @Sequence(3) int[] values);
 

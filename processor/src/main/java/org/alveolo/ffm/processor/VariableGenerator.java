@@ -6,7 +6,6 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 
-import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.In;
 import org.alveolo.ffm.Out;
 
@@ -14,7 +13,6 @@ final class VariableGenerator extends TypeGenerator {
   final Element element;
   final String name;
   final boolean hasExplicitSequence;
-  final String countedBy;
 
   VariableGenerator(
       ProcessingEnvironment processingEnv,
@@ -41,10 +39,6 @@ final class VariableGenerator extends TypeGenerator {
     this.name = name;
 
     hasExplicitSequence = hasSequence(typeMirror, element);
-
-    var countedByAnnotation = element.getAnnotation(CountedBy.class);
-    countedBy = countedByAnnotation == null
-        ? null : countedByAnnotation.value();
   }
 
   /// Variable name
@@ -58,12 +52,7 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String bridgeSignature() {
-    var signature = bridgeTypeName() + " " + name();
-    // @CountedBy is a parameter annotation, not part of the type mirror.
-    return hasCountedBy()
-        ? "@org.alveolo.ffm.CountedBy("
-            + ProcessorUtils.quote(countedBy) + ") " + signature
-        : signature;
+    return bridgeTypeName() + " " + name();
   }
 
   String argumentLayout() {
@@ -144,8 +133,7 @@ final class VariableGenerator extends TypeGenerator {
           <sizeInitializer>
           <sequenceCheck>
           """
-          .replace("<sizeInitializer>\n", sizeInitializer(
-              name + ".length", "length"))
+          .replace("<sizeInitializer>\n", sizeInitializer())
           .replace("<sequenceCheck>\n", sequenceCheck("length"))
           .stripTrailing();
 
@@ -159,8 +147,7 @@ final class VariableGenerator extends TypeGenerator {
         """
         .replace("<position>", positionName())
         .replace("<name>", name)
-        .replace("<sizeInitializer>\n", sizeInitializer(
-            name + ".remaining()", "remaining"))
+        .replace("<sizeInitializer>\n", sizeInitializer())
         .replace("<sequenceCheck>\n", sequenceCheck("remaining"))
         .replace("<readOnlyCheck>\n", readOnlyCheck())
         .replace("<directOrderCheck>\n", directOrderCheck())
@@ -235,16 +222,13 @@ final class VariableGenerator extends TypeGenerator {
 
     return """
         var <segment> = <direct>
-            ? java.lang.foreign.MemorySegment.ofBuffer(<name>).asSlice(
-                0L, Math.multiplyExact(<layout>.byteSize(), (long) <size>))
+            ? java.lang.foreign.MemorySegment.ofBuffer(<name>)
             : <memorySegment>;
         <copyIn>
         """
         .replace("<segment>", segmentName())
         .replace("<direct>", directName())
         .replace("<name>", name)
-        .replace("<layout>", elementLayout())
-        .replace("<size>", sizeName())
         .replace("<memorySegment>", memorySegment)
         .replace("<copyIn>", copyIn() ? bufferCopyIn() : "")
         .stripTrailing();
@@ -313,27 +297,6 @@ final class VariableGenerator extends TypeGenerator {
 
   boolean hasInvalidSequence() {
     return hasExplicitSequence && sequence <= 0L;
-  }
-
-  boolean hasCountedBy() {
-    return countedBy != null;
-  }
-
-  String countedByName() {
-    return countedBy;
-  }
-
-  boolean hasConflictingSizeAnnotations() {
-    return hasExplicitSequence && hasCountedBy();
-  }
-
-  boolean isCountType() {
-    if (isPrimitiveAddress()) return false;
-
-    return switch (typeMirror.getKind()) {
-      case BYTE, SHORT, INT, LONG -> true;
-      default -> false;
-    };
   }
 
   boolean isCallArrayOrBuffer() {
@@ -406,8 +369,7 @@ final class VariableGenerator extends TypeGenerator {
         var <segment> = arena$f.allocate(<layout>, <size>);
         <copyIn>
         """
-        .replace("<sizeInitializer>\n", sizeInitializer(
-            name + ".length", "length"))
+        .replace("<sizeInitializer>\n", sizeInitializer())
         .replace("<sequenceCheck>\n", sequenceCheck("length"))
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())
@@ -425,15 +387,13 @@ final class VariableGenerator extends TypeGenerator {
         <directOrderCheck>
         var <direct> = <name>.isDirect();
         var <segment> = <direct>
-            ? java.lang.foreign.MemorySegment.ofBuffer(<name>).asSlice(
-                0L, Math.multiplyExact(<layout>.byteSize(), (long) <size>))
+            ? java.lang.foreign.MemorySegment.ofBuffer(<name>)
             : arena$f.allocate(<layout>, <size>);
         <copyIn>
         """
         .replace("<position>", positionName())
         .replace("<name>", name)
-        .replace("<sizeInitializer>\n", sizeInitializer(
-            name + ".remaining()", "remaining"))
+        .replace("<sizeInitializer>\n", sizeInitializer())
         .replace("<sequenceCheck>\n", sequenceCheck("remaining"))
         .replace("<readOnlyCheck>\n", readOnlyCheck())
         .replace("<directOrderCheck>\n", directOrderCheck())
@@ -453,8 +413,7 @@ final class VariableGenerator extends TypeGenerator {
             <foreignClass>.MemoryLayout$F, <size>);
         <copyIn>
         """
-        .replace("<sizeInitializer>\n", sizeInitializer(
-            name + ".length", "length"))
+        .replace("<sizeInitializer>\n", sizeInitializer())
         .replace("<sequenceCheck>\n", sequenceCheck("length"))
         .replace("<segment>", segmentName())
         .replace("<foreignClass>", recordForeignMemoryClassName())
@@ -463,28 +422,9 @@ final class VariableGenerator extends TypeGenerator {
         .stripTrailing();
   }
 
-  private String sizeInitializer(String availableExpression,
-      String availableWord) {
-    if (!hasCountedBy())
-      return "var " + sizeName() + " = " + availableExpression + ";\n";
-
-    return """
-        var <available> = <availableExpression>;
-        var <count> = (long) <countParameter>;
-        if (<count> < 0L || <count> > <available>) {
-          throw new IllegalArgumentException(
-              "<name> count parameter '<countParameter>' must be between 0 and "
-                  + <available> + " (<availableWord>): " + <count>);
-        }
-        var <size> = (int) <count>;
-        """
-        .replace("<available>", availableName())
-        .replace("<availableExpression>", availableExpression)
-        .replace("<count>", countName())
-        .replace("<countParameter>", countedBy)
-        .replace("<name>", name)
-        .replace("<availableWord>", availableWord)
-        .replace("<size>", sizeName());
+  private String sizeInitializer() {
+    return "var " + sizeName() + " = " + name
+        + (isArray() ? ".length" : ".remaining()") + ";\n";
   }
 
   private String sequenceCheck(String sizeWord) {
@@ -700,14 +640,6 @@ final class VariableGenerator extends TypeGenerator {
 
   private String indexName() {
     return name + "$index$f";
-  }
-
-  private String availableName() {
-    return name + "$available$f";
-  }
-
-  private String countName() {
-    return name + "$count$f";
   }
 
   private String bytesName() {

@@ -803,15 +803,6 @@ class ExecutableGenerator {
         continue;
       }
 
-      if (paramGen.hasConflictingSizeAnnotations()) {
-        hasUnsupported = true;
-
-        messager.printError(
-            "@CountedBy and @Sequence cannot be used together",
-            paramGen.element);
-        continue;
-      }
-
       if (paramGen.hasInvalidSequence()) {
         hasUnsupported = true;
 
@@ -839,43 +830,6 @@ class ExecutableGenerator {
             "@Out is not supported on @Value array and Buffer parameters",
             paramGen.element);
         continue;
-      }
-
-      if (paramGen.hasCountedBy()) {
-        if (!paramGen.isCallArrayOrBuffer()) {
-          hasUnsupported = true;
-
-          messager.printError(
-              "@CountedBy is only supported on primitive arrays, NIO Buffer "
-                  + "types, and value-style @Struct record arrays",
-              paramGen.element);
-          continue;
-        }
-
-        var countParam = parameterGenerators.stream()
-            .filter(p -> p.name().equals(paramGen.countedByName()))
-            .findFirst();
-
-        if (countParam.isEmpty()) {
-          hasUnsupported = true;
-
-          messager.printError(
-              "@CountedBy(\"" + paramGen.countedByName()
-                  + "\") does not name a parameter of this method",
-              paramGen.element);
-          continue;
-        }
-
-        if (!countParam.orElseThrow().isCountType()) {
-          hasUnsupported = true;
-
-          messager.printError(
-              "@CountedBy parameter '" + paramGen.countedByName()
-                  + "' must be a plain scalar of type byte, short, int, "
-                  + "or long",
-              paramGen.element);
-          continue;
-        }
       }
 
       if (paramGen.hasSequenceOnUnsupportedType()) {

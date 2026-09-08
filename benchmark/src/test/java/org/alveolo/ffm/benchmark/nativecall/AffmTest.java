@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import org.alveolo.ffm.Address;
-import org.alveolo.ffm.CountedBy;
 import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.In;
@@ -22,7 +21,7 @@ import org.alveolo.ffm.WCharT;
 @Library("affm_test")
 @ForeignInterface
 public interface AffmTest {
-  CountedVirtual get_counted_virtual();
+  ArrayVirtual get_array_virtual();
 
   VirtualPairs get_virtual_pairs();
 
@@ -123,13 +122,25 @@ public interface AffmTest {
   int pair_box_interface_value_sum(@Value PairBoxIV value);
 
   void scale_ints(
-      @CountedBy("count") int[] values, int count, int factor);
+      int[] values, int count, int factor);
+
+  default void scale_ints(int[] values, int factor) {
+    scale_ints(values, values.length, factor);
+  }
 
   void offset_pairs(
-      @CountedBy("count") PairR[] values, int count, int delta);
+      PairR[] values, int count, int delta);
+
+  default void offset_pairs(PairR[] values, int delta) {
+    offset_pairs(values, values.length, delta);
+  }
 
   void fill_pairs(
-      @Out @CountedBy("count") PairR[] values, int count, int start);
+      @Out PairR[] values, int count, int start);
+
+  default void fill_pairs(PairR[] values, int start) {
+    fill_pairs(values, values.length, start);
+  }
 
   void mutate_native_arrays(NativeArrays value);
 
@@ -140,14 +151,22 @@ public interface AffmTest {
   void fill_two_ints(@Out @Sequence(2) int[] values, int start);
 
   void increment_bytes(
-      @CountedBy("count") ByteBuffer values, int count);
+      ByteBuffer values, int count);
+
+  default void increment_bytes(ByteBuffer values) {
+    increment_bytes(values, values.remaining());
+  }
 
   @Symbol("fill_two_ints")
   void fill_two_int_buffer(@Out @Sequence(2) IntBuffer values, int start);
 
   @Symbol("scale_ints")
   void scale_int_buffer(
-      @CountedBy("count") IntBuffer values, int count, int factor);
+      IntBuffer values, int count, int factor);
+
+  default void scale_int_buffer(IntBuffer values, int factor) {
+    scale_int_buffer(values, values.remaining(), factor);
+  }
 
   @Symbol("sum_three_and_clobber")
   int sum_three_int_buffer(@In @Sequence(3) IntBuffer values);

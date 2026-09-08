@@ -10,7 +10,9 @@ import java.lang.annotation.Target;
 /// Marks an array or buffer parameter as output-only.
 ///
 /// The generated wrapper does not copy Java values into native memory before the
-/// call and copies native memory back after the call.
+/// call and copies native memory back after the call. The entire array or
+/// buffer's remaining region is copied, independently of native count arguments
+/// or return values.
 ///
 /// Direct buffer parameters are always passed directly to native code without
 /// copying, so this annotation has no effect for direct buffers.

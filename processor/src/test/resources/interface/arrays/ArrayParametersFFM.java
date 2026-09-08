@@ -107,8 +107,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
       }
       var values$direct$f = values.isDirect();
       var values$MemorySegment$f = values$direct$f
-          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
-              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_BYTE.byteSize(), (long) values$size$f))
+          ? java.lang.foreign.MemorySegment.ofBuffer(values)
           : arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_BYTE, values$size$f);
       if (!values$direct$f) {
         for (var values$index$f = 0; values$index$f < values$size$f; values$index$f++) {
@@ -157,8 +156,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
       }
       var values$direct$f = values.isDirect();
       var values$MemorySegment$f = values$direct$f
-          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
-              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) values$size$f))
+          ? java.lang.foreign.MemorySegment.ofBuffer(values)
           : arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       MethodHandle$4$F.invokeExact(
           values$MemorySegment$f);
@@ -206,23 +204,16 @@ public final class ArrayParametersFFM implements ArrayParameters {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$6$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("prefix"),
+      SymbolLookup$F.findOrThrow("process"),
       java.lang.foreign.FunctionDescriptor.ofVoid(
           java.lang.foreign.ValueLayout.ADDRESS,
           java.lang.foreign.ValueLayout.JAVA_INT));
 
-  public void prefix(
+  public void process(
       int[] values,
       int count) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var values$available$f = values.length;
-      var values$count$f = (long) count;
-      if (values$count$f < 0L || values$count$f > values$available$f) {
-        throw new IllegalArgumentException(
-            "values count parameter 'count' must be between 0 and "
-                + values$available$f + " (length): " + values$count$f);
-      }
-      var values$size$f = (int) values$count$f;
+      var values$size$f = values.length;
       var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       java.lang.foreign.MemorySegment.copy(
           values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
@@ -250,14 +241,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
       pkg.CallPoint[] points,
       long count) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var points$available$f = points.length;
-      var points$count$f = (long) count;
-      if (points$count$f < 0L || points$count$f > points$available$f) {
-        throw new IllegalArgumentException(
-            "points count parameter 'count' must be between 0 and "
-                + points$available$f + " (length): " + points$count$f);
-      }
-      var points$size$f = (int) points$count$f;
+      var points$size$f = points.length;
       var points$MemorySegment$f = arena$f.allocate(
           pkg.CallPointFM.MemoryLayout$F, points$size$f);
       for (var points$index$f = 0; points$index$f < points$size$f; points$index$f++) {
@@ -345,24 +329,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$10$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("readPrefix"),
+      SymbolLookup$F.findOrThrow("read"),
       java.lang.foreign.FunctionDescriptor.ofVoid(
           java.lang.foreign.ValueLayout.ADDRESS,
           java.lang.foreign.ValueLayout.JAVA_INT));
 
-  public void readPrefix(
+  public void read(
       java.nio.IntBuffer values,
       int count) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$position$f = values.position();
-      var values$available$f = values.remaining();
-      var values$count$f = (long) count;
-      if (values$count$f < 0L || values$count$f > values$available$f) {
-        throw new IllegalArgumentException(
-            "values count parameter 'count' must be between 0 and "
-                + values$available$f + " (remaining): " + values$count$f);
-      }
-      var values$size$f = (int) values$count$f;
+      var values$size$f = values.remaining();
       if (values.isDirect()
           && !values.order().equals(java.nio.ByteOrder.nativeOrder())) {
         throw new IllegalArgumentException(
@@ -370,8 +347,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
       }
       var values$direct$f = values.isDirect();
       var values$MemorySegment$f = values$direct$f
-          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
-              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) values$size$f))
+          ? java.lang.foreign.MemorySegment.ofBuffer(values)
           : arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       if (!values$direct$f) {
         for (var values$index$f = 0; values$index$f < values$size$f; values$index$f++) {
@@ -437,8 +413,7 @@ public final class ArrayParametersFFM implements ArrayParameters {
       }
       var values$direct$f = values.isDirect();
       var values$MemorySegment$f = values$direct$f
-          ? java.lang.foreign.MemorySegment.ofBuffer(values).asSlice(
-              0L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) values$size$f))
+          ? java.lang.foreign.MemorySegment.ofBuffer(values)
           : arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
       if (!values$direct$f) {
         for (var values$index$f = 0; values$index$f < values$size$f; values$index$f++) {

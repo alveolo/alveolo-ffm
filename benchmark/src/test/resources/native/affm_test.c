@@ -40,26 +40,26 @@ static void virtual_fill(void* self, int32_t* values, int32_t count) {
   }
 }
 
-// Count validation tests must remain safe even if Java validation regresses.
+// Return the scalar unchanged without accessing storage using its value.
 static int32_t virtual_count(void* self, int32_t* values, int32_t count) {
   return count;
 }
 
-typedef struct counted_vtable {
+typedef struct array_vtable {
   void (*fill_array)(void*, int32_t*, int32_t);
   void (*fill_buffer)(void*, int32_t*, int32_t);
   int32_t (*count)(void*, int32_t*, int32_t);
-} counted_vtable;
+} array_vtable;
 
-typedef struct counted_virtual {
-  const counted_vtable* vtable;
-} counted_virtual;
+typedef struct array_virtual {
+  const array_vtable* vtable;
+} array_virtual;
 
-EXPORT const counted_virtual* get_counted_virtual(void) {
-  static const counted_vtable vtable = {
+EXPORT const array_virtual* get_array_virtual(void) {
+  static const array_vtable vtable = {
     virtual_fill, virtual_fill, virtual_count
   };
-  static const counted_virtual object = {&vtable};
+  static const array_virtual object = {&vtable};
   return &object;
 }
 

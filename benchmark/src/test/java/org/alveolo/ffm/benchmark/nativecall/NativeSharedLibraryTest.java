@@ -4,6 +4,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,44 +88,42 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void copiesOutVirtualArrayPrefix() {
-    var object = AffmTestFFM.INSTANCE$F.get_counted_virtual();
+  void copiesOutEntireVirtualArrayRegardlessOfCount() {
+    var object = AffmTestFFM.INSTANCE$F.get_array_virtual();
     var values = new int[] {1, 2, 3};
 
     object.fill(values, 1);
-    assertArrayEquals(new int[] {10, 2, 3}, values);
+    assertArrayEquals(new int[] {10, 0, 0}, values);
 
     object.fill(values, 0);
-    assertArrayEquals(new int[] {10, 2, 3}, values);
+    assertArrayEquals(new int[] {0, 0, 0}, values);
 
-    object.fill(values, 3);
+    object.fill(values);
     assertArrayEquals(new int[] {10, 11, 12}, values);
   }
 
   @Test
-  void copiesOutVirtualBufferPrefixWithoutChangingPosition() {
-    var object = AffmTestFFM.INSTANCE$F.get_counted_virtual();
+  void derivesVirtualCountFromBufferWindow() {
+    var object = AffmTestFFM.INSTANCE$F.get_array_virtual();
     var values = new int[] {1, 2, 3, 4};
     var buffer = IntBuffer.wrap(values).position(1).limit(3);
 
-    object.fill(buffer, 1);
+    object.fill(buffer);
 
-    assertArrayEquals(new int[] {1, 10, 3, 4}, values);
+    assertArrayEquals(new int[] {1, 10, 11, 4}, values);
     assertEquals(1, buffer.position());
     assertEquals(3, buffer.limit());
   }
 
   @Test
-  void rejectsVirtualCountsOutsideArrayBounds() {
-    var object = AffmTestFFM.INSTANCE$F.get_counted_virtual();
+  void passesExplicitVirtualCountsUnchanged() {
+    var object = AffmTestFFM.INSTANCE$F.get_array_virtual();
     var values = new int[] {1, 2, 3};
 
-    assertThrows(IllegalArgumentException.class,
-        () -> object.count(values, -1));
-    assertThrows(IllegalArgumentException.class,
-        () -> object.count(values, 4));
+    assertEquals(-1, object.count(values, -1));
+    assertEquals(4, object.count(values, 4));
     assertEquals(0, object.count(values, 0));
-    assertEquals(3, object.count(values, 3));
+    assertEquals(3, object.count(values));
   }
 
   @Test
@@ -451,7 +450,7 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void copiesCountedPrimitivePrefixInAndOut() {
+  void preservesArrayContentsNotModifiedByNativeCall() {
     var values = new int[] {1, 2, 3, 4};
 
     AffmTestFFM.INSTANCE$F.scale_ints(values, 2, 10);
@@ -460,7 +459,7 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void acceptsEmptyCountedPrimitivePrefix() {
+  void transfersArrayWhenNativeCountIsZero() {
     var values = new int[] {1, 2, 3};
 
     AffmTestFFM.INSTANCE$F.scale_ints(values, 0, 10);
@@ -469,17 +468,17 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void rejectsCountOutsidePrimitiveArray() {
+  void derivesNativeCountFromEntireArray() {
     var values = new int[] {1, 2, 3};
 
-    assertThrows(IllegalArgumentException.class,
-        () -> AffmTestFFM.INSTANCE$F.scale_ints(values, -1, 10));
-    assertThrows(IllegalArgumentException.class,
-        () -> AffmTestFFM.INSTANCE$F.scale_ints(values, 4, 10));
+    AffmTestFFM.INSTANCE$F.scale_ints(values, 10);
+
+    assertArrayEquals(new int[] {10, 20, 30}, values);
+    AffmTestFFM.INSTANCE$F.scale_ints(new int[0], 10);
   }
 
   @Test
-  void copiesCountedRecordPrefixInAndOut() {
+  void copiesEveryRecordEvenWhenNativeCountIsSmaller() {
     var untouched = new PairR(5, 6);
     var values = new PairR[] {
       new PairR(1, 2), new PairR(3, 4), untouched
@@ -490,20 +489,18 @@ class NativeSharedLibraryTest {
     assertArrayEquals(new PairR[] {
       new PairR(11, 12), new PairR(13, 14), untouched
     }, values);
-    assertSame(untouched, values[2]);
+    assertNotSame(untouched, values[2]);
   }
 
   @Test
-  void copiesOutCountedRecordPrefixFromNullEntries() {
-    var untouched = new PairR(9, 10);
-    var values = new PairR[] {null, null, untouched};
+  void derivesRecordOutputCountFromArrayLength() {
+    var values = new PairR[3];
 
-    AffmTestFFM.INSTANCE$F.fill_pairs(values, 2, 20);
+    AffmTestFFM.INSTANCE$F.fill_pairs(values, 20);
 
     assertArrayEquals(new PairR[] {
-      new PairR(20, 21), new PairR(22, 23), untouched
+      new PairR(20, 21), new PairR(22, 23), new PairR(24, 25)
     }, values);
-    assertSame(untouched, values[2]);
   }
 
   @Test
@@ -578,7 +575,7 @@ class NativeSharedLibraryTest {
     var values = ByteBuffer.wrap(new byte[] {1, 2, 3});
     values.position(1);
 
-    AffmTestFFM.INSTANCE$F.increment_bytes(values, values.remaining());
+    AffmTestFFM.INSTANCE$F.increment_bytes(values);
 
     assertEquals(1, values.get(0));
     assertEquals(3, values.get(1));
@@ -603,14 +600,15 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void rejectsCountOutsideBufferRemainingRegion() {
-    var values = ByteBuffer.allocate(3);
-    values.position(1);
+  void derivesZeroCountFromEmptyBufferWindow() {
+    var bytes = new byte[] {1, 2, 3};
+    var values = ByteBuffer.wrap(bytes).position(1).limit(1);
 
-    assertThrows(IllegalArgumentException.class,
-        () -> AffmTestFFM.INSTANCE$F.increment_bytes(values, -1));
-    assertThrows(IllegalArgumentException.class,
-        () -> AffmTestFFM.INSTANCE$F.increment_bytes(values, 3));
+    AffmTestFFM.INSTANCE$F.increment_bytes(values);
+
+    assertArrayEquals(new byte[] {1, 2, 3}, bytes);
+    assertEquals(1, values.position());
+    assertEquals(1, values.limit());
   }
 
   @Test
@@ -624,14 +622,17 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void passesOnlyCountedPrefixOfDirectTypedBuffer() {
+  void derivesNativeCountFromDirectTypedBufferWindow() {
     var values = ByteBuffer.allocateDirect(4 * Integer.BYTES)
         .order(ByteOrder.nativeOrder())
         .asIntBuffer();
     values.put(new int[] {1, 2, 3, 4});
     values.position(1);
 
-    AffmTestFFM.INSTANCE$F.scale_int_buffer(values, 2, 10);
+    var window = values.duplicate().limit(3);
+    AffmTestFFM.INSTANCE$F.scale_int_buffer(window, 10);
+    assertEquals(1, window.position());
+    assertEquals(3, window.limit());
 
     assertEquals(1, values.get(0));
     assertEquals(20, values.get(1));
