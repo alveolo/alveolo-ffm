@@ -87,8 +87,15 @@ For unnamed-module applications and tests, pass:
 --enable-native-access=ALL-UNNAMED
 ```
 
-For named modules, enable native access for the module that uses the generated
-bindings.
+For named modules, enable native access for `org.alveolo.ffm` and each module
+containing generated bindings. For example, if the bindings are generated in
+`com.example.app`, pass:
+
+```text
+--enable-native-access=com.example.app,org.alveolo.ffm
+```
+
+Both generated bindings and core helpers perform restricted FFM operations.
 
 ## Maven Setup
 
@@ -144,8 +151,18 @@ module org.alveolo.ffm {
 }
 ```
 
-Named-module applications should add `requires org.alveolo.ffm;` to their own
-`module-info.java`.
+Named modules containing generated bindings should declare:
+
+```java
+module com.example.app {
+  requires org.alveolo.ffm;
+  requires static java.compiler;
+}
+```
+
+Generated classes use `javax.annotation.processing.Generated` from
+`java.compiler`. The `static` requirement makes that module readable during
+compilation without requiring it at runtime.
 
 ## Native Functions
 

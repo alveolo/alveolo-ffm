@@ -109,7 +109,7 @@ The first three findings deserve priority because valid declarations produce inc
 
    Source: [ExecutableGenerator.java:853](/Users/igor/work/alveolo/alveolo-ffm/processor/src/main/java/org/alveolo/ffm/processor/ExecutableGenerator.java:853). Evidence: [binary_count/compile.log](/Users/igor/work/alveolo/alveolo-ffm/tmp/independent-audit/binary_count/compile.log).
 
-9. **[P2] The documented named-module setup does not compile generated classes.**
+9. **[P2] ✅ The documented named-module setup does not compile generated classes.**
 
    README tells applications to add `requires org.alveolo.ffm;`. Every companion also references `javax.annotation.processing.Generated`, which belongs to `java.compiler`. That module is not readable under the documented setup.
 
