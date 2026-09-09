@@ -45,6 +45,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
 
     var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
     var generator = new ForeignMemoryGenerator(processingEnv, generatedTypes);
+    var processedTypes = new HashSet<TypeElement>();
 
     for (var annotation : annotations) {
       if (annotation.getQualifiedName().contentEquals(
@@ -62,7 +63,7 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       }
 
       for (var element : roundEnv.getElementsAnnotatedWith(annotation)) {
-        if (element instanceof TypeElement type)
+        if (element instanceof TypeElement type && processedTypes.add(type))
           processType(annotation, type, generator);
       }
     }
@@ -73,12 +74,17 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
   private void processType(TypeElement annotation, TypeElement type,
       ForeignMemoryGenerator generator) {
     var messager = processingEnv.getMessager();
+    var struct = type.getAnnotation(Struct.class);
+    var union = type.getAnnotation(Union.class);
+    if (struct != null && union != null) {
+      messager.printError("@Struct and @Union cannot be used on the same type",
+          type);
+      return;
+    }
 
     switch (type.getKind()) {
       case INTERFACE, RECORD -> {
         try {
-          var struct = type.getAnnotation(Struct.class);
-          var union = type.getAnnotation(Union.class);
           if (type.getAnnotation(Fields.class) != null
               && (struct != null || union != null)) return;
 

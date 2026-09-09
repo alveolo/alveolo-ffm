@@ -104,7 +104,7 @@ Relevant code:
 Use one shared, complete Java string-literal encoder for every
 annotation-derived string.
 
-### 7. Medium — Combining `@Struct` and `@Union` Produces Internal Stack Traces
+### 7. ✅ Medium — Combining `@Struct` and `@Union` Produces Internal Stack Traces
 
 The processor independently handles both annotations and attempts to recreate
 the same `*FM` file, producing duplicate `FilerException` stack traces rather

@@ -917,6 +917,25 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         "@Union can only be applied to an interface, not ENUM");
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "interface Both { int value(); }", "record Both(int value) {}"
+  })
+  void rejectsStructAndUnionOnSameType(String declaration) {
+    var source = forSourceString("test.Both", """
+        package test;
+        @org.alveolo.ffm.Struct
+        @org.alveolo.ffm.Union
+        %s
+        """.formatted(declaration));
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorCount(1);
+    assertThat(c).hadErrorContaining(
+        "@Struct and @Union cannot be used on the same type").inFile(source);
+  }
+
   @Test
   void failsNestedUnion() {
     var source = forSourceString("test.Outer", """
