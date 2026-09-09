@@ -139,8 +139,11 @@ preferable to speculative sizing or over-allocation.
 
 ## Return Storage
 
-A downcall returning a struct by value accepts a `SegmentAllocator`, not a
-specific `MemorySegment`. That does not prevent preallocated return storage:
+At the linker level, a downcall returning a struct by value accepts a
+`SegmentAllocator`, not a specific `MemorySegment`. Generated bindings supply
+this allocator internally for record returns; memory-backed interface or wrapper
+returns require it as the first source-method parameter. This does not prevent
+preallocated return storage:
 
 - Pass the shared slicing allocator when arguments and the return value occupy
   consecutive parts of one call-scoped backing segment.

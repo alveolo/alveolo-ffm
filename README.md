@@ -685,6 +685,8 @@ public interface NativePairs {
   @Value PairS make_pair(
       SegmentAllocator allocator, int left, int right);
 
+  PairR make_pair_record(int left, int right);
+
   int pair_sum_interface(@Value PairS value);
 }
 ```
@@ -697,11 +699,15 @@ interface; use `@Value` to override that pass mode:
 int tcgetattr(int fd, termiosFM value);
 ```
 
-If a `@ForeignInterface` method returns a struct by value, the generated wrapper
-needs caller-owned memory for the returned value. In that case the source method
-must declare a `SegmentAllocator` parameter, as shown by `make_pair(...)`, and
-the processor reports a compile error if it is missing. This requirement is
-about returned values, not ordinary `@Address` arguments.
+Returning a memory-backed struct or union by value requires a `SegmentAllocator`
+as the first source-method parameter, as shown by `make_pair(...)`. This applies
+to interface types and their generated wrapper classes. The returned wrapper
+views the allocated storage, whose lifetime the caller manages.
+
+Returning a record struct by value, as in `make_pair_record(...)`, uses an
+internal call-scoped arena. The generated binding copies the result into a Java
+record snapshot before closing the arena. Such methods must not declare a
+`SegmentAllocator` parameter; the processor rejects it.
 
 See [Efficient Arena Allocation](docs/ARENA-ALLOCATION.md) for the call-scoped
 allocation strategy, including shared backing segments, aligned slicing, and
