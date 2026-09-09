@@ -13,6 +13,35 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ForeignMemoryProcessorTest extends AbstractProcessorTest {
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "@Struct record Recursive(Recursive child) {}",
+      "@Struct record A(B child) {} @Struct record B(A child) {}",
+      "@Struct record Recursive(@Sequence(2) Recursive[] children) {}",
+      """
+      @Struct interface A { @Value B child(); }
+      @Union interface B { @Value AFM parent(@Sequence(2) int index); }
+      """,
+      """
+      @Struct interface Base { @Value Derived child(); }
+      @Struct interface Derived extends Base {}
+      """
+  })
+  void rejectsRecursiveInlineLayouts(String declarations) {
+    var source = forSourceString("test.RecursiveLayouts", """
+        package test;
+        import org.alveolo.ffm.*;
+        %s
+        """.formatted(declarations));
+
+    var c = compile(source);
+
+    assertThat(c).hadErrorCount(1);
+    assertThat(c).hadErrorContaining(
+        "Recursive inline layout: a struct or union cannot contain itself"
+            + " by value").inFile(source);
+  }
+
   @Test
   void stripsSpecFromInterfaceNamesButNotRecordNames() {
     var source = forSourceString("test.SpecNames", """

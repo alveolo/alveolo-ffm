@@ -38,13 +38,16 @@ import org.alveolo.ffm.Virtual;
 })
 @SupportedSourceVersion(RELEASE_25)
 public class ForeignMemoryProcessor extends AbstractProcessor {
+  private final LayoutCycleValidator layoutCycles = new LayoutCycleValidator();
+
   @Override
   public boolean process(
       Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     if (roundEnv.processingOver()) return true;
 
     var generatedTypes = GeneratedTypeRegistry.create(processingEnv, roundEnv);
-    var generator = new ForeignMemoryGenerator(processingEnv, generatedTypes);
+    var generator = new ForeignMemoryGenerator(
+        processingEnv, generatedTypes, layoutCycles);
     var processedTypes = new HashSet<TypeElement>();
 
     for (var annotation : annotations) {
@@ -68,6 +71,8 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
       }
     }
 
+    if (!roundEnv.errorRaised())
+      layoutCycles.validate(processingEnv.getMessager());
     return true;
   }
 

@@ -5,6 +5,8 @@ import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
@@ -16,10 +18,12 @@ final class ForeignMemoryGenerator {
   private final ForeignMemoryAnalyzer analyzer;
   private final ObjectMethodsGenerator objectGenerator;
   private final ForeignMemoryAccessorGenerator accessorGenerator;
+  private final LayoutCycleValidator layoutCycles;
 
   ForeignMemoryGenerator(ProcessingEnvironment processingEnv,
-      GeneratedTypeRegistry generatedTypes) {
+      GeneratedTypeRegistry generatedTypes, LayoutCycleValidator layoutCycles) {
     this.processingEnv = processingEnv;
+    this.layoutCycles = layoutCycles;
     analyzer = new ForeignMemoryAnalyzer(processingEnv, generatedTypes);
     objectGenerator = new ObjectMethodsGenerator(processingEnv, generatedTypes);
     var indexedFieldGenerator = new IndexedFieldGenerator(analyzer);
@@ -78,6 +82,17 @@ final class ForeignMemoryGenerator {
         ProcessorUtils.vtableImplementationSimpleClassName(source);
     var baseClassName = baseStruct == null ? null
         : ProcessorUtils.foreignMemoryClassName(baseStruct, elements);
+
+    var dependencies = new ArrayList<LayoutCycleValidator.Dependency>();
+    if (baseClassName != null)
+      dependencies.add(new LayoutCycleValidator.Dependency(baseClassName, source));
+    for (var field : fields.fields()) {
+      if (field.isForeignMemory() && field.isValue() && !field.unsupported()) {
+        dependencies.add(new LayoutCycleValidator.Dependency(
+            field.foreignMemoryClassName(), field.element));
+      }
+    }
+    layoutCycles.dependencies.put(className, List.copyOf(dependencies));
 
     var file = processingEnv.getFiler().createSourceFile(className, source);
     try (var out = new PlatformWriter(file.openWriter())) {

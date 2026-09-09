@@ -437,6 +437,11 @@ object or provide enough information to allocate one.
 
 ## Structs and Unions
 
+Inline fields must form a finite layout. A struct or union cannot contain itself
+by value, directly or through other types, array elements, or inherited layouts.
+The processor rejects these cycles. Pointer fields may refer back to the same
+type or form cycles between types.
+
 Use `@Struct` for C structs. Records are convenient for value-style data:
 
 ```java
