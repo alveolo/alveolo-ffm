@@ -103,6 +103,7 @@ class ExecutableGenerator {
     return """
 
           <signature> {
+            <symbolGuard>
             <declarations>
             try <confinedArena>{
               <body>
@@ -114,10 +115,23 @@ class ExecutableGenerator {
           }
         """
         .replace("<signature>", signature())
+        .replace("    <symbolGuard>\n", symbolGuard())
         .replace("    <declarations>\n", declarations())
         .replace("<confinedArena>", confinedArena())
         .replace("<body>", methodBody(methodHandleExpression))
         .replace("<finallyBlock>", finallyBlock());
+  }
+
+  private String symbolGuard() {
+    if (instanceMethodHandle) return "";
+
+    return """
+            if (<mh> == null)
+              throw new UnsatisfiedLinkError(<message>);
+        """
+        .replace("<mh>", methodHandleName)
+        .replace("<message>", elements.getConstantExpression(
+            "Native symbol not found: " + name(element)));
   }
 
   String methodHandleDeclaration() {
@@ -130,12 +144,10 @@ class ExecutableGenerator {
 
     var rawHandle = """
         <linker>.downcallHandle(
-            <lookup>.findOrThrow(<name>),
+            address$f,
             <descriptor><options>)
         """
         .replace("<linker>", linkerExpression)
-        .replace("<lookup>", lookupExpression)
-        .replace("<name>", elements.getConstantExpression(name(element)))
         .replace("<descriptor>", downcallDescriptor())
         .replace("<options>", downcallOptions())
         .stripTrailing();
@@ -143,11 +155,15 @@ class ExecutableGenerator {
     return """
 
           private static final java.lang.invoke.MethodHandle <mh> =
-              <initializer>;
+              <lookup>.find(<name>)
+                  .map(address$f -> <initializer>)
+                  .orElse(null);
         """
         .replace("<mh>", methodHandleName)
+        .replace("<lookup>", lookupExpression)
+        .replace("<name>", elements.getConstantExpression(name(element)))
         .replace("<initializer>", adaptDowncall(rawHandle, false)
-            .replace("\n", "\n      "));
+            .replace("\n", "\n          "));
   }
 
   String adaptDowncall(String rawHandle, boolean unbound) {

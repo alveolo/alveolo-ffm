@@ -14,13 +14,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
       SymbolLookup$F = Linker$F.defaultLookup();
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("scale"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("scale")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void scale(
       int[] values) {
+    if (MethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: scale");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values == null ? 0 : values.length;
       var values$MemorySegment$f = values == null
@@ -46,14 +50,18 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$1$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("sum"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.JAVA_INT,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("sum")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public int sum(
       @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
+    if (MethodHandle$1$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: sum");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values == null ? 0 : values.length;
       if (values != null && values$size$f != 3) {
@@ -79,13 +87,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$2$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("fill"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("fill")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void fill(
       @org.alveolo.ffm.Out @org.alveolo.ffm.Sequence(2L) int[] values) {
+    if (MethodHandle$2$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: fill");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values == null ? 0 : values.length;
       if (values != null && values$size$f != 2) {
@@ -111,13 +123,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$3$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("bytes"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("bytes")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void bytes(
       java.nio.ByteBuffer values) {
+    if (MethodHandle$3$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: bytes");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$position$f = values == null ? 0 : values.position();
       var values$size$f = values == null ? 0 : values.remaining();
@@ -155,13 +171,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$4$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("ints"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("ints")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void ints(
       java.nio.IntBuffer values) {
+    if (MethodHandle$4$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: ints");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$position$f = values == null ? 0 : values.position();
       var values$size$f = values == null ? 0 : values.remaining();
@@ -202,13 +222,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$5$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("flags"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("flags")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void flags(
       boolean[] values) {
+    if (MethodHandle$5$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: flags");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values == null ? 0 : values.length;
       var values$MemorySegment$f = values == null
@@ -235,15 +259,19 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$6$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("process"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.JAVA_INT));
+      SymbolLookup$F.find("process")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_INT)))
+          .orElse(null);
 
   public void process(
       int[] values,
       int count) {
+    if (MethodHandle$6$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: process");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values == null ? 0 : values.length;
       var values$MemorySegment$f = values == null
@@ -270,16 +298,20 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$7$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("transform"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.JAVA_INT,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.JAVA_LONG));
+      SymbolLookup$F.find("transform")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_LONG)))
+          .orElse(null);
 
   public int transform(
       pkg.CallPoint[] points,
       long count) {
+    if (MethodHandle$7$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: transform");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var points$size$f = points == null ? 0 : points.length;
       var points$MemorySegment$f = points == null
@@ -312,13 +344,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$8$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("produce"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("produce")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void produce(
       pkg.@org.alveolo.ffm.Out CallPoint[] points) {
+    if (MethodHandle$8$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: produce");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var points$size$f = points == null ? 0 : points.length;
       var points$MemorySegment$f = points == null
@@ -342,13 +378,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$9$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("consume"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("consume")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void consume(
       pkg.@org.alveolo.ffm.In @org.alveolo.ffm.Sequence(2L) CallPoint[] points) {
+    if (MethodHandle$9$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: consume");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var points$size$f = points == null ? 0 : points.length;
       if (points != null && points$size$f != 2) {
@@ -377,15 +417,19 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$10$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("read"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.JAVA_INT));
+      SymbolLookup$F.find("read")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_INT)))
+          .orElse(null);
 
   public void read(
       java.nio.IntBuffer values,
       int count) {
+    if (MethodHandle$10$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: read");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$position$f = values == null ? 0 : values.position();
       var values$size$f = values == null ? 0 : values.remaining();
@@ -419,13 +463,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$11$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("valueArray"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(3L, java.lang.foreign.ValueLayout.JAVA_INT))));
+      SymbolLookup$F.find("valueArray")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(3L, java.lang.foreign.ValueLayout.JAVA_INT)))))
+          .orElse(null);
 
   public void valueArray(
       @org.alveolo.ffm.Value @org.alveolo.ffm.Sequence(3L) int[] values) {
+    if (MethodHandle$11$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: valueArray");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values.length;
       if (values$size$f != 3) {
@@ -449,13 +497,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$12$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("valueBuffer"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(2L, java.lang.foreign.ValueLayout.JAVA_INT))));
+      SymbolLookup$F.find("valueBuffer")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(2L, java.lang.foreign.ValueLayout.JAVA_INT)))))
+          .orElse(null);
 
   public void valueBuffer(
       java.nio.IntBuffer values) {
+    if (MethodHandle$12$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: valueBuffer");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$position$f = values.position();
       var values$size$f = values.remaining();
@@ -490,13 +542,17 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$13$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("valueRecords"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(2L, pkg.CallPointFM.MemoryLayout$F))));
+      SymbolLookup$F.find("valueRecords")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.MemoryLayout.structLayout(java.lang.foreign.MemoryLayout.sequenceLayout(2L, pkg.CallPointFM.MemoryLayout$F)))))
+          .orElse(null);
 
   public void valueRecords(
       pkg.@org.alveolo.ffm.Value @org.alveolo.ffm.Sequence(2L) CallPoint[] values) {
+    if (MethodHandle$13$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: valueRecords");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var values$size$f = values.length;
       if (values$size$f != 2) {
@@ -523,15 +579,19 @@ public final class ArrayParametersFFM implements ArrayParameters {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$14$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("textAndValues"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("textAndValues")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void textAndValues(
       java.lang.String text,
       long[] values) {
+    if (MethodHandle$14$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: textAndValues");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var text$bytes$f = text == null ? null : text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
       var values$size$f = values == null ? 0 : values.length;

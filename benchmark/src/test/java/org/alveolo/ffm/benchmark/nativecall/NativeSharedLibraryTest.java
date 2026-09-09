@@ -345,8 +345,24 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void callsPrimitiveFunction() {
-    assertEquals(42, AffmTestFFM.INSTANCE$F.add_ints(19, 23));
+  void callsAvailableFunctionDespiteMissingSymbols() {
+    var api = AffmTestFFM.INSTANCE$F;
+    assertEquals(42, api.add_ints(19, 23));
+    assertEquals(java.util.Optional.empty(),
+        AffmTestFFM.SymbolLookup$F.find("affm_missing_function"));
+
+    var values = new int[] {7};
+    for (var attempt = 0; attempt < 2; attempt++) {
+      var plain = assertThrows(UnsatisfiedLinkError.class,
+          () -> api.affm_missing_function(values));
+      var adapted = assertThrows(UnsatisfiedLinkError.class,
+          () -> api.missingSize(3L));
+      assertEquals("Native symbol not found: affm_missing_function",
+          plain.getMessage());
+      assertEquals(plain.getMessage(), adapted.getMessage());
+      assertArrayEquals(new int[] {7}, values);
+      assertEquals(42, api.add_ints(19, 23));
+    }
   }
 
   @Test

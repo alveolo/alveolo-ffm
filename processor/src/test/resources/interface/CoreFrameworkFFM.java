@@ -24,13 +24,17 @@ public final class CoreFrameworkFFM implements CoreFramework {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
-      Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("CFAbsoluteTimeGetCurrent"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_DOUBLE));
+      SymbolLookup$F.find("CFAbsoluteTimeGetCurrent")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_DOUBLE)))
+          .orElse(null);
 
   public double CFAbsoluteTimeGetCurrent(
       ) {
+    if (MethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: CFAbsoluteTimeGetCurrent");
     try {
       return (double) MethodHandle$0$F.invokeExact(
           );

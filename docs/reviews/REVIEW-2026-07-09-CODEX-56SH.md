@@ -218,8 +218,9 @@ In priority order:
   * critical-call options
 5. ✅ Fixed arrays of nested structs and multidimensional sequences.
 6. Fixed arrays of Enum and bitfield support remain open.
-7. Lazy or optional symbol resolution so one unavailable symbol does not
-   prevent using an otherwise valid binding.
+7. ✅ Optional symbol resolution so one unavailable symbol does not
+   prevent using an otherwise valid binding. Static final nullable handles and
+   per-call guards report absent symbols with `UnsatisfiedLinkError`.
 8. Injectable `Linker` and `SymbolLookup` factories for testing and nonstandard
    loading environments.
 

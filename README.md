@@ -385,6 +385,17 @@ Multiple `@Library` annotations are allowed. The generated lookup combines the
 matching libraries and falls back to the platform default lookup when no library
 entry applies.
 
+Symbols are resolved once when the generated class initializes. A missing
+symbol leaves that method's handle null; calling the method throws
+`UnsatisfiedLinkError` with the native symbol name before any argument conversion
+or temporary allocation. Other methods remain usable, including after repeated
+calls to an unavailable method. This also applies to direct `@Symbol` methods on
+struct wrappers.
+
+To check availability, use the generated lookup, for example
+`AffmTestFFM.SymbolLookup$F.find("add_ints").isPresent()`. Missing libraries and
+other linking errors still fail initialization; only absent symbols are tolerated.
+
 ## Dispatch Tables
 
 Use `@DispatchTable` for native tables of function pointers:

@@ -81,29 +81,35 @@ public class ObjFM implements Obj {
   }
 
   private static final java.lang.invoke.MethodHandle SymbolMethodHandle$0$F =
-      pkg.NativeApiFFM.Linker$F.downcallHandle(
-      pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_symbol"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+      pkg.NativeApiFFM.SymbolLookup$F.find("native_symbol")
+          .map(address$f -> pkg.NativeApiFFM.Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_INT)))
+          .orElse(null);
 
   private static final java.lang.invoke.MethodHandle SymbolMethodHandle$1$F =
-      org.alveolo.ffm.NativeType.adaptDowncall(
-          pkg.NativeApiFFM.Linker$F.downcallHandle(
-              pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_strlen"),
-              java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.NativeType.SIZE_T.layout,
-                  java.lang.foreign.ValueLayout.ADDRESS,
-                  java.lang.foreign.ValueLayout.ADDRESS)),
-          org.alveolo.ffm.NativeType.SIZE_T,
-          new org.alveolo.ffm.NativeType[] {
-              null,
-              null
-          });
+      pkg.NativeApiFFM.SymbolLookup$F.find("native_strlen")
+          .map(address$f -> org.alveolo.ffm.NativeType.adaptDowncall(
+              pkg.NativeApiFFM.Linker$F.downcallHandle(
+                  address$f,
+                  java.lang.foreign.FunctionDescriptor.of(
+                      org.alveolo.ffm.NativeType.SIZE_T.layout,
+                      java.lang.foreign.ValueLayout.ADDRESS,
+                      java.lang.foreign.ValueLayout.ADDRESS)),
+              org.alveolo.ffm.NativeType.SIZE_T,
+              new org.alveolo.ffm.NativeType[] {
+                  null,
+                  null
+              }))
+          .orElse(null);
 
   public int call(
       int arg) {
+    if (SymbolMethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: native_symbol");
     try {
       return (int) SymbolMethodHandle$0$F.invokeExact(
           this.MemorySegment$F,
@@ -117,6 +123,8 @@ public class ObjFM implements Obj {
 
   public long strlen(
       java.lang.String value) {
+    if (SymbolMethodHandle$1$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: native_strlen");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       return (long) SymbolMethodHandle$1$F.invokeExact(
           this.MemorySegment$F,

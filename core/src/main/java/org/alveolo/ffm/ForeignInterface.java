@@ -6,7 +6,12 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/// Marks an interface for use as a Foreign Function API wrapper
+/// Marks an interface for use as a Foreign Function API wrapper.
+///
+/// Symbols are resolved once when the generated class initializes. A missing
+/// symbol leaves its method unavailable; calling it throws
+/// [UnsatisfiedLinkError] with the symbol name before converting arguments.
+/// Other methods remain usable.
 @Target(TYPE)
 @Retention(CLASS)
 public @interface ForeignInterface {

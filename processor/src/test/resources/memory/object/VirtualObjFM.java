@@ -86,13 +86,15 @@ public class VirtualObjFM implements VirtualObj {
   }
 
   private static final java.lang.invoke.MethodHandle SymbolMethodHandle$0$F =
-      pkg.NativeApiFFM.Linker$F.downcallHandle(
-      pkg.NativeApiFFM.SymbolLookup$F.findOrThrow("native_symbol"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.JAVA_INT),
-          java.lang.foreign.Linker.Option.firstVariadicArg(2));
+      pkg.NativeApiFFM.SymbolLookup$F.find("native_symbol")
+          .map(address$f -> pkg.NativeApiFFM.Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_INT),
+              java.lang.foreign.Linker.Option.firstVariadicArg(2)))
+          .orElse(null);
 
   public int method(
       long arg) {
@@ -106,6 +108,8 @@ public class VirtualObjFM implements VirtualObj {
 
   public int call(
       int arg) {
+    if (SymbolMethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: native_symbol");
     try {
       return (int) SymbolMethodHandle$0$F.invokeExact(
           this.MemorySegment$F,

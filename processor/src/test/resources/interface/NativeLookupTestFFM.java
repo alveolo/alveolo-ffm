@@ -29,16 +29,20 @@ public final class NativeLookupTestFFM implements NativeLookupTest {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
-      Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("add\"ints\\\n\r\t\b\f\0"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+      SymbolLookup$F.find("add\"ints\\\n\r\t\b\f\u0000")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.JAVA_INT)))
+          .orElse(null);
 
   public int add_ints(
       int left,
       int right) {
+    if (MethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: add\"ints\\\n\r\t\b\f\u0000");
     try {
       return (int) MethodHandle$0$F.invokeExact(
           left,

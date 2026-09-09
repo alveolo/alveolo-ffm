@@ -14,13 +14,17 @@ public final class NullableCallsFFM implements NullableCalls {
       SymbolLookup$F = Linker$F.defaultLookup();
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("find"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("find")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public pkg.@org.alveolo.ffm.Address NullItem find(
       ) {
+    if (MethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: find");
     try {
       return pkg.NullItemFM.reinterpret$F((java.lang.foreign.MemorySegment) MethodHandle$0$F.invokeExact(
           ));
@@ -32,13 +36,17 @@ public final class NullableCallsFFM implements NullableCalls {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$1$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("number"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("number")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public int number(
       ) {
+    if (MethodHandle$1$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: number");
     try {
       var addressResult$f = (java.lang.foreign.MemorySegment) MethodHandle$1$F.invokeExact(
           );
@@ -53,15 +61,19 @@ public final class NullableCallsFFM implements NullableCalls {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$2$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("accept"),
-          java.lang.foreign.FunctionDescriptor.ofVoid(
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("accept")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.ofVoid(
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public void accept(
       pkg.NullItem item,
       java.lang.String text) {
+    if (MethodHandle$2$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: accept");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var text$bytes$f = text == null ? null : text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
       var item$allocationOffset$f = 0L;

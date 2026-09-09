@@ -24,14 +24,18 @@ public final class CoreStringsFFM implements CoreStrings {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("CFStringGetLength"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.JAVA_LONG,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("CFStringGetLength")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_LONG,
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public long CFStringGetLength(
       java.lang.String value) {
+    if (MethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: CFStringGetLength");
     java.lang.foreign.MemorySegment value$CFString$f = java.lang.foreign.MemorySegment.NULL;
     try {
       value$CFString$f = org.alveolo.ffm.macos.CFStringSupport.toCFString(value);
@@ -47,18 +51,20 @@ public final class CoreStringsFFM implements CoreStrings {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$1$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("CFStringGetBytes"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.JAVA_LONG,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              pkg.CFRangeFM.MemoryLayout$F,
-              java.lang.foreign.ValueLayout.JAVA_INT,
-              java.lang.foreign.ValueLayout.JAVA_BYTE,
-              java.lang.foreign.ValueLayout.JAVA_BOOLEAN,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.JAVA_LONG,
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("CFStringGetBytes")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_LONG,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  pkg.CFRangeFM.MemoryLayout$F,
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.JAVA_BYTE,
+                  java.lang.foreign.ValueLayout.JAVA_BOOLEAN,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_LONG,
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public long CFStringGetBytes(
       java.lang.String value,
@@ -69,6 +75,8 @@ public final class CoreStringsFFM implements CoreStrings {
       @org.alveolo.ffm.Out byte[] buffer,
       long capacity,
       @org.alveolo.ffm.Out long[] used) {
+    if (MethodHandle$1$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: CFStringGetBytes");
     java.lang.foreign.MemorySegment value$CFString$f = java.lang.foreign.MemorySegment.NULL;
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var buffer$size$f = buffer == null ? 0 : buffer.length;
@@ -130,18 +138,22 @@ public final class CoreStringsFFM implements CoreStrings {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$2$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("CFStringCompare"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.JAVA_LONG,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.JAVA_LONG));
+      SymbolLookup$F.find("CFStringCompare")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_LONG,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_LONG)))
+          .orElse(null);
 
   public long compare(
       java.lang.String left,
       java.lang.String right,
       long options) {
+    if (MethodHandle$2$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: CFStringCompare");
     java.lang.foreign.MemorySegment left$CFString$f = java.lang.foreign.MemorySegment.NULL;
     java.lang.foreign.MemorySegment right$CFString$f = java.lang.foreign.MemorySegment.NULL;
     try {
@@ -162,18 +174,22 @@ public final class CoreStringsFFM implements CoreStrings {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$3$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("CFStringCreateWithCString"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              java.lang.foreign.ValueLayout.JAVA_INT));
+      SymbolLookup$F.find("CFStringCreateWithCString")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_INT)))
+          .orElse(null);
 
   public java.lang.String create(
       java.lang.foreign.MemorySegment allocator,
       java.lang.String cString,
       int encoding) {
+    if (MethodHandle$3$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: CFStringCreateWithCString");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var cfStringResult$f = (java.lang.foreign.MemorySegment) MethodHandle$3$F.invokeExact(
           allocator,

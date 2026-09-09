@@ -14,19 +14,23 @@ public final class SizesFFM implements Sizes {
       SymbolLookup$F = Linker$F.defaultLookup();
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
-      org.alveolo.ffm.NativeType.adaptDowncall(
-          Linker$F.downcallHandle(
-              SymbolLookup$F.findOrThrow("echo"),
-              java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.NativeType.SIZE_T.layout,
-                  org.alveolo.ffm.NativeType.SIZE_T.layout)),
-          org.alveolo.ffm.NativeType.SIZE_T,
-          new org.alveolo.ffm.NativeType[] {
-              org.alveolo.ffm.NativeType.SIZE_T
-          });
+      SymbolLookup$F.find("echo")
+          .map(address$f -> org.alveolo.ffm.NativeType.adaptDowncall(
+              Linker$F.downcallHandle(
+                  address$f,
+                  java.lang.foreign.FunctionDescriptor.of(
+                      org.alveolo.ffm.NativeType.SIZE_T.layout,
+                      org.alveolo.ffm.NativeType.SIZE_T.layout)),
+              org.alveolo.ffm.NativeType.SIZE_T,
+              new org.alveolo.ffm.NativeType[] {
+                  org.alveolo.ffm.NativeType.SIZE_T
+              }))
+          .orElse(null);
 
   public long echo(
       long value) {
+    if (MethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: echo");
     try {
       return (long) MethodHandle$0$F.invokeExact(
           value);
@@ -38,19 +42,23 @@ public final class SizesFFM implements Sizes {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$1$F =
-      org.alveolo.ffm.NativeType.adaptDowncall(
-          Linker$F.downcallHandle(
-              SymbolLookup$F.findOrThrow("read"),
-              java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.NativeType.SIZE_T.layout,
-                  java.lang.foreign.ValueLayout.ADDRESS)),
-          org.alveolo.ffm.NativeType.SIZE_T,
-          new org.alveolo.ffm.NativeType[] {
-              null
-          });
+      SymbolLookup$F.find("read")
+          .map(address$f -> org.alveolo.ffm.NativeType.adaptDowncall(
+              Linker$F.downcallHandle(
+                  address$f,
+                  java.lang.foreign.FunctionDescriptor.of(
+                      org.alveolo.ffm.NativeType.SIZE_T.layout,
+                      java.lang.foreign.ValueLayout.ADDRESS)),
+              org.alveolo.ffm.NativeType.SIZE_T,
+              new org.alveolo.ffm.NativeType[] {
+                  null
+              }))
+          .orElse(null);
 
   public long read(
       long value) {
+    if (MethodHandle$1$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: read");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var value$MemorySegment$f = arena$f.allocate(org.alveolo.ffm.NativeType.SIZE_T.layout);
       org.alveolo.ffm.NativeType.setSizeT(value$MemorySegment$f, 0L, value);
@@ -64,22 +72,26 @@ public final class SizesFFM implements Sizes {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$2$F =
-      org.alveolo.ffm.NativeType.adaptDowncall(
-          Linker$F.downcallHandle(
-              SymbolLookup$F.findOrThrow("sum"),
-              java.lang.foreign.FunctionDescriptor.of(
-                  org.alveolo.ffm.NativeType.SIZE_T.layout,
-                  java.lang.foreign.ValueLayout.ADDRESS,
-                  java.lang.foreign.ValueLayout.ADDRESS)),
-          org.alveolo.ffm.NativeType.SIZE_T,
-          new org.alveolo.ffm.NativeType[] {
-              null,
-              null
-          });
+      SymbolLookup$F.find("sum")
+          .map(address$f -> org.alveolo.ffm.NativeType.adaptDowncall(
+              Linker$F.downcallHandle(
+                  address$f,
+                  java.lang.foreign.FunctionDescriptor.of(
+                      org.alveolo.ffm.NativeType.SIZE_T.layout,
+                      java.lang.foreign.ValueLayout.ADDRESS,
+                      java.lang.foreign.ValueLayout.ADDRESS)),
+              org.alveolo.ffm.NativeType.SIZE_T,
+              new org.alveolo.ffm.NativeType[] {
+                  null,
+                  null
+              }))
+          .orElse(null);
 
   public long sum(
       long first,
       long second) {
+    if (MethodHandle$2$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: sum");
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var first$allocationOffset$f = 0L;
       var allocationOffset$f = org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize();
@@ -109,13 +121,17 @@ public final class SizesFFM implements Sizes {
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$3$F =
-      Linker$F.downcallHandle(
-          SymbolLookup$F.findOrThrow("address"),
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.ADDRESS));
+      SymbolLookup$F.find("address")
+          .map(address$f -> Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.ADDRESS)))
+          .orElse(null);
 
   public long address(
       ) {
+    if (MethodHandle$3$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: address");
     try {
       var addressResult$f = (java.lang.foreign.MemorySegment) MethodHandle$3$F.invokeExact(
           );

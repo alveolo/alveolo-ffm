@@ -178,7 +178,7 @@ The following features would be useful after the runtime and compilation defects
 
 | Priority | Feature | Concrete value and initial scope |
 | --- | --- | --- |
-| 1 | Injectable symbol lookup and optional symbols | Allow a binding instance to use a caller-provided `SymbolLookup`. This supports tests, multiple library versions, and caller-controlled library arenas. Add explicit availability checks for optional entry points so one missing symbol need not disable an entire binding class. |
+| 1 | Injectable symbol lookup and optional symbols | ✅ Missing symbols no longer disable the binding class: nullable static final handles and explicit guards throw `UnsatisfiedLinkError` only when an unavailable method is called. Availability can be checked through the generated `SymbolLookup$F`. Caller-provided lookup remains open for tests, multiple library versions, and caller-controlled library arenas. |
 | 2 | Generated callbacks and upcall stubs | Complete the native interoperation path for event handlers, comparators, and visitor APIs. Start with fixed signatures, explicit arena ownership, and a defined exception policy at the native boundary. |
 | 3 | Canonical scalar arrays | Support `@SLong`, `@ULong`, `@SizeT`, and `@WCharT` in inline arrays and call arrays. Reuse scalar conversion rules and establish Windows coverage first. This removes manual C-long array marshalling. |
 | 4 | Explicit string contracts | ✅ Nullable C-string parameters and returns are supported. Bounded pointer-return decoding and additional encoding choices remain open. Raw MemorySegment bindings remain available. |

@@ -28,6 +28,11 @@ public interface AffmTest {
 
   int add_ints(int left, int right);
 
+  void affm_missing_function(@Out @Sequence(2) int[] values);
+
+  @Symbol("affm_missing_function")
+  @SizeT long missingSize(@SizeT long value);
+
   @Symbol("null_pointer") PairS absentPair();
   @Symbol("null_pointer") NullableUnion absentUnion();
   @Symbol("null_pointer") PairSFM absentWrapper();
