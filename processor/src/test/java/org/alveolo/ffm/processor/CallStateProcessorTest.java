@@ -69,14 +69,26 @@ class CallStateProcessorTest extends AbstractProcessorTest {
           long error(int index);
         }
         """);
+    var inherited = forSourceString("test.Inherited", """
+        package test;
+        interface Parent { int error(); }
+        @org.alveolo.ffm.CallState("errno")
+        interface Inherited extends Parent {
+          int another();
+        }
+        """);
 
-    var c = compile(missing, invalid);
+    var c = compile(missing, invalid, inherited);
 
     assertThat(c).hadErrorContaining(
-        "@CallState interface must declare exactly one abstract accessor");
+        "@CallState interface must have exactly one abstract accessor")
+        .inFile(missing);
+    assertThat(c).hadErrorContaining(
+        "@CallState interface must have exactly one abstract accessor")
+        .inFile(inherited);
     assertThat(c).hadErrorContaining(
         "@CallState accessor must have no parameters and return int");
-    assertThat(c).hadErrorCount(2);
+    assertThat(c).hadErrorCount(3);
   }
 
   @Test

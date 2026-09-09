@@ -101,7 +101,7 @@ public class CallStateProcessor extends AbstractProcessor {
       }
     }
 
-    var accessors = type.getEnclosedElements().stream()
+    var accessors = processingEnv.getElementUtils().getAllMembers(type).stream()
         .filter(ExecutableElement.class::isInstance)
         .map(ExecutableElement.class::cast)
         .filter(method -> method.getKind() == ElementKind.METHOD)
@@ -110,7 +110,7 @@ public class CallStateProcessor extends AbstractProcessor {
 
     if (accessors.size() != 1) {
       messager.printError(
-          "@CallState interface must declare exactly one abstract accessor",
+          "@CallState interface must have exactly one abstract accessor",
           type);
       return null;
     }

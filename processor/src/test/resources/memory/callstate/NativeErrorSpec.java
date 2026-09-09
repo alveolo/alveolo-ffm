@@ -6,14 +6,16 @@ import java.util.function.IntPredicate;
 import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.Library;
 
+interface ErrorAccessor {
+  int error();
+}
+
 @CallState(
     value = "errno",
     overrides = @CallState.Override(
         os = Library.OS.WINDOWS,
         value = "GetLastError"))
-public interface NativeErrorSpec {
-  int error();
-
+public interface NativeErrorSpec extends ErrorAccessor {
   default void throwIf(BooleanSupplier failure) {
     int error = error();
     if (failure.getAsBoolean()) throw new IllegalStateException(

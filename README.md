@@ -284,8 +284,9 @@ parameters, the processor passes `N + 1` to the linker.
 ## Captured Call State
 
 Use `@CallState` for native thread-local state such as `errno`, Windows
-`GetLastError`, or `WSAGetLastError`. The annotated interface declares one
-zero-argument `int` accessor. Its generated implementation owns the reusable
+`GetLastError`, or `WSAGetLastError`. The annotated interface must have exactly
+one abstract, zero-argument `int` accessor, declared directly or inherited.
+Its generated implementation owns the reusable
 capture segment:
 
 ```java

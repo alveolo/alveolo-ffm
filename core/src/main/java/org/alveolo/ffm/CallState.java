@@ -9,8 +9,9 @@ import java.lang.annotation.Target;
 /// Defines a reusable wrapper for one value captured immediately after a
 /// native call.
 ///
-/// The annotated interface must declare exactly one abstract, zero-argument
-/// accessor returning `int`. The generated implementation stores a
+/// The annotated interface must have exactly one abstract, zero-argument
+/// accessor returning `int`, declared directly or inherited. The generated
+/// implementation stores a
 /// `MemorySegment` allocated with `Linker.Option.captureStateLayout()` and the
 /// accessor reads the selected native state from that segment.
 ///
