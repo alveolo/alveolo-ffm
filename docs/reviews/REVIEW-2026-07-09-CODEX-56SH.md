@@ -89,7 +89,7 @@ Relevant code:
 Introduce a method-scoped name allocator that reserves source parameter names
 and creates guaranteed-unique synthetic names.
 
-### 6. Medium — `@Symbol` Values Are Not Escaped in Generated Java
+### 6. ✅ Medium — `@Symbol` Values Are Not Escaped in Generated Java
 
 A legal `@Symbol("quote\"inside")` generated malformed Java because the value
 is inserted directly into a string literal. Backslashes can also silently

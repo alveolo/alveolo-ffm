@@ -6,7 +6,6 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
-import static org.alveolo.ffm.processor.ProcessorUtils.quote;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
@@ -217,14 +216,15 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
   }
 
   private String librarySpec(Library library) {
+    var elements = processingEnv.getElementUtils();
     return """
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
             <value>, <version>,
             <os>,
             org.alveolo.ffm.Library.Kind.<kind><overrides>)
         """
-        .replace("<value>", quote(library.value()))
-        .replace("<version>", quote(library.version()))
+        .replace("<value>", elements.getConstantExpression(library.value()))
+        .replace("<version>", elements.getConstantExpression(library.version()))
         .replace("<os>", osArray(library.os()))
         .replace("<kind>", library.kind().name())
         .replace("<overrides>", libraryOverrides(library))
@@ -242,6 +242,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
   }
 
   private String libraryOverride(Library.Override override) {
+    var elements = processingEnv.getElementUtils();
     return """
         new org.alveolo.ffm.ForeignUtils.LibraryOverride(
             <os>,
@@ -251,7 +252,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
         """
         .replace("<os>", osArray(override.os()))
         .replace("<kind>", override.kind().name())
-        .replace("<value>", quote(override.value()))
+        .replace("<value>", elements.getConstantExpression(override.value()))
         .stripTrailing();
   }
 }

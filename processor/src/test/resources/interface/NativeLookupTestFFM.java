@@ -18,14 +18,19 @@ public final class NativeLookupTestFFM implements NativeLookupTest {
         NativeLookupTest.class,
         Linker$F.defaultLookup(),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
-            "cups", "2",
+            "cups\"\\path\n", "2\t",
             new org.alveolo.ffm.Library.OS[] {},
-            org.alveolo.ffm.Library.Kind.NAME));
+            org.alveolo.ffm.Library.Kind.NAME,
+            new org.alveolo.ffm.ForeignUtils.LibraryOverride(
+                new org.alveolo.ffm.Library.OS[] {},
+                org.alveolo.ffm.Library.Kind.NAME,
+                "cups\r\b\f"
+            )));
   }
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("add_ints"),
+      SymbolLookup$F.findOrThrow("add\"ints\\\n\r\t\b\f\0"),
       java.lang.foreign.FunctionDescriptor.of(
           java.lang.foreign.ValueLayout.JAVA_INT,
           java.lang.foreign.ValueLayout.JAVA_INT,

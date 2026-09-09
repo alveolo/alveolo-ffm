@@ -12,12 +12,14 @@ import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.Symbol;
 
 class ExecutableGenerator {
   final Messager messager;
+  final Elements elements;
   final ExecutableElement element;
   final boolean hasErrors;
   final String methodHandleName;
@@ -54,6 +56,7 @@ class ExecutableGenerator {
       List<NativeArgument> leadingNativeArguments,
       String linkerExpression, String lookupExpression) {
     messager = processingEnv.getMessager();
+    elements = processingEnv.getElementUtils();
     this.element = element;
     this.methodHandleName = methodHandleName;
     this.instanceMethodHandle = instanceMethodHandle;
@@ -127,12 +130,12 @@ class ExecutableGenerator {
 
     var rawHandle = """
         <linker>.downcallHandle(
-            <lookup>.findOrThrow("<name>"),
+            <lookup>.findOrThrow(<name>),
             <descriptor><options>)
         """
         .replace("<linker>", linkerExpression)
         .replace("<lookup>", lookupExpression)
-        .replace("<name>", name(element))
+        .replace("<name>", elements.getConstantExpression(name(element)))
         .replace("<descriptor>", downcallDescriptor())
         .replace("<options>", downcallOptions())
         .stripTrailing();

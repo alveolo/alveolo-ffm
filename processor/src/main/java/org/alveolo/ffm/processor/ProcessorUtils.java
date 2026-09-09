@@ -171,10 +171,6 @@ final class ProcessorUtils {
             "new org.alveolo.ffm.Library.OS[] {", "}"));
   }
 
-  static String quote(String value) {
-    return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-  }
-
   static String qualifyName(String packageName, String className) {
     return packageName.isEmpty() ? className : packageName + "." + className;
   }

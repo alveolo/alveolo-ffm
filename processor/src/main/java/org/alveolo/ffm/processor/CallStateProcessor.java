@@ -6,7 +6,6 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
-import static org.alveolo.ffm.processor.ProcessorUtils.quote;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
@@ -195,7 +194,7 @@ public class CallStateProcessor extends AbstractProcessor {
               .replace("<generator>", getClass().getCanonicalName())
               .replace("<class>", simpleClassName)
               .replace("<source>", sourceName)
-              .replace("<state>", quote(callState.value()))
+              .replace("<state>", elements.getConstantExpression(callState.value()))
               .replace("<overrides>", overrides(callState))
               .replace("<accessor>", accessor.getSimpleName().toString()));
     }
@@ -212,13 +211,14 @@ public class CallStateProcessor extends AbstractProcessor {
   }
 
   private String callStateOverride(CallState.Override override) {
+    var elements = processingEnv.getElementUtils();
     return """
         new org.alveolo.ffm.ForeignUtils.CallStateOverride(
             <os>,
             <value>)
         """
         .replace("<os>", osArray(override.os()))
-        .replace("<value>", quote(override.value()))
+        .replace("<value>", elements.getConstantExpression(override.value()))
         .stripTrailing();
   }
 }
