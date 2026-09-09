@@ -793,29 +793,39 @@ native contract supplies a trustworthy element count.
 
 ### Extent
 
+Pointer-passed arrays and buffers accept Java `null` as native NULL. The wrapper
+skips allocation, size validation, and copying for that argument. This applies
+with `@In`, `@Out`, or the default input/output transfer mode. A non-null empty
+array or buffer window supplies a non-null pointer with zero logical elements;
+the wrapper provides minimal backing storage when needed to preserve this
+distinction.
+
 An array uses its full `array.length`. A buffer uses the region from
 `position()` through `limit()`, without changing its position or limit.
 
-`@Sequence(n)` declares a fixed logical extent and requires the available
-element count to equal `n`. By default the ABI type remains a pointer and the
-annotation is an exact Java binding contract.
+`@Sequence(n)` declares a fixed logical extent and requires a non-null argument's
+available element count to equal `n`. By default the ABI type remains a pointer
+and the annotation is an exact Java binding contract.
 
 Add `@Value` to pass the fixed array or buffer contents as a native aggregate
 instead. `@Sequence` is required in that case because the aggregate layout must
 be known when the downcall handle is created. The generated descriptor uses a
 synthetic one-field struct containing the sequence: the FFM linker accepts the
 resulting group layout as a by-value argument while the Java API can remain an
-array or buffer without a user-declared `@Struct` wrapper. `@Out` is rejected
-for these arguments because a by-value argument cannot return mutations to the
-caller.
+array or buffer without a user-declared `@Struct` wrapper. These `@Value`
+arguments must be non-null. `@Out` is rejected for these arguments because a
+by-value argument cannot return mutations to the caller.
 
 C array parameters still decay to pointers. Use `@Value` only when the target
 ABI actually defines a compatible aggregate-by-value parameter, such as an API
 from another language or a C-compatible single-array struct ABI.
 
 Native count, capacity, offset, and stride parameters remain ordinary explicit
-arguments. They do not change the region transferred by the generated wrapper,
-and the processor does not validate their relationship to that region. Default
+arguments, including when an array or buffer is null. The wrapper does not infer
+a zero count from null; a default convenience method may do so if the native API
+requires it. These parameters do not change the region transferred by the
+generated wrapper, and the processor does not validate their relationship to
+that region. Default
 convenience methods can derive counts from `array.length` or
 `buffer.remaining()`, or validate API-specific relationships such as audio
 frames versus samples per channel.
@@ -845,7 +855,7 @@ Transfer direction controls copying:
   copied out after the call
 - `@In` copies in only
 - `@Out` copies out only
-- direct buffers are passed directly with `MemorySegment.ofBuffer(...)`,
+- non-empty direct buffers are passed directly with `MemorySegment.ofBuffer(...)`,
   exposing the buffer's current position-to-limit region
 
 Buffers must be writable whenever copy-out is enabled. Direct typed buffers
@@ -866,9 +876,9 @@ untouched contents, or use direct/native storage and handle the produced
 length explicitly.
 
 `@In` and `@Out` describe wrapper copies, not native `const` or memory
-protection. They do not change direct-buffer behavior: native code receives the
-buffer's storage and may read or write it regardless of the annotation.
-The Java segment view is bounded to the selected buffer window, but native
+protection. For non-empty direct buffers, native code receives the buffer's
+storage and may read or write it regardless of the annotation. The Java segment
+view is bounded to the selected buffer window, but native
 pointer arithmetic is outside Java's bounds checks, so native code must still
 honor its storage limits.
 

@@ -138,14 +138,21 @@ final class VariableGenerator extends TypeGenerator {
           .stripTrailing();
 
     return """
-        var <position> = <name>.position();
+        var <position> = <positionExpression>;
         <sizeInitializer>
         <sequenceCheck>
         <readOnlyCheck>
         <directOrderCheck>
-        var <direct> = <name>.isDirect();
+        var <direct> = <directExpression>;
         """
         .replace("<position>", positionName())
+        .replace("<positionExpression>", nullableArrayOrBuffer()
+            ? name + " == null ? 0 : " + name + ".position()"
+            : name + ".position()")
+        .replace("<directExpression>", nullableArrayOrBuffer()
+            ? name + " != null && " + sizeName() + " != 0 && "
+                + name + ".isDirect()"
+            : name + ".isDirect()")
         .replace("<name>", name)
         .replace("<sizeInitializer>\n", sizeInitializer())
         .replace("<sequenceCheck>\n", sequenceCheck("remaining"))
@@ -200,37 +207,22 @@ final class VariableGenerator extends TypeGenerator {
               + conversion + "\n}" : conversion);
     }
 
-    if (isValueStructRecordArray())
-      return """
-          var <segment> = <memorySegment>;
-          <copyIn>
-          """
-          .replace("<segment>", segmentName())
-          .replace("<memorySegment>", memorySegment)
-          .replace("<copyIn>", copyIn() ? plannedRecordArrayCopyIn() : "")
-          .stripTrailing();
-
-    if (isArray())
-      return """
-          var <segment> = <memorySegment>;
-          <copyIn>
-          """
-          .replace("<segment>", segmentName())
-          .replace("<memorySegment>", memorySegment)
-          .replace("<copyIn>", copyIn() ? arrayCopyIn() : "")
-          .stripTrailing();
-
+    var storage = isArray() ? memorySegment
+        : directName() + "\n    ? java.lang.foreign.MemorySegment.ofBuffer("
+            + name + ")\n    : " + memorySegment;
+    if (nullableArrayOrBuffer()) {
+      storage = name + " == null\n    ? java.lang.foreign.MemorySegment.NULL\n"
+          + "    : " + storage.replace("\n", "\n    ");
+    }
+    var copy = !copyIn() ? "" : isValueStructRecordArray() ? recordArrayCopyIn()
+        : isArray() ? arrayCopyIn() : bufferCopyIn();
     return """
-        var <segment> = <direct>
-            ? java.lang.foreign.MemorySegment.ofBuffer(<name>)
-            : <memorySegment>;
+        var <segment> = <storage>;
         <copyIn>
         """
         .replace("<segment>", segmentName())
-        .replace("<direct>", directName())
-        .replace("<name>", name)
-        .replace("<memorySegment>", memorySegment)
-        .replace("<copyIn>", copyIn() ? bufferCopyIn() : "")
+        .replace("<storage>", storage)
+        .replace("<copyIn>", copy)
         .stripTrailing();
   }
 
@@ -244,13 +236,15 @@ final class VariableGenerator extends TypeGenerator {
       return "(" + name + " == null ? 0L : Math.addExact((long) "
           + bytesName() + ".length, 1L))";
 
-    if (isNioBuffer())
-      return directName() + " ? 0L : Math.multiplyExact("
-          + allocationLayout() + ".byteSize(), (long) " + sizeName() + ")";
-
-    if (isCallArrayOrBuffer())
-      return "Math.multiplyExact(" + allocationLayout()
-          + ".byteSize(), (long) " + sizeName() + ")";
+    if (isCallArrayOrBuffer()) {
+      var size = arrayOrBufferAllocationSize();
+      if (nullableArrayOrBuffer()) {
+        return "(" + name + " == null"
+            + (isNioBuffer() ? " || " + directName() : "")
+            + " ? 0L : " + size + ")";
+      }
+      return isNioBuffer() ? directName() + " ? 0L : " + size : size;
+    }
 
     var size = allocationLayout() + ".byteSize()";
     return isRecord() && isAddress()
@@ -307,6 +301,10 @@ final class VariableGenerator extends TypeGenerator {
     return isCallArrayOrBuffer() && hasExplicitValuePassMode();
   }
 
+  private boolean nullableArrayOrBuffer() {
+    return isCallArrayOrBuffer() && !isCallArrayOrBufferByValue();
+  }
+
   private String callArrayOrBufferValueLayout() {
     if (hasConflictingPassModeAnnotations())
       return VALUE_LAYOUT_NOT_SUPPORTED;
@@ -321,9 +319,15 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String arrayOrBufferInitializer() {
-    return isValueStructRecordArray() ? recordArrayInitializer()
-        : isArray() ? arrayInitializer()
-        : bufferInitializer();
+    return plannedPreparation() + "\n" + plannedInitializer(
+        "arena$f.allocate(\n    " + arrayOrBufferAllocationSize() + ",\n    "
+            + allocationAlignment() + ")");
+  }
+
+  private String arrayOrBufferAllocationSize() {
+    var size = "Math.multiplyExact(" + allocationLayout()
+        + ".byteSize(), (long) " + sizeName() + ")";
+    return nullableArrayOrBuffer() ? "Math.max(1L, " + size + ")" : size;
   }
 
   String primitiveAddressInitializer() {
@@ -362,68 +366,9 @@ final class VariableGenerator extends TypeGenerator {
     return !isCallArrayOrBufferByValue() && !hasInAnnotation();
   }
 
-  private String arrayInitializer() {
-    return """
-        <sizeInitializer>
-        <sequenceCheck>
-        var <segment> = arena$f.allocate(<layout>, <size>);
-        <copyIn>
-        """
-        .replace("<sizeInitializer>\n", sizeInitializer())
-        .replace("<sequenceCheck>\n", sequenceCheck("length"))
-        .replace("<segment>", segmentName())
-        .replace("<layout>", elementLayout())
-        .replace("<size>", sizeName())
-        .replace("<copyIn>", copyIn() ? arrayCopyIn() : "")
-        .stripTrailing();
-  }
-
-  private String bufferInitializer() {
-    return """
-        var <position> = <name>.position();
-        <sizeInitializer>
-        <sequenceCheck>
-        <readOnlyCheck>
-        <directOrderCheck>
-        var <direct> = <name>.isDirect();
-        var <segment> = <direct>
-            ? java.lang.foreign.MemorySegment.ofBuffer(<name>)
-            : arena$f.allocate(<layout>, <size>);
-        <copyIn>
-        """
-        .replace("<position>", positionName())
-        .replace("<name>", name)
-        .replace("<sizeInitializer>\n", sizeInitializer())
-        .replace("<sequenceCheck>\n", sequenceCheck("remaining"))
-        .replace("<readOnlyCheck>\n", readOnlyCheck())
-        .replace("<directOrderCheck>\n", directOrderCheck())
-        .replace("<direct>", directName())
-        .replace("<segment>", segmentName())
-        .replace("<layout>", elementLayout())
-        .replace("<size>", sizeName())
-        .replace("<copyIn>", copyIn() ? bufferCopyIn() : "")
-        .stripTrailing();
-  }
-
-  private String recordArrayInitializer() {
-    return """
-        <sizeInitializer>
-        <sequenceCheck>
-        var <segment> = arena$f.allocate(
-            <foreignClass>.MemoryLayout$F, <size>);
-        <copyIn>
-        """
-        .replace("<sizeInitializer>\n", sizeInitializer())
-        .replace("<sequenceCheck>\n", sequenceCheck("length"))
-        .replace("<segment>", segmentName())
-        .replace("<foreignClass>", recordForeignMemoryClassName())
-        .replace("<size>", sizeName())
-        .replace("<copyIn>", copyIn() ? recordArrayCopyIn() : "")
-        .stripTrailing();
-  }
-
   private String sizeInitializer() {
-    return "var " + sizeName() + " = " + name
+    return "var " + sizeName() + " = "
+        + (nullableArrayOrBuffer() ? name + " == null ? 0 : " : "") + name
         + (isArray() ? ".length" : ".remaining()") + ";\n";
   }
 
@@ -431,12 +376,13 @@ final class VariableGenerator extends TypeGenerator {
     if (!hasExplicitSequence) return "";
 
     return """
-        if (<size> != <sequence>) {
+        if (<present><size> != <sequence>) {
           throw new IllegalArgumentException(
               "<name> <sizeWord> must be <sequence>");
         }
         """
         .replace("<size>", sizeName())
+        .replace("<present>", nullableArrayOrBuffer() ? name + " != null && " : "")
         .replace("<sequence>", Long.toString(sequence))
         .replace("<name>", name)
         .replace("<sizeWord>", sizeWord);
@@ -446,7 +392,7 @@ final class VariableGenerator extends TypeGenerator {
     if (!copyOut()) return "";
 
     return """
-        if (<name>.isReadOnly()) {
+        if (<name> != null && <name>.isReadOnly()) {
           throw new IllegalArgumentException(
               "<name> must be writable unless annotated @In");
         }
@@ -458,13 +404,14 @@ final class VariableGenerator extends TypeGenerator {
     if ("byte".equals(elementTypeName())) return "";
 
     return """
-        if (<name>.isDirect()
+        if (<present><name>.isDirect()
             && !<name>.order().equals(java.nio.ByteOrder.nativeOrder())) {
           throw new IllegalArgumentException(
               "direct <name> must use native byte order");
         }
         """
-        .replace("<name>", name);
+        .replace("<name>", name)
+        .replace("<present>", nullableArrayOrBuffer() ? name + " != null && " : "");
   }
 
   private String arrayCopyIn() {
@@ -472,8 +419,10 @@ final class VariableGenerator extends TypeGenerator {
       return booleanArrayCopyIn();
 
     return """
-        java.lang.foreign.MemorySegment.copy(
-            <name>, 0, <segment>, <layout>, 0, <size>);
+        if (<size> != 0) {
+          java.lang.foreign.MemorySegment.copy(
+              <name>, 0, <segment>, <layout>, 0, <size>);
+        }
         """
         .replace("<name>", name)
         .replace("<segment>", segmentName())
@@ -520,24 +469,6 @@ final class VariableGenerator extends TypeGenerator {
         .stripTrailing();
   }
 
-  private String plannedRecordArrayCopyIn() {
-    return """
-        for (var <index> = 0; <index> < <size>; <index>++) {
-          <foreignClass>.toMemorySegment$F(
-              <name>[<index>],
-              <segment>.asSlice(
-                  (long) <index> * <foreignClass>.MemoryLayout$F.byteSize(),
-                  <foreignClass>.MemoryLayout$F));
-        }
-        """
-        .replace("<index>", indexName())
-        .replace("<size>", sizeName())
-        .replace("<segment>", segmentName())
-        .replace("<foreignClass>", recordForeignMemoryClassName())
-        .replace("<name>", name)
-        .stripTrailing();
-  }
-
   private String bufferCopyIn() {
     return """
         if (!<direct>) {
@@ -562,8 +493,10 @@ final class VariableGenerator extends TypeGenerator {
       return booleanArrayCopyOut();
 
     return """
-        java.lang.foreign.MemorySegment.copy(
-            <segment>, <layout>, 0, <name>, 0, <size>);
+        if (<size> != 0) {
+          java.lang.foreign.MemorySegment.copy(
+              <segment>, <layout>, 0, <name>, 0, <size>);
+        }
         """
         .replace("<segment>", segmentName())
         .replace("<layout>", elementLayout())

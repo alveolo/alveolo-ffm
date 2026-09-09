@@ -1,5 +1,6 @@
 package org.alveolo.ffm.benchmark.nativecall;
 
+import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -48,6 +49,25 @@ public interface AffmTest {
   int optionalInterfaceValues(PairS value, String text);
   @Symbol("nullable_box")
   int optionalAllocatingValues(@Address PairBoxRA value, String text);
+
+  @Symbol("pointer_state")
+  int optionalArray(int[] values, MemorySegment other, int count);
+
+  @Symbol("pointer_state")
+  int optionalFlags(boolean[] values, MemorySegment other, int count);
+
+  @Symbol("pointer_state")
+  int optionalRecords(PairBoxRA[] values, MemorySegment other, int count);
+
+  @Symbol("pointer_state")
+  int optionalArrays(int[] values, @Out @Sequence(2) PairR[] other, int count);
+
+  @Symbol("pointer_state")
+  int optionalBuffer(IntBuffer values, MemorySegment other, int count);
+
+  @Symbol("pointer_state")
+  int optionalBuffers(@In @Sequence(2) IntBuffer values,
+      ByteBuffer other, int count);
 
 
   @SLong long echo_slong(@SLong long value);

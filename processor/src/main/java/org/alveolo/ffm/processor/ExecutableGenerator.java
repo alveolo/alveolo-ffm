@@ -590,8 +590,9 @@ class ExecutableGenerator {
     }
 
     plan.append("""
-        var allocation$MemorySegment$f = arena$f.allocate(
-            allocationOffset$f, <alignment>);
+        var allocation$MemorySegment$f = allocationOffset$f == 0L
+            ? java.lang.foreign.MemorySegment.NULL
+            : arena$f.allocate(allocationOffset$f, <alignment>);
         """
         .replace("<alignment>", maximumAlignment(allocations)));
 

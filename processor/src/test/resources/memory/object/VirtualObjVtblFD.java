@@ -31,10 +31,10 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
       org.alveolo.ffm.NativeType.adaptDowncall(
           Linker$F.downcallHandle(
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.JAVA_INT,
-              java.lang.foreign.ValueLayout.ADDRESS,
-              org.alveolo.ffm.NativeType.SLONG.layout),
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  org.alveolo.ffm.NativeType.SLONG.layout),
               java.lang.foreign.Linker.Option.firstVariadicArg(2)),
           null,
           new org.alveolo.ffm.NativeType[] {
@@ -61,10 +61,10 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$1$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$1$F;
 
@@ -72,14 +72,20 @@ public final class VirtualObjVtblFD implements VirtualObjVtbl {
       pkg.VirtualObj self$f,
       @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var values$size$f = values.length;
-      if (values$size$f != 3) {
+      var values$size$f = values == null ? 0 : values.length;
+      if (values != null && values$size$f != 3) {
         throw new IllegalArgumentException(
             "values length must be 3");
       }
-      var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
-      java.lang.foreign.MemorySegment.copy(
-          values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
+      var values$MemorySegment$f = values == null
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(
+              Math.max(1L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) values$size$f)),
+              java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
+      if (values$size$f != 0) {
+        java.lang.foreign.MemorySegment.copy(
+            values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
+      }
       return (int) MethodHandle$1$F.invokeExact(
           (java.lang.foreign.MemorySegment) (self$f == null ? java.lang.foreign.MemorySegment.NULL : ((pkg.VirtualObjFM) self$f).MemorySegment$F),
           values$MemorySegment$f);

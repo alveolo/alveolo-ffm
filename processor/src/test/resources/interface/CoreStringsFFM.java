@@ -71,8 +71,8 @@ public final class CoreStringsFFM implements CoreStrings {
       @org.alveolo.ffm.Out long[] used) {
     java.lang.foreign.MemorySegment value$CFString$f = java.lang.foreign.MemorySegment.NULL;
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var buffer$size$f = buffer.length;
-      var used$size$f = used.length;
+      var buffer$size$f = buffer == null ? 0 : buffer.length;
+      var used$size$f = used == null ? 0 : used.length;
       var range$allocationOffset$f = 0L;
       var allocationOffset$f = pkg.CFRangeFM.MemoryLayout$F.byteSize();
       allocationOffset$f = Math.addExact(
@@ -80,23 +80,28 @@ public final class CoreStringsFFM implements CoreStrings {
           Math.floorMod(-allocationOffset$f, java.lang.foreign.ValueLayout.JAVA_BYTE.byteAlignment()));
       var buffer$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_BYTE.byteSize(), (long) buffer$size$f));
+          allocationOffset$f, (buffer == null ? 0L : Math.max(1L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_BYTE.byteSize(), (long) buffer$size$f))));
       allocationOffset$f = Math.addExact(
           allocationOffset$f,
           Math.floorMod(-allocationOffset$f, java.lang.foreign.ValueLayout.JAVA_LONG.byteAlignment()));
       var used$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) used$size$f));
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, Math.max(Math.max(pkg.CFRangeFM.MemoryLayout$F.byteAlignment(), java.lang.foreign.ValueLayout.JAVA_BYTE.byteAlignment()), java.lang.foreign.ValueLayout.JAVA_LONG.byteAlignment()));
+          allocationOffset$f, (used == null ? 0L : Math.max(1L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) used$size$f))));
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, Math.max(Math.max(pkg.CFRangeFM.MemoryLayout$F.byteAlignment(), java.lang.foreign.ValueLayout.JAVA_BYTE.byteAlignment()), java.lang.foreign.ValueLayout.JAVA_LONG.byteAlignment()));
       value$CFString$f = org.alveolo.ffm.macos.CFStringSupport.toCFString(value);
       var range$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           range$allocationOffset$f, pkg.CFRangeFM.MemoryLayout$F.byteSize());
       pkg.CFRangeFM.toMemorySegment$F(range, range$MemorySegment$f);
-      var buffer$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          buffer$allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_BYTE.byteSize(), (long) buffer$size$f));
-      var used$MemorySegment$f = allocation$MemorySegment$f.asSlice(
-          used$allocationOffset$f, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) used$size$f));
+      var buffer$MemorySegment$f = buffer == null
+          ? java.lang.foreign.MemorySegment.NULL
+          : allocation$MemorySegment$f.asSlice(
+              buffer$allocationOffset$f, (buffer == null ? 0L : Math.max(1L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_BYTE.byteSize(), (long) buffer$size$f))));
+      var used$MemorySegment$f = used == null
+          ? java.lang.foreign.MemorySegment.NULL
+          : allocation$MemorySegment$f.asSlice(
+              used$allocationOffset$f, (used == null ? 0L : Math.max(1L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_LONG.byteSize(), (long) used$size$f))));
       var result$f = (long) MethodHandle$1$F.invokeExact(
           value$CFString$f,
           range$MemorySegment$f,
@@ -106,10 +111,14 @@ public final class CoreStringsFFM implements CoreStrings {
           buffer$MemorySegment$f,
           capacity,
           used$MemorySegment$f);
-      java.lang.foreign.MemorySegment.copy(
-          buffer$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_BYTE, 0, buffer, 0, buffer$size$f);
-      java.lang.foreign.MemorySegment.copy(
-          used$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_LONG, 0, used, 0, used$size$f);
+      if (buffer$size$f != 0) {
+        java.lang.foreign.MemorySegment.copy(
+            buffer$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_BYTE, 0, buffer, 0, buffer$size$f);
+      }
+      if (used$size$f != 0) {
+        java.lang.foreign.MemorySegment.copy(
+            used$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_LONG, 0, used, 0, used$size$f);
+      }
       return result$f;
     } catch (RuntimeException|Error exception$f) {
       throw exception$f;

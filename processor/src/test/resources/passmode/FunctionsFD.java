@@ -36,11 +36,11 @@ public final class FunctionsFD implements Functions {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          passmode.ValueStructFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              passmode.ValueStructFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$0$F;
 
@@ -62,11 +62,11 @@ public final class FunctionsFD implements Functions {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$1$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          passmode.CircularValue.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              passmode.CircularValue.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$1$F;
 
@@ -88,11 +88,11 @@ public final class FunctionsFD implements Functions {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$2$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          passmode.DefaultRecordFM.MemoryLayout$F,
-          passmode.ValueRecordFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              passmode.DefaultRecordFM.MemoryLayout$F,
+              passmode.ValueRecordFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$2$F;
 
@@ -115,8 +115,9 @@ public final class FunctionsFD implements Functions {
       var address$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize()));
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
       var defaultValue$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           defaultValue$allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
       passmode.DefaultRecordFM.toMemorySegment$F(defaultValue, defaultValue$MemorySegment$f);
@@ -141,10 +142,10 @@ public final class FunctionsFD implements Functions {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$3$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          passmode.AddressStructFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              passmode.AddressStructFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$3$F;
 

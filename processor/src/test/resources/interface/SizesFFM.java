@@ -89,8 +89,9 @@ public final class SizesFFM implements Sizes {
       var second$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize());
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteAlignment());
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteAlignment());
       var first$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           first$allocationOffset$f, org.alveolo.ffm.NativeType.SIZE_T.layout.byteSize());
       org.alveolo.ffm.NativeType.setSizeT(first$MemorySegment$f, 0L, first);

@@ -12,7 +12,8 @@ import java.lang.annotation.Target;
 /// The generated wrapper copies values into native memory before the call and
 /// does not copy native memory back after the call.
 ///
-/// Direct buffer parameters are always passed directly to native code without
+/// Null pointer parameters pass native NULL without copying. Non-empty direct
+/// buffer parameters are passed directly to native code without
 /// copying, so this annotation has no effect for direct buffers.
 ///
 /// @see [Out] for output-only parameters.

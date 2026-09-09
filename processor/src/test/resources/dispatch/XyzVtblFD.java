@@ -42,10 +42,10 @@ public final class XyzVtblFD implements XyzVtbl {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$0$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.JAVA_INT));
 
   private final java.lang.invoke.MethodHandle MethodHandle$0$F;
 
@@ -65,10 +65,10 @@ public final class XyzVtblFD implements XyzVtbl {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$1$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.JAVA_INT));
 
   private final java.lang.invoke.MethodHandle MethodHandle$1$F;
 
@@ -114,23 +114,29 @@ public final class XyzVtblFD implements XyzVtbl {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$3$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   private final java.lang.invoke.MethodHandle MethodHandle$3$F;
 
   public int sum(
       @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
-      var values$size$f = values.length;
-      if (values$size$f != 3) {
+      var values$size$f = values == null ? 0 : values.length;
+      if (values != null && values$size$f != 3) {
         throw new IllegalArgumentException(
             "values length must be 3");
       }
-      var values$MemorySegment$f = arena$f.allocate(java.lang.foreign.ValueLayout.JAVA_INT, values$size$f);
-      java.lang.foreign.MemorySegment.copy(
-          values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
+      var values$MemorySegment$f = values == null
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(
+              Math.max(1L, Math.multiplyExact(java.lang.foreign.ValueLayout.JAVA_INT.byteSize(), (long) values$size$f)),
+              java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
+      if (values$size$f != 0) {
+        java.lang.foreign.MemorySegment.copy(
+            values, 0, values$MemorySegment$f, java.lang.foreign.ValueLayout.JAVA_INT, 0, values$size$f);
+      }
       return (int) MethodHandle$3$F.invokeExact(
           values$MemorySegment$f);
     } catch (RuntimeException|Error exception$f) {
@@ -143,9 +149,9 @@ public final class XyzVtblFD implements XyzVtbl {
   private static final java.lang.invoke.MethodHandle DowncallHandle$4$F =
       org.alveolo.ffm.NativeType.adaptDowncall(
           Linker$F.downcallHandle(
-          java.lang.foreign.FunctionDescriptor.of(
-              java.lang.foreign.ValueLayout.JAVA_INT,
-              org.alveolo.ffm.NativeType.SLONG.layout),
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  org.alveolo.ffm.NativeType.SLONG.layout),
               java.lang.foreign.Linker.Option.firstVariadicArg(1),
               pkg.NativeError.LinkerOption$F),
           null,
@@ -173,9 +179,9 @@ public final class XyzVtblFD implements XyzVtbl {
 
   private static final java.lang.invoke.MethodHandle DowncallHandle$5$F =
       Linker$F.downcallHandle(
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.JAVA_INT),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.JAVA_INT),
           pkg.NativeError.LinkerOption$F);
 
   private final java.lang.invoke.MethodHandle MethodHandle$5$F;

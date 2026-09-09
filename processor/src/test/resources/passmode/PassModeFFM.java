@@ -15,12 +15,12 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$0$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalInterfaces"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          passmode.ValueStructFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("originalInterfaces"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              passmode.ValueStructFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int originalInterfaces(
       passmode.DefaultStruct defaultValue,
@@ -40,12 +40,12 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$1$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("generatedInterfaces"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          passmode.ValueStructFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("generatedInterfaces"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              passmode.ValueStructFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int generatedInterfaces(
       passmode.DefaultStructFM defaultValue,
@@ -65,12 +65,12 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$2$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalCircular"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          passmode.CircularValue.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("originalCircular"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              passmode.CircularValue.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int originalCircular(
       passmode.CircularDefaultSpec defaultValue,
@@ -90,12 +90,12 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$3$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("generatedCircular"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          passmode.CircularValue.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("generatedCircular"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              passmode.CircularValue.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int generatedCircular(
       passmode.CircularDefault defaultValue,
@@ -115,12 +115,12 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$4$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalRecords"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          passmode.DefaultRecordFM.MemoryLayout$F,
-          passmode.ValueRecordFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("originalRecords"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              passmode.DefaultRecordFM.MemoryLayout$F,
+              passmode.ValueRecordFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int originalRecords(
       passmode.DefaultRecord defaultValue,
@@ -141,8 +141,9 @@ public final class PassModeFFM implements PassMode {
       var address$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize()));
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
       var defaultValue$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           defaultValue$allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
       passmode.DefaultRecordFM.toMemorySegment$F(defaultValue, defaultValue$MemorySegment$f);
@@ -167,13 +168,13 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$5$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalOverrides"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          passmode.AddressStructFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS,
-          passmode.AddressRecordFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("originalOverrides"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              passmode.AddressStructFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS,
+              passmode.AddressRecordFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int originalOverrides(
       passmode.AddressStruct interfaceValue,
@@ -189,8 +190,9 @@ public final class PassModeFFM implements PassMode {
       var recordAddress$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, (recordAddress == null ? 0L : passmode.ValueRecordFM.MemoryLayout$F.byteSize()));
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, Math.max(passmode.AddressRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()));
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, Math.max(passmode.AddressRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()));
       var recordValue$MemorySegment$f = allocation$MemorySegment$f.asSlice(
           recordValue$allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
       passmode.AddressRecordFM.toMemorySegment$F(recordValue, recordValue$MemorySegment$f);
@@ -213,11 +215,11 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$6$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("generatedOverrides"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          passmode.AddressStructFM.MemoryLayout$F,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("generatedOverrides"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              passmode.AddressStructFM.MemoryLayout$F,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int generatedOverrides(
       passmode.AddressStructFM interfaceValue,
@@ -235,10 +237,10 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$7$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalRecordReturn"),
-      java.lang.foreign.FunctionDescriptor.of(
-          passmode.DefaultRecordFM.MemoryLayout$F,
-          passmode.DefaultRecordFM.MemoryLayout$F));
+          SymbolLookup$F.findOrThrow("originalRecordReturn"),
+          java.lang.foreign.FunctionDescriptor.of(
+              passmode.DefaultRecordFM.MemoryLayout$F,
+              passmode.DefaultRecordFM.MemoryLayout$F));
 
   public passmode.DefaultRecord originalRecordReturn(
       passmode.DefaultRecord value) {
@@ -251,8 +253,9 @@ public final class PassModeFFM implements PassMode {
       var return$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment());
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment());
       var return$allocation$f = allocation$MemorySegment$f.asSlice(
           return$allocationOffset$f, passmode.DefaultRecordFM.MemoryLayout$F.byteSize());
       var value$MemorySegment$f = allocation$MemorySegment$f.asSlice(
@@ -270,10 +273,10 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$8$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalRecordAddressReturn"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("originalRecordAddressReturn"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.ADDRESS,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public passmode.@org.alveolo.ffm.Address DefaultRecord originalRecordAddressReturn(
       passmode.DefaultRecord value) {
@@ -289,10 +292,10 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$9$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalInterfaceReturn"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.ADDRESS,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("originalInterfaceReturn"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.ADDRESS,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public passmode.DefaultStruct originalInterfaceReturn(
       passmode.DefaultStruct value) {
@@ -308,10 +311,10 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$10$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("originalInterfaceValueReturn"),
-      java.lang.foreign.FunctionDescriptor.of(
-          passmode.DefaultStructFM.MemoryLayout$F,
-          passmode.DefaultStructFM.MemoryLayout$F));
+          SymbolLookup$F.findOrThrow("originalInterfaceValueReturn"),
+          java.lang.foreign.FunctionDescriptor.of(
+              passmode.DefaultStructFM.MemoryLayout$F,
+              passmode.DefaultStructFM.MemoryLayout$F));
 
   public passmode.@org.alveolo.ffm.Value DefaultStruct originalInterfaceValueReturn(
       java.lang.foreign.SegmentAllocator allocator,
@@ -329,10 +332,10 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$11$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("primitiveAddress"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("primitiveAddress"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int primitiveAddress(
       int value) {
@@ -350,9 +353,9 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$12$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("primitiveAddressReturn"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.ADDRESS));
+          SymbolLookup$F.findOrThrow("primitiveAddressReturn"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.ADDRESS));
 
   public int primitiveAddressReturn(
       ) {
@@ -370,11 +373,11 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$13$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("mixedRecord"),
-      java.lang.foreign.FunctionDescriptor.of(
-          passmode.LongRecordFM.MemoryLayout$F,
-          passmode.ByteRecordFM.MemoryLayout$F,
-          passmode.LongRecordFM.MemoryLayout$F));
+          SymbolLookup$F.findOrThrow("mixedRecord"),
+          java.lang.foreign.FunctionDescriptor.of(
+              passmode.LongRecordFM.MemoryLayout$F,
+              passmode.ByteRecordFM.MemoryLayout$F,
+              passmode.LongRecordFM.MemoryLayout$F));
 
   public passmode.LongRecord mixedRecord(
       passmode.ByteRecord small,
@@ -394,8 +397,9 @@ public final class PassModeFFM implements PassMode {
       var return$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, passmode.LongRecordFM.MemoryLayout$F.byteSize());
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, Math.max(passmode.ByteRecordFM.MemoryLayout$F.byteAlignment(), passmode.LongRecordFM.MemoryLayout$F.byteAlignment()));
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, Math.max(passmode.ByteRecordFM.MemoryLayout$F.byteAlignment(), passmode.LongRecordFM.MemoryLayout$F.byteAlignment()));
       var return$allocation$f = allocation$MemorySegment$f.asSlice(
           return$allocationOffset$f, passmode.LongRecordFM.MemoryLayout$F.byteSize());
       var small$MemorySegment$f = allocation$MemorySegment$f.asSlice(
@@ -417,11 +421,11 @@ public final class PassModeFFM implements PassMode {
 
   private static final java.lang.invoke.MethodHandle MethodHandle$14$F =
       Linker$F.downcallHandle(
-      SymbolLookup$F.findOrThrow("allocatingRecords"),
-      java.lang.foreign.FunctionDescriptor.of(
-          java.lang.foreign.ValueLayout.JAVA_INT,
-          passmode.PointerRecordFM.MemoryLayout$F,
-          passmode.PointerRecordFM.MemoryLayout$F));
+          SymbolLookup$F.findOrThrow("allocatingRecords"),
+          java.lang.foreign.FunctionDescriptor.of(
+              java.lang.foreign.ValueLayout.JAVA_INT,
+              passmode.PointerRecordFM.MemoryLayout$F,
+              passmode.PointerRecordFM.MemoryLayout$F));
 
   public int allocatingRecords(
       passmode.PointerRecord first,

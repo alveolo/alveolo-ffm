@@ -162,6 +162,9 @@ class NativeSharedLibraryTest {
     assertEquals(4, object.count(values, 4));
     assertEquals(0, object.count(values, 0));
     assertEquals(3, object.count(values));
+    assertEquals(4, object.count(null, 4));
+    object.fill((int[]) null, 0);
+    object.fill((IntBuffer) null, 0);
   }
 
   @Test
@@ -226,12 +229,18 @@ class NativeSharedLibraryTest {
   }
 
   @Test
-  void passesNullableStringsAndStructPointers() {
+  void passesNullablePointers() {
     var api = AffmTestFFM.INSTANCE$F;
     assertEquals(0, api.optionalPair(null));
     assertEquals(0, api.optionalWrapper(null));
     assertEquals(0, api.optionalRecord(null));
     assertEquals(0, api.optionalString(null));
+    assertEquals(7, api.optionalArray(null, MemorySegment.NULL, 7));
+    assertEquals(7, api.optionalFlags(null, MemorySegment.NULL, 7));
+    assertEquals(7, api.optionalRecords(null, MemorySegment.NULL, 7));
+    assertEquals(7, api.optionalArrays(null, null, 7));
+    assertEquals(7, api.optionalBuffer(null, MemorySegment.NULL, 7));
+    assertEquals(7, api.optionalBuffers(null, null, 7));
     assertEquals(1000, api.optionalString(""));
     assertEquals(1003, api.optionalString("abc"));
     assertEquals(118, api.optionalRecord(new PairR(7, 11)));
@@ -257,13 +266,52 @@ class NativeSharedLibraryTest {
       }
     }
     assertEquals(1003, api.optionalAllocatingValues(new PairBoxRA(null), "abc"));
+    var pairs = new PairR[2];
+    assertEquals(1007, api.optionalArrays(null, pairs, 7));
+    assertArrayEquals(new PairR[] {new PairR(0, 0), new PairR(0, 0)}, pairs);
+    var values = new int[] {3, 5};
+    assertEquals(107, api.optionalArrays(values, null, 7));
+    assertArrayEquals(new int[] {3, 5}, values);
+    assertEquals(1107, api.optionalArrays(values, pairs, 7));
+    var buffer = IntBuffer.wrap(values).asReadOnlyBuffer();
+    assertEquals(107, api.optionalBuffers(buffer, null, 7));
+    assertEquals(1107, api.optionalBuffers(buffer, ByteBuffer.allocate(1), 7));
   }
 
   @Test
-  void rejectsNullByValueStructs() {
+  void distinguishesEmptyArraysAndBuffersFromNull() {
+    var api = AffmTestFFM.INSTANCE$F;
+    assertEquals(97, api.optionalArray(new int[0], MemorySegment.NULL, -3));
+    assertEquals(97, api.optionalFlags(new boolean[0], MemorySegment.NULL, -3));
+    assertEquals(97, api.optionalRecords(new PairBoxRA[0], MemorySegment.NULL, -3));
+    assertEquals(97, api.optionalArrays(new int[0], null, -3));
+    for (var buffer : new IntBuffer[] {
+        IntBuffer.allocate(0),
+        ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer(),
+        MemorySegment.NULL.asByteBuffer().order(ByteOrder.nativeOrder()).asIntBuffer(),
+        IntBuffer.wrap(new int[] {1, 2}).position(1).limit(1)
+    }) {
+      var position = buffer.position();
+      var limit = buffer.limit();
+      assertEquals(97, api.optionalBuffer(buffer, MemorySegment.NULL, -3));
+      assertEquals(position, buffer.position());
+      assertEquals(limit, buffer.limit());
+    }
+    for (var buffer : new ByteBuffer[] {
+        ByteBuffer.allocate(0), ByteBuffer.allocateDirect(0),
+        MemorySegment.NULL.asByteBuffer()
+    }) {
+      assertEquals(997, api.optionalBuffers(null, buffer, -3));
+    }
+  }
+
+  @Test
+  void rejectsNullByValueArguments() {
     var api = AffmTestFFM.INSTANCE$F;
     assertThrows(NullPointerException.class, () -> api.pair_sum(null));
     assertThrows(NullPointerException.class, () -> api.requiredValues(null, "abc"));
+    assertThrows(NullPointerException.class, () -> api.sum_int3_value(null));
+    assertThrows(NullPointerException.class, () -> api.sum_int3_buffer_value(null));
     assertEquals(118, api.requiredValues(new PairR(7, 11), null));
     assertEquals(1121, api.requiredValues(new PairR(7, 11), "abc"));
     assertThrows(NullPointerException.class,

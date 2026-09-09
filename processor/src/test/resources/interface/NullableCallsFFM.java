@@ -72,8 +72,9 @@ public final class NullableCallsFFM implements NullableCalls {
       var text$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
           allocationOffset$f, (text == null ? 0L : Math.addExact((long) text$bytes$f.length, 1L)));
-      var allocation$MemorySegment$f = arena$f.allocate(
-          allocationOffset$f, pkg.NullItemFM.MemoryLayout$F.byteAlignment());
+      var allocation$MemorySegment$f = allocationOffset$f == 0L
+          ? java.lang.foreign.MemorySegment.NULL
+          : arena$f.allocate(allocationOffset$f, pkg.NullItemFM.MemoryLayout$F.byteAlignment());
       var item$MemorySegment$f = (java.lang.foreign.MemorySegment) (item == null ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
           item$allocationOffset$f, (item == null ? 0L : pkg.NullItemFM.MemoryLayout$F.byteSize())));
       if (item != null) {

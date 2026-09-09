@@ -67,6 +67,11 @@ EXPORT void* null_pointer(void) {
   return NULL;
 }
 
+// Observe pointer presence and the explicit count without dereferencing storage.
+EXPORT int pointer_state(const void* first, const void* second, int count) {
+  return count + (first ? 100 : 0) + (second ? 1000 : 0);
+}
+
 EXPORT int nullable_pair(const pair* value) {
   return value ? 100 + value->left + value->right : 0;
 }
