@@ -553,7 +553,7 @@ class ExecutableGenerator {
 
   private Stream<String> plannedPreparations() {
     return parameterGenerators.stream()
-        .map(VariableGenerator::plannedPreparation)
+        .map(VariableGenerator::preparation)
         .filter(not(String::isEmpty))
         .flatMap(String::lines);
   }
@@ -561,7 +561,7 @@ class ExecutableGenerator {
   private Stream<String> plannedInitializers() {
     return parameterGenerators.stream()
         .flatMap(parameter -> parameter.needsLocalAllocation()
-            ? parameter.plannedInitializer(
+            ? parameter.initializer(
                 plannedAllocationSegment(parameter)).lines()
             : paramInitializers(parameter));
   }

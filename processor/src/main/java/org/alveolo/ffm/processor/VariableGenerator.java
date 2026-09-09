@@ -121,7 +121,7 @@ final class VariableGenerator extends TypeGenerator {
         || isString() && !isCFString();
   }
 
-  String plannedPreparation() {
+  String preparation() {
     if (isString() && !isCFString())
       return "var " + bytesName() + " = " + name() + " == null ? null : "
           + name() + ".getBytes(java.nio.charset.StandardCharsets.UTF_8);";
@@ -162,7 +162,7 @@ final class VariableGenerator extends TypeGenerator {
         .stripTrailing();
   }
 
-  String plannedInitializer(String memorySegment) {
+  String initializer(String memorySegment) {
     if (isPrimitiveAddress()) {
       var initialize = hasCanonicalScalar()
           ? canonicalSet(segmentName(), "0L", name)
@@ -319,7 +319,7 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String arrayOrBufferInitializer() {
-    return plannedPreparation() + "\n" + plannedInitializer(
+    return preparation() + "\n" + initializer(
         "arena$f.allocate(\n    " + arrayOrBufferAllocationSize() + ",\n    "
             + allocationAlignment() + ")");
   }
@@ -331,23 +331,7 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String primitiveAddressInitializer() {
-    if (hasCanonicalScalar()) return """
-        var <segment> = arena$f.allocate(<layout>);
-        <set>
-        """
-        .replace("<segment>", segmentName())
-        .replace("<layout>", valueLayout())
-        .replace("<set>", canonicalSet(segmentName(), "0L", name))
-        .stripTrailing();
-
-    return """
-        var <segment> = arena$f.allocate(<layout>);
-        <segment>.set(<layout>, 0L, <name>);
-        """
-        .replace("<segment>", segmentName())
-        .replace("<layout>", valueLayout())
-        .replace("<name>", name)
-        .stripTrailing();
+    return initializer("arena$f.allocate(" + valueLayout() + ")");
   }
 
   String arrayOrBufferCopyOut() {
