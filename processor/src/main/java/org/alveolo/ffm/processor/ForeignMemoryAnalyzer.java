@@ -335,7 +335,7 @@ final class ForeignMemoryAnalyzer {
     if (element.isPrimitive()) return true;
 
     if (recordSnapshot) {
-      if (element.isForeignMemory() && element.isRecord() && element.isValue())
+      if (element.foreignMemory && element.isRecord() && element.isValue())
         return true;
 
       messager.printError(
@@ -348,7 +348,7 @@ final class ForeignMemoryAnalyzer {
     if (element.isMemorySegment())
       return true;
 
-    if (element.isForeignMemory()) {
+    if (element.foreignMemory) {
       if (element.isValue() || element.isAddress())
         return true;
     }
@@ -382,7 +382,7 @@ final class ForeignMemoryAnalyzer {
       }
       var generator = new TypeGenerator(processingEnv, generatedTypes,
           componentType, component);
-      if (generator.isForeignMemory() && !generator.isRecord()) {
+      if (generator.foreignMemory && !generator.isRecord()) {
         messager.printError(
             "Record structs cannot contain memory-backed types;"
                 + " use a record struct component or declare the containing"

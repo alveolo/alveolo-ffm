@@ -63,7 +63,9 @@ final class ForeignMemoryAccessorGenerator {
             out, className, indexed);
         continue;
       }
-      if (!hasFluentSetter(field)) continue;
+      if (!hasFluentSetter(field)) {
+        continue;
+      }
 
       var needsAllocator = analyzer.needsAllocatorWrite(field);
       var arguments = needsAllocator ? "allocator, value" : "value";
@@ -173,8 +175,7 @@ final class ForeignMemoryAccessorGenerator {
 
   private void writeVarHandle(Writer out, VariableGenerator field)
       throws IOException {
-    if (field.isNioBuffer()
-        || (field.isForeignMemory() && field.isValue()))
+    if (field.isNioBuffer() || (field.foreignMemory && field.isValue()))
       return;
 
     var initializer = field.sequence > 1
@@ -551,11 +552,11 @@ final class ForeignMemoryAccessorGenerator {
   }
 
   private boolean isNestedValue(VariableGenerator field) {
-    return field.isForeignMemory() && field.isValue();
+    return field.foreignMemory && field.isValue();
   }
 
   private boolean isNestedAddress(VariableGenerator field) {
-    return field.isForeignMemory() && field.isAddress();
+    return field.foreignMemory && field.isAddress();
   }
 
   private String nestedAddressGetter(
@@ -579,5 +580,4 @@ final class ForeignMemoryAccessorGenerator {
     return address + ".reinterpret(" + layout + ".byteSize())\n"
         + "    .get(" + layout + ", 0L)";
   }
-
 }

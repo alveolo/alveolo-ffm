@@ -5,7 +5,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -87,6 +86,18 @@ sealed class TypeGenerator permits VariableGenerator {
   final GeneratedTypeRegistry.Wrapper generatedWrapper;
   final long sequence;
 
+  final boolean ambiguousCanonicalScalars;
+  final CanonicalScalar canonicalScalar;
+  final boolean foreignMemoryImplementation;
+  final boolean foreignMemory;
+  final boolean typeUseAddress;
+  final boolean typeUseValue;
+  final boolean typeAddress;
+  final boolean typeValue;
+
+  private final boolean callState;
+  private final CFString cfString;
+
   TypeGenerator(ProcessingEnvironment processingEnv,
       GeneratedTypeRegistry generatedTypes, TypeMirror typeMirror,
       Element useSite) {
@@ -106,6 +117,32 @@ sealed class TypeGenerator permits VariableGenerator {
     typeElement = (TypeElement) types.asElement(typeMirror);
     generatedWrapper = generatedTypes.find(typeMirror, useSite);
     this.sequence = sequence;
+
+    ambiguousCanonicalScalars = Arrays.stream(CanonicalScalar.values())
+        .filter(scalar -> hasTypeUseAnnotation(typeMirror, scalar.annotation))
+        .count() > 1;
+    canonicalScalar = Arrays.stream(CanonicalScalar.values())
+        .filter(scalar -> hasTypeUseAnnotation(typeMirror, scalar.annotation))
+        .findFirst().orElse(null);
+    typeUseAddress = hasTypeUseAnnotation(
+        typeMirror, Address.class.getCanonicalName());
+    typeUseValue = hasTypeUseAnnotation(
+        typeMirror, Value.class.getCanonicalName());
+    cfString = typeMirror.getAnnotation(CFString.class);
+
+    foreignMemoryImplementation = generatedWrapper != null
+        || hasWrapperMemorySegment(typeElement);
+    foreignMemory = foreignMemoryImplementation
+        || isForeignMemorySpecification(typeElement);
+
+    var annotationSource = resolveTypeAnnotationSource();
+    typeAddress = annotationSource != null
+        && annotationSource.getAnnotation(Address.class) != null;
+    typeValue = annotationSource != null
+        && annotationSource.getAnnotation(Value.class) != null;
+    callState = hasCallStateLinkerOption(typeElement)
+        || annotationSource != null
+            && annotationSource.getAnnotation(CallState.class) != null;
   }
 
   /// Java type name
@@ -137,7 +174,8 @@ sealed class TypeGenerator permits VariableGenerator {
   /// annotations must survive so the processor consuming that specification sees
   /// the same native pass mode.
   String bridgeTypeName() {
-    if (generatedWrapper == null) return typeMirror.toString();
+    if (generatedWrapper == null)
+      return typeMirror.toString();
 
     var annotations = new ArrayList<String>();
 
@@ -145,10 +183,10 @@ sealed class TypeGenerator permits VariableGenerator {
       annotations.add(annotation.toString());
     }
 
-    if (!hasTypeUseAddress() && !hasTypeUseValue()) {
-      if (hasTypeAddress()) {
+    if (!typeUseAddress && !typeUseValue) {
+      if (typeAddress) {
         annotations.add("@" + Address.class.getCanonicalName());
-      } else if (hasTypeValue()) {
+      } else if (typeValue) {
         annotations.add("@" + Value.class.getCanonicalName());
       }
     }
@@ -161,8 +199,8 @@ sealed class TypeGenerator permits VariableGenerator {
     var separator = className.lastIndexOf('.');
 
     return separator < 0 ? annotationSource + " " + className
-        : className.substring(0, separator + 1) + annotationSource + " "
-            + className.substring(separator + 1);
+        : className.substring(0, separator + 1) + annotationSource
+            + " " + className.substring(separator + 1);
   }
 
   /// MemoryLayout type such as:
@@ -172,19 +210,18 @@ sealed class TypeGenerator permits VariableGenerator {
   /// * `MemoryLayout.sequenceLayout(5L, ValueLayout.JAVA_INT)` for primitive
   ///   arrays and NIO buffers
   String layout() {
-    if (hasConflictingPassModeAnnotations()
-        || canonicalScalarError() != null)
+    if (hasConflictingPassModeAnnotations() || canonicalScalarError() != null)
       return VALUE_LAYOUT_NOT_SUPPORTED;
 
     if (isPrimitiveAddress())
       return "java.lang.foreign.ValueLayout.ADDRESS";
 
-    if (isForeignMemory())
-      return isValue()
-          ? foreignMemoryClassName() + ".MemoryLayout$F"
-          : "java.lang.foreign.ValueLayout.ADDRESS";
+    if (!foreignMemory)
+      return directLayout();
 
-    return directLayout();
+    return isValue()
+        ? foreignMemoryClassName() + ".MemoryLayout$F"
+        : "java.lang.foreign.ValueLayout.ADDRESS";
   }
 
   private String directLayout() {
@@ -234,8 +271,8 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   String elementLayout() {
-    var kind = elementKind();
-    return kind == null ? null : switch (kind) {
+    return switch (elementKind()) {
+      case null -> null;
       case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
       case BYTE -> "java.lang.foreign.ValueLayout.JAVA_BYTE";
       case CHAR -> "java.lang.foreign.ValueLayout.JAVA_CHAR";
@@ -270,8 +307,7 @@ sealed class TypeGenerator permits VariableGenerator {
 
   private TypeKind elementKind() {
     if (typeMirror.getKind() == TypeKind.ARRAY) {
-      var componentKind = ((ArrayType) typeMirror)
-          .getComponentType().getKind();
+      var componentKind = ((ArrayType) typeMirror).getComponentType().getKind();
       return componentKind.isPrimitive() ? componentKind : null;
     }
 
@@ -292,9 +328,8 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   String valueLayout() {
-    var canonical = canonicalScalar();
-    if (canonical != null)
-      return canonical.nativeType + ".layout";
+    if (canonicalScalar != null)
+      return canonicalScalar.nativeType + ".layout";
 
     return switch (typeMirror.getKind()) {
       case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
@@ -367,11 +402,10 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   boolean isCFString() {
-    return typeMirror.getAnnotation(CFString.class) != null;
+    return cfString != null;
   }
 
   boolean isOwnedCFString() {
-    var cfString = typeMirror.getAnnotation(CFString.class);
     return cfString != null && cfString.owned();
   }
 
@@ -390,90 +424,62 @@ sealed class TypeGenerator permits VariableGenerator {
   boolean isAddress() {
     if (isPrimitive()) return isPrimitiveAddress();
 
-    if (hasTypeUseAddress()) return true;
-    if (hasTypeUseValue()) return false;
+    if (typeUseAddress) return true;
+    if (typeUseValue) return false;
 
-    if (hasTypeAddress()) return true;
-    if (hasTypeValue()) return false;
+    if (typeAddress) return true;
+    if (typeValue) return false;
 
-    if (isForeignMemoryImplementation()) return true;
+    if (foreignMemoryImplementation) return true;
 
-    if (isForeignMemory())
+    if (foreignMemory)
       return typeElement.getKind() == ElementKind.INTERFACE;
 
     // default
     return false;
   }
 
-  boolean isForeignMemoryImplementation() {
-    return generatedWrapper != null || hasWrapperMemorySegment(typeElement);
-  }
-
   boolean isPrimitiveAddress() {
-    return isPrimitive() && hasTypeUseAddress();
+    return isPrimitive() && typeUseAddress;
   }
 
   boolean isValue() {
     return !isAddress();
   }
 
-  boolean hasExplicitValuePassMode() {
-    return hasTypeUseValue();
-  }
-
-  boolean isForeignMemory() {
-    return isForeignMemoryImplementation()
-        || (typeElement != null
-            && (typeElement.getAnnotation(Struct.class) != null
-                || typeElement.getAnnotation(Union.class) != null
-                || typeElement.getAnnotation(CallState.class) != null));
-  }
-
   boolean isCallState() {
-    if (hasCallStateLinkerOption(typeElement)) return true;
-
-    var annotationSource = typeAnnotationSource();
-    return annotationSource != null
-        && annotationSource.getAnnotation(CallState.class) != null;
+    return callState;
   }
 
   String foreignMemoryClassName() {
-    return isForeignMemoryImplementation() ? typeName()
+    return foreignMemoryImplementation ? typeName()
         : ProcessorUtils.foreignMemoryClassName(typeElement, elements);
   }
 
   boolean hasConflictingPassModeAnnotations() {
-    return (hasTypeUseAddress() && hasTypeUseValue())
-        || (!hasTypeUseAddress() && !hasTypeUseValue()
-            && hasTypeAddress() && hasTypeValue());
+    return (typeUseAddress && typeUseValue)
+        || (!typeUseAddress && !typeUseValue && typeAddress && typeValue);
   }
 
   boolean hasCanonicalScalar() {
-    return canonicalScalar() != null;
+    return canonicalScalar != null;
   }
 
   boolean needsDowncallAdaptation() {
-    var canonical = canonicalScalar();
     return isPrimitive() && !isPrimitiveAddress()
-        && canonical != null && canonical.nativeType != null;
-  }
-
-  boolean isWCharT() {
-    return canonicalScalar() == CanonicalScalar.WCHAR_T;
+        && canonicalScalar != null && canonicalScalar.nativeType != null;
   }
 
   String canonicalRuntimeType() {
-    var canonical = canonicalScalar();
-    return canonical == null ? "null" : canonical.nativeType;
+    return canonicalScalar == null ? "null" : canonicalScalar.nativeType;
   }
 
   String canonicalGet(String segment, String offset) {
-    var canonical = canonicalScalar();
-    if (canonical == null)
+    if (canonicalScalar == null)
       throw new IllegalStateException(
           "Type has no canonical scalar: " + typeMirror);
 
-    return switch (canonical) {
+    return switch (canonicalScalar) {
       case SLONG -> "org.alveolo.ffm.NativeType.getSLong("
           + segment + ", " + offset + ")";
       case ULONG -> "org.alveolo.ffm.NativeType.getULong("
@@ -486,12 +492,11 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   String canonicalSet(String segment, String offset, String value) {
-    var canonical = canonicalScalar();
-    if (canonical == null)
+    if (canonicalScalar == null)
       throw new IllegalStateException(
           "Type has no canonical scalar: " + typeMirror);
 
-    return switch (canonical) {
+    return switch (canonicalScalar) {
       case SLONG -> "org.alveolo.ffm.NativeType.setSLong("
           + segment + ", " + offset + ", " + value + ");";
       case ULONG -> "org.alveolo.ffm.NativeType.setULong("
@@ -504,41 +509,21 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   String canonicalScalarError() {
-    var canonical = canonicalScalars();
-    if (canonical.isEmpty()) return null;
+    if (canonicalScalar == null) return null;
 
-    if (canonical.size() > 1)
+    if (ambiguousCanonicalScalars)
       return "Only one of @SLong, @ULong, @SizeT, and @WCharT "
           + "may be used on a type";
 
-    var scalar = canonical.getFirst();
-    if (!isPrimitive()) return scalar.simpleAnnotationName()
-        + " is only supported on scalar values and @Address scalar pointees";
+    if (!isPrimitive())
+      return canonicalScalar.simpleAnnotationName()
+          + " is only supported on scalar values and @Address scalar pointees";
 
-    if (typeMirror.getKind() != scalar.javaKind)
-      return scalar.simpleAnnotationName() + " requires Java "
-          + scalar.javaKind.name().toLowerCase();
+    if (typeMirror.getKind() != canonicalScalar.javaKind)
+      return canonicalScalar.simpleAnnotationName() + " requires Java "
+          + canonicalScalar.javaKind.name().toLowerCase();
 
     return null;
-  }
-
-  private CanonicalScalar canonicalScalar() {
-    var canonical = canonicalScalars();
-    return canonical.isEmpty() ? null : canonical.getFirst();
-  }
-
-  private List<CanonicalScalar> canonicalScalars() {
-    return Arrays.stream(CanonicalScalar.values())
-        .filter(scalar -> hasTypeUseAnnotation(typeMirror, scalar.annotation))
-        .toList();
-  }
-
-  private boolean hasTypeUseAddress() {
-    return hasTypeUseAnnotation(typeMirror, Address.class.getCanonicalName());
-  }
-
-  private boolean hasTypeUseValue() {
-    return hasTypeUseAnnotation(typeMirror, Value.class.getCanonicalName());
   }
 
   private static boolean hasTypeUseAnnotation(
@@ -553,34 +538,27 @@ sealed class TypeGenerator permits VariableGenerator {
             ((ArrayType) type).getComponentType(), annotationName);
   }
 
-  private boolean hasTypeAddress() {
-    var annotationSource = typeAnnotationSource();
-    return annotationSource != null
-        && annotationSource.getAnnotation(Address.class) != null;
-  }
-
-  private boolean hasTypeValue() {
-    var annotationSource = typeAnnotationSource();
-    return annotationSource != null
-        && annotationSource.getAnnotation(Value.class) != null;
-  }
-
-  private TypeElement typeAnnotationSource() {
+  private TypeElement resolveTypeAnnotationSource() {
     if (generatedWrapper != null)
       return generatedWrapper.specification();
 
-    if (!hasWrapperMemorySegment(typeElement))
+    if (!foreignMemoryImplementation)
       return typeElement;
 
     for (var iface : typeElement.getInterfaces()) {
       if (types.asElement(iface) instanceof TypeElement spec
-          && (spec.getAnnotation(Struct.class) != null
-              || spec.getAnnotation(Union.class) != null
-              || spec.getAnnotation(CallState.class) != null))
+          && isForeignMemorySpecification(spec))
         return spec;
     }
 
     return typeElement;
+  }
+
+  private static boolean isForeignMemorySpecification(TypeElement type) {
+    return type != null
+        && (type.getAnnotation(Struct.class) != null
+            || type.getAnnotation(Union.class) != null
+            || type.getAnnotation(CallState.class) != null);
   }
 
   private boolean hasWrapperMemorySegment(TypeElement type) {

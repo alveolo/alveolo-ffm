@@ -1,7 +1,9 @@
 package org.alveolo.ffm.processor;
 
+import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.vtableImplementationSimpleClassName;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -60,7 +62,9 @@ final class ForeignMemoryGenerator {
     analyzer.validateFields(fields);
     var baseFields = model == null || model.baseStruct() == null
         ? null : analyzer.inferFields(model.baseFieldMethods());
-    if (baseFields != null) analyzer.validateFields(baseFields);
+    if (baseFields != null) {
+      analyzer.validateFields(baseFields);
+    }
 
     writeSource(source, kind, effectiveVtable, fields,
         baseFields, preparedObjectMethods,
@@ -76,18 +80,19 @@ final class ForeignMemoryGenerator {
     var elements = processingEnv.getElementUtils();
     var packageName = packageName(source, elements);
     var sourceSimpleName = source.getSimpleName().toString();
-    var className = ProcessorUtils.foreignMemoryClassName(source, elements);
+    var className = foreignMemoryClassName(source, elements);
     var simpleClassName = foreignMemorySimpleClassName(source);
-    var vtableSimpleName =
-        ProcessorUtils.vtableImplementationSimpleClassName(source);
+    var vtableSimpleName = vtableImplementationSimpleClassName(source);
     var baseClassName = baseStruct == null ? null
-        : ProcessorUtils.foreignMemoryClassName(baseStruct, elements);
+        : foreignMemoryClassName(baseStruct, elements);
 
     var dependencies = new ArrayList<LayoutCycleValidator.Dependency>();
-    if (baseClassName != null)
-      dependencies.add(new LayoutCycleValidator.Dependency(baseClassName, source));
+    if (baseClassName != null) {
+      dependencies.add(
+          new LayoutCycleValidator.Dependency(baseClassName, source));
+    }
     for (var field : fields.fields()) {
-      if (field.isForeignMemory() && field.isValue() && !field.unsupported()) {
+      if (field.foreignMemory && field.isValue() && !field.unsupported()) {
         dependencies.add(new LayoutCycleValidator.Dependency(
             field.foreignMemoryClassName(), field.element));
       }
@@ -125,7 +130,9 @@ final class ForeignMemoryGenerator {
       if (vtable && baseStruct == null) {
         objectGenerator.writeVtableMetadata(out);
       }
-      if (!vtable) writeAllocators(out);
+      if (!vtable) {
+        writeAllocators(out);
+      }
       writeReinterprets(out, source, simpleClassName);
       writeArrayElementHelpers(out, source, simpleClassName);
 
@@ -165,8 +172,9 @@ final class ForeignMemoryGenerator {
         """
         .replace("<kind>", kind));
 
-    if (baseClassName != null)
+    if (baseClassName != null) {
       out.write("        " + baseClassName + ".MemoryLayout$F,\n");
+    }
 
     if (vtable) {
       out.write("        java.lang.foreign.ValueLayout.ADDRESS.withName(\""
@@ -280,10 +288,12 @@ final class ForeignMemoryGenerator {
       String vtableTypeName, boolean vtable, boolean hasVirtualMethods,
       String baseClassName)
       throws IOException {
-    if (baseClassName == null) out.write("""
+    if (baseClassName == null) {
+      out.write("""
 
-          public final java.lang.foreign.MemorySegment MemorySegment$F;
-        """);
+            public final java.lang.foreign.MemorySegment MemorySegment$F;
+          """);
+    }
 
     if (hasVirtualMethods) {
       out.write("""
@@ -293,12 +303,14 @@ final class ForeignMemoryGenerator {
           .replace("<vtableType>", vtableTypeName));
     }
 
-    if (!vtable) out.write("""
+    if (!vtable) {
+      out.write("""
 
-          public <class>(java.lang.foreign.SegmentAllocator allocator) {
-            this(allocate$F(allocator));
-          }
-        """.replace("<class>", className));
+            public <class>(java.lang.foreign.SegmentAllocator allocator) {
+              this(allocate$F(allocator));
+            }
+          """.replace("<class>", className));
+    }
 
     var memoryInitializer = baseClassName == null
         ? "this.MemorySegment$F = memorySegment;"

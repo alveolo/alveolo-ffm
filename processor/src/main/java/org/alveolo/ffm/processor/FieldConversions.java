@@ -1,7 +1,7 @@
 package org.alveolo.ffm.processor;
 
-/// Conversion expressions shared by scalar and indexed field accessors.
-/// Callers supply the storage location and retain layout and indexing logic.
+/// Conversion expressions shared by scalar and indexed field accessors. Callers
+/// supply the storage location and retain layout and indexing logic.
 final class FieldConversions {
   private FieldConversions() {}
 
@@ -43,8 +43,10 @@ final class FieldConversions {
   }
 
   private static String memorySegment(TypeGenerator field, String value) {
-    if (field.isMemorySegment()) return value;
-    return (field.isForeignMemoryImplementation() ? value
+    if (field.isMemorySegment())
+      return value;
+
+    return (field.foreignMemoryImplementation ? value
         : "((" + field.foreignMemoryClassName() + ") " + value + ")")
         + ".MemorySegment$F";
   }

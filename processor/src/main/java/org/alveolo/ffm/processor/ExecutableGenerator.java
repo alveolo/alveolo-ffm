@@ -17,6 +17,7 @@ import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.Symbol;
+import org.alveolo.ffm.processor.TypeGenerator.CanonicalScalar;
 
 class ExecutableGenerator {
   final Messager messager;
@@ -37,10 +38,15 @@ class ExecutableGenerator {
   private final AllocationPlan allocationPlan;
 
   record NativeArgument(String layout, String expression) {}
+
   record LocalAllocation(
-      String name, String byteSize, String alignment) {}
-  record AllocationPlan(boolean confinedArena,
-      List<LocalAllocation> allocations, boolean shared) {
+      String name, String byteSize, String alignment
+  ) {}
+
+  record AllocationPlan(
+      boolean confinedArena,
+      List<LocalAllocation> allocations, boolean shared
+  ) {
     AllocationPlan {
       allocations = List.copyOf(allocations);
     }
@@ -296,7 +302,7 @@ class ExecutableGenerator {
   }
 
   String returnTypeName() {
-    if (returnGenerator.isForeignMemoryImplementation())
+    if (returnGenerator.foreignMemoryImplementation)
       return returnGenerator.typeName();
 
     if (returnGenerator.isCFString())
@@ -360,10 +366,7 @@ class ExecutableGenerator {
     if (returnGenerator.isString())
       return stringInvoke(call, copyOut);
 
-    if (returnGenerator.isForeignMemoryImplementation())
-      return returnWithCopyOut(foreignMemoryExpression(call), copyOut);
-
-    if (returnGenerator.isForeignMemory())
+    if (returnGenerator.foreignMemory)
       return returnWithCopyOut(foreignMemoryExpression(call), copyOut);
 
     // returnType.getKind() == TypeKind.VOID
@@ -371,15 +374,15 @@ class ExecutableGenerator {
   }
 
   /// The descriptor excludes Java-only allocator and capture parameters, but
-  /// the handle takes them before the native arguments. Adaptation and invocation
-  /// must use this same order.
+  /// the handle takes them before the native arguments. Adaptation and
+  /// invocation must use this same order.
   private Stream<String> downcallArguments(String recordAllocator,
       Function<VariableGenerator, String> syntheticArgument,
       Function<NativeArgument, String> leadingArgument,
       Function<VariableGenerator, String> nativeArgument) {
     return Stream.of(
-        Stream.ofNullable(returnGenerator.isRecord() && returnGenerator.isValue()
-            ? recordAllocator : null),
+        Stream.ofNullable(returnGenerator.isRecord()
+            && returnGenerator.isValue() ? recordAllocator : null),
         allocatorParameters.stream().map(syntheticArgument),
         callStateParameters.stream().map(syntheticArgument),
         leadingNativeArguments.stream().map(leadingArgument),
@@ -399,7 +402,7 @@ class ExecutableGenerator {
         VariableGenerator::invoke, NativeArgument::expression,
         allocationPlan.shared()
             ? VariableGenerator::plannedInvoke : VariableGenerator::invoke)
-        .collect(joining("," + newLine, newLine, ""));
+                .collect(joining("," + newLine, newLine, ""));
   }
 
   private Stream<String> returnWithCopyOut(
@@ -539,13 +542,16 @@ class ExecutableGenerator {
     var confinedArena = returnGenerator.isRecord() && returnGenerator.isValue()
         || parameterGenerators.stream()
             .anyMatch(VariableGenerator::needsConfinedArena);
-    var allocations = confinedArena
-        ? localAllocations() : List.<LocalAllocation>of();
+
+    List<LocalAllocation> allocations =
+        confinedArena ? localAllocations() : List.of();
 
     // Such converters can allocate a runtime-dependent record graph. Keep the
     // direct-arena fallback instead of guessing a backing capacity.
-    var shared = allocations.size() >= 2 && parameterGenerators.stream()
-        .noneMatch(this::converterNeedsAllocator);
+    var shared = allocations.size() >= 2
+        && parameterGenerators.stream()
+            .noneMatch(this::converterNeedsAllocator);
+
     return new AllocationPlan(confinedArena, allocations, shared);
   }
 
@@ -581,7 +587,8 @@ class ExecutableGenerator {
             <name>$allocationOffset$f, <size>)
         """
         .replace("<name>", parameter.name())
-        .replace("<size>", allocationPlan.allocation(parameter.name()).byteSize())
+        .replace("<size>",
+            allocationPlan.allocation(parameter.name()).byteSize())
         .strip();
   }
 
@@ -622,7 +629,9 @@ class ExecutableGenerator {
         .replace("<alignment>", maximumAlignment(allocations)));
 
     for (var allocation : allocations) {
-      if (!allocation.name().equals("return")) continue;
+      if (!allocation.name().equals("return")) {
+        continue;
+      }
 
       plan.append("""
           var return$allocation$f = allocation$MemorySegment$f.asSlice(
@@ -662,14 +671,14 @@ class ExecutableGenerator {
         .map(LocalAllocation::alignment)
         .distinct()
         .toList();
-    if (alignments.size() > 1)
+    if (alignments.size() > 1) {
       alignments = alignments.stream()
           .filter(alignment -> !alignment.equals("1L"))
           .toList();
+    }
 
     return alignments.stream()
-        .reduce((left, right) ->
-            "Math.max(" + left + ", " + right + ")")
+        .reduce((left, right) -> "Math.max(" + left + ", " + right + ")")
         .orElseThrow();
   }
 
@@ -729,12 +738,14 @@ class ExecutableGenerator {
             element);
         hasUnsupported = true;
       } else {
-        for (var parameter : nativeParameters.subList(index, nativeParameterCount)) {
+        for (var parameter : nativeParameters
+            .subList(index, nativeParameterCount)) {
           if (isUnpromotedVariadicType(parameter)) {
-            var correction = parameter.isWCharT()
-                ? "remove @WCharT and use plain int"
-                : "use " + promotedVariadicType(parameter) + " instead of "
-                    + parameter.typeName();
+            var correction =
+                parameter.canonicalScalar == CanonicalScalar.WCHAR_T
+                    ? "remove @WCharT and use plain int"
+                    : "use " + promotedVariadicType(parameter) + " instead of "
+                        + parameter.typeName();
             messager.printError(
                 "Variadic parameter '" + parameter.name()
                     + "' must use its C-promoted type: " + correction,
@@ -759,8 +770,7 @@ class ExecutableGenerator {
       hasUnsupported = true;
     }
 
-    boolean needsExternalAllocator = (returnGenerator.isForeignMemory()
-        || returnGenerator.isForeignMemoryImplementation())
+    boolean needsExternalAllocator = (returnGenerator.foreignMemory)
         && !returnGenerator.isRecord() && returnGenerator.isValue();
 
     if (needsExternalAllocator) {
@@ -907,7 +917,7 @@ class ExecutableGenerator {
 
   private boolean isUnpromotedVariadicType(VariableGenerator parameter) {
     if (parameter.isPrimitiveAddress()) return false;
-    if (parameter.isWCharT()) return true;
+    if (parameter.canonicalScalar == CanonicalScalar.WCHAR_T) return true;
 
     return switch (parameter.typeMirror.getKind()) {
       case BOOLEAN, BYTE, CHAR, SHORT, FLOAT -> true;

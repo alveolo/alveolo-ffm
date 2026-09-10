@@ -97,14 +97,14 @@ final class VariableGenerator extends TypeGenerator {
     if (isString())
       return nullableInvoke("arena$f.allocateFrom(" + name() + ")");
 
-    var expression = isForeignMemoryImplementation()
-        ? name() + ".MemorySegment$F"
-        : isRecord()
-            ? foreignMemoryClassName()
-                + ".toMemorySegment$F(arena$f, " + name() + ")"
-            : "((" + foreignMemoryClassName() + ") " + name()
-                + ").MemorySegment$F";
-    return isAddress() && !isCallState() ? nullableInvoke(expression) : expression;
+    var expression = foreignMemoryImplementation ? name() + ".MemorySegment$F"
+        : isRecord() ? foreignMemoryClassName()
+            + ".toMemorySegment$F(arena$f, " + name() + ")"
+        : "((" + foreignMemoryClassName() + ") " + name() + ").MemorySegment$F";
+
+    return isAddress() && !isCallState()
+        ? nullableInvoke(expression)
+        : expression;
   }
 
   private String nullableInvoke(String expression) {
@@ -203,8 +203,9 @@ final class VariableGenerator extends TypeGenerator {
       return "var " + segmentName() + " = "
           + (isAddress() ? nullableInvoke(memorySegment) : memorySegment)
           + ";\n"
-          + (isAddress() ? "if (" + name + " != null) {\n  "
-              + conversion + "\n}" : conversion);
+          + (isAddress()
+              ? "if (" + name + " != null) {\n  " + conversion + "\n}"
+              : conversion);
     }
 
     var storage = isArray() ? memorySegment
@@ -238,11 +239,10 @@ final class VariableGenerator extends TypeGenerator {
 
     if (isCallArrayOrBuffer()) {
       var size = arrayOrBufferAllocationSize();
-      if (nullableArrayOrBuffer()) {
+      if (nullableArrayOrBuffer())
         return "(" + name + " == null"
             + (isNioBuffer() ? " || " + directName() : "")
             + " ? 0L : " + size + ")";
-      }
       return isNioBuffer() ? directName() + " ? 0L : " + size : size;
     }
 
@@ -298,7 +298,7 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   boolean isCallArrayOrBufferByValue() {
-    return isCallArrayOrBuffer() && hasExplicitValuePassMode();
+    return isCallArrayOrBuffer() && typeUseValue;
   }
 
   private boolean nullableArrayOrBuffer() {
@@ -366,7 +366,8 @@ final class VariableGenerator extends TypeGenerator {
         }
         """
         .replace("<size>", sizeName())
-        .replace("<present>", nullableArrayOrBuffer() ? name + " != null && " : "")
+        .replace("<present>",
+            nullableArrayOrBuffer() ? name + " != null && " : "")
         .replace("<sequence>", Long.toString(sequence))
         .replace("<name>", name)
         .replace("<sizeWord>", sizeWord);
@@ -395,7 +396,8 @@ final class VariableGenerator extends TypeGenerator {
         }
         """
         .replace("<name>", name)
-        .replace("<present>", nullableArrayOrBuffer() ? name + " != null && " : "");
+        .replace("<present>",
+            nullableArrayOrBuffer() ? name + " != null && " : "");
   }
 
   private String arrayCopyIn() {

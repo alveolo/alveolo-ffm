@@ -79,10 +79,10 @@ record IndexedField(
 
   boolean addressElement() {
     return element.isMemorySegment()
-        || (element.isForeignMemory() && element.isAddress());
+        || (element.foreignMemory && element.isAddress());
   }
 
   boolean structuredValueElement() {
-    return element.isForeignMemory() && element.isValue();
+    return element.foreignMemory && element.isValue();
   }
 }
