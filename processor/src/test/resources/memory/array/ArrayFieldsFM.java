@@ -317,26 +317,21 @@ public class ArrayFieldsFM implements ArrayFields {
   public ArrayFieldsFM pointersAsAddress$F(
       long index0, java.lang.foreign.MemorySegment value) {
     pointers$VarHandle$F.set(MemorySegment$F, index0,
-        value == null
-            ? java.lang.foreign.MemorySegment.NULL : value);
+        value == null ? java.lang.foreign.MemorySegment.NULL
+            : value);
     return this;
   }
 
   public pkg.ArrayPoint pointers(long index0$f) {
-    var address$f = pointersAsAddress$F(index0$f);
-    return address$f.address() == 0L
-        ? null
-        : pkg.ArrayPointFM.reinterpret$F(address$f);
+    return pkg.ArrayPointFM.reinterpret$F(pointersAsAddress$F(index0$f));
   }
 
   public ArrayFieldsFM pointers(
       java.lang.foreign.SegmentAllocator allocator$f, long index0$f,
       pkg.ArrayPoint value$f) {
     pointers$VarHandle$F.set(MemorySegment$F, index0$f,
-        value$f == null
-            ? java.lang.foreign.MemorySegment.NULL
-            : pkg.ArrayPointFM.toMemorySegment$F(
-                allocator$f, value$f));
+        value$f == null ? java.lang.foreign.MemorySegment.NULL
+            : pkg.ArrayPointFM.toMemorySegment$F(allocator$f, value$f));
     return this;
   }
 
@@ -386,8 +381,7 @@ public class ArrayFieldsFM implements ArrayFields {
       pkg.ArrayCell value$f) {
     java.lang.foreign.MemorySegment.copy(
         ((pkg.ArrayCellFM) value$f).MemorySegment$F, 0L,
-        cellsAsMemorySegment$F(index0$f), 0L,
-        cells$ElementMemoryLayout$F.byteSize());
+        cellsAsMemorySegment$F(index0$f), 0L, cells$ElementMemoryLayout$F.byteSize());
     return this;
   }
 
@@ -440,24 +434,20 @@ public class ArrayFieldsFM implements ArrayFields {
   public ArrayFieldsFM referencesAsAddress$F(
       long index0, java.lang.foreign.MemorySegment value) {
     references$VarHandle$F.set(MemorySegment$F, index0,
-        value == null
-            ? java.lang.foreign.MemorySegment.NULL : value);
+        value == null ? java.lang.foreign.MemorySegment.NULL
+            : value);
     return this;
   }
 
   public pkg.ArrayCell references(long index0$f) {
-    var address$f = referencesAsAddress$F(index0$f);
-    return address$f.address() == 0L
-        ? null
-        : pkg.ArrayCellFM.reinterpret$F(address$f);
+    return pkg.ArrayCellFM.reinterpret$F(referencesAsAddress$F(index0$f));
   }
 
   public ArrayFieldsFM references(
       long index0$f,
       pkg.ArrayCell value$f) {
     references$VarHandle$F.set(MemorySegment$F, index0$f,
-        value$f == null
-            ? java.lang.foreign.MemorySegment.NULL
+        value$f == null ? java.lang.foreign.MemorySegment.NULL
             : ((pkg.ArrayCellFM) value$f).MemorySegment$F);
     return this;
   }
@@ -511,8 +501,8 @@ public class ArrayFieldsFM implements ArrayFields {
   public ArrayFieldsFM rawAsAddress$F(
       long index0, java.lang.foreign.MemorySegment value) {
     raw$VarHandle$F.set(MemorySegment$F, index0,
-        value == null
-            ? java.lang.foreign.MemorySegment.NULL : value);
+        value == null ? java.lang.foreign.MemorySegment.NULL
+            : value);
     return this;
   }
 
@@ -524,8 +514,8 @@ public class ArrayFieldsFM implements ArrayFields {
       long index0$f,
       java.lang.foreign.MemorySegment value$f) {
     raw$VarHandle$F.set(MemorySegment$F, index0$f,
-        value$f == null
-            ? java.lang.foreign.MemorySegment.NULL : value$f);
+        value$f == null ? java.lang.foreign.MemorySegment.NULL
+            : value$f);
     return this;
   }
 }

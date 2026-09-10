@@ -325,61 +325,32 @@ final class ForeignMemoryAccessorGenerator {
 
     var typeElement = field.typeElement;
     if (isNestedValue(field)) {
-      var fieldClassName = field.foreignMemoryClassName();
+      var slice = """
+          <segment>.asSlice(
+              MemoryLayout$F.byteOffset(<name>$PathElement$F),
+              MemoryLayout$F.select(<name>$PathElement$F).byteSize())
+          """
+          .stripTrailing()
+          .replace("<segment>", segment)
+          .replace("<name>", name);
+      writeGetter(out, target, field, FieldConversions.readValue(field, slice));
 
-      if (typeElement.getKind() == ElementKind.RECORD) {
-        writeGetter(out, target, field, """
-            <foreignClassName>.fromMemorySegment$F(<segment>.asSlice(
-                MemoryLayout$F.byteOffset(<name>$PathElement$F),
-                MemoryLayout$F.select(<name>$PathElement$F).byteSize()))
-            """
-            .stripTrailing()
-            .replace("<foreignClassName>", fieldClassName)
-            .replace("<segment>", segment)
-            .replace("<name>", name));
-
-        var needsAllocator = analyzer.recordConverterNeedsAllocator(
-            typeElement);
-        writeSetter(out, target, field, needsAllocator, """
-            var memoryLayout =
-                MemoryLayout$F.select(<name>$PathElement$F);
-            var slice = <segment>.asSlice(
-                MemoryLayout$F.byteOffset(<name>$PathElement$F),
-                memoryLayout.byteSize());
-            <foreignClassName>.toMemorySegment$F(
-                value, slice<allocator>);
-            """
-            .stripTrailing()
-            .replace("<allocator>", needsAllocator ? ", allocator" : "")
-            .replace("<foreignClassName>", fieldClassName)
-            .replace("<segment>", segment)
-            .replace("<name>", name));
-      } else {
-        writeGetter(out, target, field, """
-            new <foreignClassName>(<segment>.asSlice(
-                MemoryLayout$F.byteOffset(<name>$PathElement$F),
-                MemoryLayout$F.select(<name>$PathElement$F).byteSize()))
-            """
-            .stripTrailing()
-            .replace("<foreignClassName>", fieldClassName)
-            .replace("<segment>", segment)
-            .replace("<name>", name));
-
-        writeSetter(out, target, field, false, """
-            var memoryLayout =
-                MemoryLayout$F.select(<name>$PathElement$F);
-            var slice = <segment>.asSlice(
-                MemoryLayout$F.byteOffset(<name>$PathElement$F),
-                memoryLayout.byteSize());
-            java.lang.foreign.MemorySegment.copy(
-                <sourceSegment>, 0,
-                slice, 0, memoryLayout.byteSize());
-            """
-            .stripTrailing()
-            .replace("<sourceSegment>", nestedMemorySegment(field))
-            .replace("<segment>", segment)
-            .replace("<name>", name));
-      }
+      var needsAllocator = field.isRecord()
+          && analyzer.recordConverterNeedsAllocator(typeElement);
+      writeSetter(out, target, field, needsAllocator, """
+          var memoryLayout =
+              MemoryLayout$F.select(<name>$PathElement$F);
+          var slice = <segment>.asSlice(
+              MemoryLayout$F.byteOffset(<name>$PathElement$F),
+              memoryLayout.byteSize());
+          <conversion>
+          """
+          .stripTrailing()
+          .replace("<conversion>", FieldConversions.writeValue(
+              field, "value", "slice", "memoryLayout.byteSize()",
+              needsAllocator ? "allocator" : null))
+          .replace("<segment>", segment)
+          .replace("<name>", name));
       return;
     }
 
@@ -393,25 +364,15 @@ final class ForeignMemoryAccessorGenerator {
 
       writeGetter(out, target, field, nestedAddressGetter(field, segment));
 
-      if (typeElement.getKind() == ElementKind.RECORD) {
-        writeSetter(out, target, field, true, """
-            <name>$VarHandle$F.set(<segment>,
-                value == null ? java.lang.foreign.MemorySegment.NULL
-                    : <foreignClassName>.toMemorySegment$F(allocator, value));
-            """
-            .stripTrailing()
-            .replace("<foreignClassName>", field.foreignMemoryClassName())
-            .replace("<segment>", segment)
-            .replace("<name>", name));
-      } else {
-        writeSetter(out, target, field, false,
-            ("<name>$VarHandle$F.set(<segment>, value == null"
-                + " ? java.lang.foreign.MemorySegment.NULL : <sourceSegment>);")
-                .replace("<sourceSegment>",
-                    nestedMemorySegment(field))
-                .replace("<segment>", segment)
-                .replace("<name>", name));
-      }
+      writeSetter(out, target, field, field.isRecord(), """
+          <name>$VarHandle$F.set(<segment>,
+              <address>);
+          """
+          .stripTrailing()
+          .replace("<address>", FieldConversions.addressValue(
+              field, "value", "allocator").replace("\n", "\n    "))
+          .replace("<segment>", segment)
+          .replace("<name>", name));
       return;
     }
 
@@ -599,10 +560,9 @@ final class ForeignMemoryAccessorGenerator {
 
   private String nestedAddressGetter(
       VariableGenerator field, String segment) {
-    return field.foreignMemoryClassName()
-        + ".reinterpret$F((java.lang.foreign.MemorySegment) "
-        + field.name() + "$VarHandle$F"
-        + ".get(" + segment + "))";
+    return FieldConversions.readAddress(field,
+        "(java.lang.foreign.MemorySegment) " + field.name()
+            + "$VarHandle$F.get(" + segment + ")");
   }
 
   private String primitiveAddressGetter(
@@ -620,10 +580,4 @@ final class ForeignMemoryAccessorGenerator {
         + "    .get(" + layout + ", 0L)";
   }
 
-  private String nestedMemorySegment(VariableGenerator field) {
-    return field.isForeignMemoryImplementation()
-        ? "value.MemorySegment$F"
-        : "((" + field.foreignMemoryClassName() + ") value"
-            + ").MemorySegment$F";
-  }
 }

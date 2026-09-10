@@ -68,9 +68,10 @@ public class CircularDefault implements CircularDefaultSpec {
           .groupElement("value");
 
   public passmode.CircularValue value() {
-    return new passmode.CircularValue(MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(value$PathElement$F),
-        MemoryLayout$F.select(value$PathElement$F).byteSize()));
+    return new passmode.CircularValue(
+        MemorySegment$F.asSlice(
+            MemoryLayout$F.byteOffset(value$PathElement$F),
+            MemoryLayout$F.select(value$PathElement$F).byteSize()));
   }
 
   public CircularDefault value(passmode.CircularValue value) {
@@ -80,8 +81,8 @@ public class CircularDefault implements CircularDefaultSpec {
         MemoryLayout$F.byteOffset(value$PathElement$F),
         memoryLayout.byteSize());
     java.lang.foreign.MemorySegment.copy(
-        value.MemorySegment$F, 0,
-        slice, 0, memoryLayout.byteSize());
+        value.MemorySegment$F, 0L,
+        slice, 0L, memoryLayout.byteSize());
     return this;
   }
 }

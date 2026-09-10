@@ -72,9 +72,10 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
           .groupElement("recordDefault");
 
   public passmode.InnerRecord recordDefault() {
-    return passmode.InnerRecordFM.fromMemorySegment$F(MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(recordDefault$PathElement$F),
-        MemoryLayout$F.select(recordDefault$PathElement$F).byteSize()));
+    return passmode.InnerRecordFM.fromMemorySegment$F(
+        MemorySegment$F.asSlice(
+            MemoryLayout$F.byteOffset(recordDefault$PathElement$F),
+            MemoryLayout$F.select(recordDefault$PathElement$F).byteSize()));
   }
 
   public FieldModeAccessorsFM recordDefault(passmode.InnerRecord value) {
@@ -101,7 +102,9 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public FieldModeAccessorsFM interfaceDefault(passmode.InnerInterface value) {
-    interfaceDefault$VarHandle$F.set(MemorySegment$F, value == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.InnerInterfaceFM) value).MemorySegment$F);
+    interfaceDefault$VarHandle$F.set(MemorySegment$F,
+        value == null ? java.lang.foreign.MemorySegment.NULL
+            : ((passmode.InnerInterfaceFM) value).MemorySegment$F);
     return this;
   }
 
@@ -110,9 +113,10 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
           .groupElement("interfaceTypeUseValue");
 
   public passmode.InnerInterface interfaceTypeUseValue() {
-    return new passmode.InnerInterfaceFM(MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(interfaceTypeUseValue$PathElement$F),
-        MemoryLayout$F.select(interfaceTypeUseValue$PathElement$F).byteSize()));
+    return new passmode.InnerInterfaceFM(
+        MemorySegment$F.asSlice(
+            MemoryLayout$F.byteOffset(interfaceTypeUseValue$PathElement$F),
+            MemoryLayout$F.select(interfaceTypeUseValue$PathElement$F).byteSize()));
   }
 
   public FieldModeAccessorsFM interfaceTypeUseValue(passmode.InnerInterface value) {
@@ -122,8 +126,8 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
         MemoryLayout$F.byteOffset(interfaceTypeUseValue$PathElement$F),
         memoryLayout.byteSize());
     java.lang.foreign.MemorySegment.copy(
-        ((passmode.InnerInterfaceFM) value).MemorySegment$F, 0,
-        slice, 0, memoryLayout.byteSize());
+        ((passmode.InnerInterfaceFM) value).MemorySegment$F, 0L,
+        slice, 0L, memoryLayout.byteSize());
     return this;
   }
 
@@ -132,9 +136,10 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
           .groupElement("fieldOverridesTypeAddress");
 
   public passmode.TypeAddressRecord fieldOverridesTypeAddress() {
-    return passmode.TypeAddressRecordFM.fromMemorySegment$F(MemorySegment$F.asSlice(
-        MemoryLayout$F.byteOffset(fieldOverridesTypeAddress$PathElement$F),
-        MemoryLayout$F.select(fieldOverridesTypeAddress$PathElement$F).byteSize()));
+    return passmode.TypeAddressRecordFM.fromMemorySegment$F(
+        MemorySegment$F.asSlice(
+            MemoryLayout$F.byteOffset(fieldOverridesTypeAddress$PathElement$F),
+            MemoryLayout$F.select(fieldOverridesTypeAddress$PathElement$F).byteSize()));
   }
 
   public FieldModeAccessorsFM fieldOverridesTypeAddress(passmode.TypeAddressRecord value) {
@@ -161,7 +166,9 @@ public class FieldModeAccessorsFM implements FieldModeAccessors {
   }
 
   public FieldModeAccessorsFM fieldOverridesTypeValue(passmode.TypeValueInterface value) {
-    fieldOverridesTypeValue$VarHandle$F.set(MemorySegment$F, value == null ? java.lang.foreign.MemorySegment.NULL : ((passmode.TypeValueInterfaceFM) value).MemorySegment$F);
+    fieldOverridesTypeValue$VarHandle$F.set(MemorySegment$F,
+        value == null ? java.lang.foreign.MemorySegment.NULL
+            : ((passmode.TypeValueInterfaceFM) value).MemorySegment$F);
     return this;
   }
 }

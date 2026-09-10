@@ -102,35 +102,17 @@ final class IndexedFieldGenerator {
     var allocator = needsAllocator
         ? "java.lang.foreign.SegmentAllocator " + allocatorName + ", " : "";
 
-    if (indexed.addressElement() && !field.isMemorySegment()) {
-      var foreignClass = field.foreignMemoryClassName();
-      out.write("""
+    out.write("""
 
-            public <type> <name>(<params>) {
-              var address$f = <name>AsAddress$F(<args>);
-              return address$f.address() == 0L
-                  ? null
-                  : <foreignClass>.reinterpret$F(address$f);
-            }
-          """
-          .replace("<type>", field.typeName())
-          .replace("<name>", name)
-          .replace("<params>", params)
-          .replace("<args>", args)
-          .replace("<foreignClass>", foreignClass));
-    } else {
-      out.write("""
-
-            public <type> <name>(<params>) {
-              return <expression>;
-            }
-          """
-          .replace("<type>", field.typeName())
-          .replace("<name>", name)
-          .replace("<params>", params)
-          .replace("<expression>", getterExpression(
-              indexed, "MemorySegment$F", args, false)));
-    }
+          public <type> <name>(<params>) {
+            return <expression>;
+          }
+        """
+        .replace("<type>", field.typeName())
+        .replace("<name>", name)
+        .replace("<params>", params)
+        .replace("<expression>", getterExpression(
+            indexed, "MemorySegment$F", args, false)));
 
     out.write("""
 
@@ -338,14 +320,15 @@ final class IndexedFieldGenerator {
           public <class> <name>AsAddress$F(
               <params>, java.lang.foreign.MemorySegment <valueName>) {
             <name>$VarHandle$F.set(<vhArgs>,
-                <valueName> == null
-                    ? java.lang.foreign.MemorySegment.NULL : <valueName>);
+                <address>);
             return this;
           }
         """
         .replace("<class>", className)
         .replace("<name>", name)
         .replace("<params>", params)
+        .replace("<address>", FieldConversions.nullableAddress(valueName, valueName)
+            .replace("\n", "\n        "))
         .replace("<valueName>", valueName)
         .replace("<vhArgs>", vhArgs));
   }
@@ -372,21 +355,14 @@ final class IndexedFieldGenerator {
           .replace("<arguments>", args);
     }
 
-    if (indexed.structuredValueElement()) {
-      var foreignClass = field.foreignMemoryClassName();
-      var leaf = elementSegmentCall(indexed, segment, args, isStatic);
-      var template = field.isRecord() ? """
-          <foreignClass>.fromMemorySegment$F(
-                  <leaf>)
-          """ : """
-          new <foreignClass>(
-                  <leaf>)
-          """;
-      return template
-          .replace("<foreignClass>", foreignClass)
-          .replace("<leaf>", leaf)
-          .strip();
-    }
+    if (indexed.addressElement())
+      return FieldConversions.readAddress(field,
+          name + "AsAddress$F(" + args + ")");
+
+    if (indexed.structuredValueElement())
+      return FieldConversions.readValue(field,
+          elementSegmentCall(indexed, segment, args, isStatic))
+          .replace("\n", "\n    ");
 
     throw new IllegalStateException("Unsupported indexed getter: " + name);
   }
@@ -405,69 +381,15 @@ final class IndexedFieldGenerator {
           .replace("<arguments>", vhArgs)
           .replace("<value>", valueName);
 
-    if (field.isMemorySegment())
-      return """
-          <name>$VarHandle$F.set(<arguments>,
-                  <value> == null
-                      ? java.lang.foreign.MemorySegment.NULL : <value>);
-          """
-          .replace("<name>", name)
-          .replace("<arguments>", vhArgs)
-          .replace("<value>", valueName)
-          .strip();
+    if (indexed.addressElement())
+      return name + "$VarHandle$F.set(" + vhArgs + ",\n        "
+          + FieldConversions.addressValue(field, valueName, allocatorName)
+              .replace("\n", "\n        ") + ");";
 
-    var foreignClass = field.foreignMemoryClassName();
-
-    if (indexed.addressElement()) {
-      var template = field.isRecord()
-          ? """
-              <name>$VarHandle$F.set(<arguments>,
-                      <value> == null
-                          ? java.lang.foreign.MemorySegment.NULL
-                          : <foreignClass>.toMemorySegment$F(
-                              <allocator>, <value>));
-              """
-          : """
-              <name>$VarHandle$F.set(<arguments>,
-                      <value> == null
-                          ? java.lang.foreign.MemorySegment.NULL
-                          : ((<foreignClass>) <value>).MemorySegment$F);
-              """;
-
-      return template
-          .replace("<name>", name)
-          .replace("<arguments>", vhArgs)
-          .replace("<value>", valueName)
-          .replace("<foreignClass>", foreignClass)
-          .replace("<allocator>", allocatorName)
-          .strip();
-    }
-
-    var leaf = elementSegmentCall(indexed, segment, args, isStatic);
-
-    if (field.isRecord())
-      return """
-          <foreignClass>.toMemorySegment$F(
-                  <value>, <leaf><allocatorArgument>);
-          """
-          .replace("<foreignClass>", foreignClass)
-          .replace("<value>", valueName)
-          .replace("<leaf>", leaf)
-          .replace("<allocatorArgument>",
-              withAllocator ? ", " + allocatorName : "")
-          .strip();
-
-    return """
-        java.lang.foreign.MemorySegment.copy(
-                ((<foreignClass>) <value>).MemorySegment$F, 0L,
-                <leaf>, 0L,
-                <name>$ElementMemoryLayout$F.byteSize());
-        """
-        .replace("<foreignClass>", foreignClass)
-        .replace("<value>", valueName)
-        .replace("<leaf>", leaf)
-        .replace("<name>", name)
-        .strip();
+    return FieldConversions.writeValue(field, valueName,
+        elementSegmentCall(indexed, segment, args, isStatic),
+        name + "$ElementMemoryLayout$F.byteSize()",
+        withAllocator ? allocatorName : null).replace("\n", "\n    ");
   }
 
   private String elementSegmentCall(IndexedField indexed,
