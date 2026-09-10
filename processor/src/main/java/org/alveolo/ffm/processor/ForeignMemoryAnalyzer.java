@@ -3,7 +3,6 @@ package org.alveolo.ffm.processor;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.STATIC;
-import static org.alveolo.ffm.processor.ObjectMethodsGenerator.isObjectMethod;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,7 +41,7 @@ final class ForeignMemoryAnalyzer {
   }
 
   /// Infers struct fields from interface accessor methods or record components.
-  Fields inferFields(TypeElement type, boolean excludeObjectMethods) {
+  Fields inferFields(TypeElement type) {
     if (type.getKind() == ElementKind.RECORD)
       return inferRecordFields(type);
 
@@ -52,7 +51,6 @@ final class ForeignMemoryAnalyzer {
         .filter(method -> method.getModifiers().contains(ABSTRACT))
         .filter(method -> !method.getModifiers().contains(STATIC))
         .filter(method -> !method.getModifiers().contains(DEFAULT))
-        .filter(method -> !excludeObjectMethods || !isObjectMethod(method))
         .toList();
     return inferFields(methods);
   }

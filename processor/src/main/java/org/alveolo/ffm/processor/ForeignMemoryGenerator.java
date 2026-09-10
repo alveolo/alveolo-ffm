@@ -57,7 +57,7 @@ final class ForeignMemoryGenerator {
     objectGenerator.writeDispatchTable(source, preparedObjectMethods);
 
     var fields = model == null
-        ? analyzer.inferFields(source, isStructInterface)
+        ? analyzer.inferFields(source)
         : analyzer.inferFields(model.fieldMethods());
     analyzer.validateFields(fields);
     var baseFields = model == null || model.baseStruct() == null
@@ -181,17 +181,17 @@ final class ForeignMemoryGenerator {
           + ObjectMethodsGenerator.VTABLE_FIELD + "\"),\n");
     }
 
-    var layoutFields = fields.fields().stream()
-        .map(field -> {
-          var indexed = fields.indexedFields().get(field.name());
-          return new MemoryLayoutGenerator.LayoutField(field.name(),
-              indexed == null ? field.layout() : indexed.layout(),
-              field.unsupported() && field.canonicalScalarError() == null,
-              field.typeName(), field.element);
-        })
-        .toList();
+    for (var field : fields.fields()) {
+      if (field.unsupported() && field.canonicalScalarError() == null) {
+        processingEnv.getMessager().printError(
+            "Type is not supported: " + field.typeName(), field.element);
+      }
 
-    out.write(new MemoryLayoutGenerator(processingEnv, layoutFields).layout());
+      var indexed = fields.indexedFields().get(field.name());
+      var layout = indexed == null ? field.layout() : indexed.layout();
+      out.write((layout + ".withName(\"" + field.name() + "\"),").indent(8));
+    }
+
     out.write("      }));\n");
   }
 
