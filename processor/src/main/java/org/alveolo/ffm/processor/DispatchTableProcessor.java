@@ -5,14 +5,13 @@ import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +25,6 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.tools.Diagnostic;
 
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.Slot;
@@ -66,13 +64,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
           processingEnv.getElementUtils().getAllMembers(type));
       validateTopLevelType(type, annotation);
       writeFile(type, generatedTypes);
-    } catch (ProcessorError e) {
-      messager.printMessage(Diagnostic.Kind.ERROR,
-          e.getMessage(), e.element);
     } catch (Throwable e) {
-      var sw = new StringWriter();
-      e.printStackTrace(new PrintWriter(sw));
-      messager.printError(sw.toString(), type);
+      reportError(messager, e, type);
     }
   }
 

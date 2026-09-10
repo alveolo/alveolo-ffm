@@ -4,10 +4,13 @@ import static java.util.stream.Collectors.joining;
 import static javax.lang.model.SourceVersion.isIdentifier;
 import static javax.lang.model.SourceVersion.isKeyword;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.annotation.processing.Messager;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -28,6 +31,18 @@ import org.alveolo.ffm.Union;
 
 final class ProcessorUtils {
   private ProcessorUtils() {}
+
+  /// Validation errors point to their offending element; unexpected failures
+  /// retain the stack trace and point to the type being processed.
+  static void reportError(Messager messager, Throwable error, Element type) {
+    if (error instanceof ProcessorError validation) {
+      messager.printError(validation.getMessage(), validation.element);
+    } else {
+      var trace = new StringWriter();
+      error.printStackTrace(new PrintWriter(trace));
+      messager.printError(trace.toString(), type);
+    }
+  }
 
   /// Includes inherited abstract methods in the compiler's member order.
   static List<ExecutableElement> abstractMethods(

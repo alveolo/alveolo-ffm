@@ -7,14 +7,13 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -26,7 +25,6 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
-import javax.tools.Diagnostic;
 
 import org.alveolo.ffm.CallState;
 
@@ -73,13 +71,8 @@ public class CallStateProcessor extends AbstractProcessor {
       if (accessor != null) {
         write(type, annotation, accessor);
       }
-    } catch (ProcessorError e) {
-      messager.printMessage(Diagnostic.Kind.ERROR,
-          e.getMessage(), e.element);
     } catch (Throwable e) {
-      var sw = new StringWriter();
-      e.printStackTrace(new PrintWriter(sw));
-      messager.printError(sw.toString(), type);
+      reportError(messager, e, type);
     }
   }
 

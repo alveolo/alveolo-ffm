@@ -7,14 +7,13 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +25,6 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
-import javax.tools.Diagnostic;
 
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Library;
@@ -66,12 +64,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
           processingEnv.getElementUtils().getAllMembers(type));
       validateTopLevelType(type, annotation);
       writeFile(type, generatedTypes);
-    } catch (ProcessorError e) {
-      messager.printMessage(Diagnostic.Kind.ERROR, e.getMessage(), e.element);
     } catch (Throwable e) {
-      var sw = new StringWriter();
-      e.printStackTrace(new PrintWriter(sw));
-      messager.printError(sw.toString(), type);
+      reportError(messager, e, type);
     }
   }
 
