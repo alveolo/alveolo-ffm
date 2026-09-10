@@ -1,5 +1,6 @@
 package org.alveolo.ffm.processor;
 
+import java.lang.annotation.Annotation;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
@@ -20,6 +21,7 @@ import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CallState;
+import org.alveolo.ffm.NativeType;
 import org.alveolo.ffm.SLong;
 import org.alveolo.ffm.Sequence;
 import org.alveolo.ffm.SizeT;
@@ -32,28 +34,21 @@ import org.alveolo.ffm.macos.CFString;
 
 sealed class TypeGenerator permits VariableGenerator {
   enum CanonicalScalar {
-    SLONG(SLong.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.NativeType.SLONG"),
-    ULONG(ULong.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.NativeType.ULONG"),
-    SIZE_T(SizeT.class.getCanonicalName(), TypeKind.LONG,
-        "org.alveolo.ffm.NativeType.SIZE_T"),
-    WCHAR_T(WCharT.class.getCanonicalName(), TypeKind.INT,
-        "org.alveolo.ffm.NativeType.WCHAR_T");
+    SLONG(SLong.class, TypeKind.LONG),
+    ULONG(ULong.class, TypeKind.LONG),
+    SIZE_T(SizeT.class, TypeKind.LONG),
+    WCHAR_T(WCharT.class, TypeKind.INT);
 
-    final String annotation;
+    final Class<? extends Annotation> annotation;
     final TypeKind javaKind;
     final String nativeType;
+    final String accessorSuffix;
 
-    CanonicalScalar(String annotation, TypeKind javaKind,
-        String runtimeType) {
+    CanonicalScalar(Class<? extends Annotation> annotation, TypeKind javaKind) {
       this.annotation = annotation;
       this.javaKind = javaKind;
-      this.nativeType = runtimeType;
-    }
-
-    String simpleAnnotationName() {
-      return "@" + annotation.substring(annotation.lastIndexOf('.') + 1);
+      nativeType = NativeType.class.getCanonicalName() + "." + name();
+      accessorSuffix = annotation.getSimpleName();
     }
   }
 
@@ -124,10 +119,8 @@ sealed class TypeGenerator permits VariableGenerator {
     canonicalScalar = Arrays.stream(CanonicalScalar.values())
         .filter(scalar -> hasTypeUseAnnotation(typeMirror, scalar.annotation))
         .findFirst().orElse(null);
-    typeUseAddress = hasTypeUseAnnotation(
-        typeMirror, Address.class.getCanonicalName());
-    typeUseValue = hasTypeUseAnnotation(
-        typeMirror, Value.class.getCanonicalName());
+    typeUseAddress = hasTypeUseAnnotation(typeMirror, Address.class);
+    typeUseValue = hasTypeUseAnnotation(typeMirror, Value.class);
     cfString = typeMirror.getAnnotation(CFString.class);
 
     foreignMemoryImplementation = generatedWrapper != null
@@ -271,18 +264,7 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   String elementLayout() {
-    return switch (elementKind()) {
-      case null -> null;
-      case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
-      case BYTE -> "java.lang.foreign.ValueLayout.JAVA_BYTE";
-      case CHAR -> "java.lang.foreign.ValueLayout.JAVA_CHAR";
-      case SHORT -> "java.lang.foreign.ValueLayout.JAVA_SHORT";
-      case INT -> "java.lang.foreign.ValueLayout.JAVA_INT";
-      case LONG -> "java.lang.foreign.ValueLayout.JAVA_LONG";
-      case FLOAT -> "java.lang.foreign.ValueLayout.JAVA_FLOAT";
-      case DOUBLE -> "java.lang.foreign.ValueLayout.JAVA_DOUBLE";
-      default -> null;
-    };
+    return primitiveLayout(elementKind());
   }
 
   TypeMirror arrayComponentType() {
@@ -331,7 +313,16 @@ sealed class TypeGenerator permits VariableGenerator {
     if (canonicalScalar != null)
       return canonicalScalar.nativeType + ".layout";
 
-    return switch (typeMirror.getKind()) {
+    var layout = primitiveLayout(typeMirror.getKind());
+    if (layout == null)
+      throw new IllegalArgumentException(
+          "Unexpected primitive type: " + typeMirror);
+
+    return layout;
+  }
+
+  private static String primitiveLayout(TypeKind kind) {
+    return switch (kind) {
       case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
       case BYTE -> "java.lang.foreign.ValueLayout.JAVA_BYTE";
       case CHAR -> "java.lang.foreign.ValueLayout.JAVA_CHAR";
@@ -340,8 +331,7 @@ sealed class TypeGenerator permits VariableGenerator {
       case LONG -> "java.lang.foreign.ValueLayout.JAVA_LONG";
       case FLOAT -> "java.lang.foreign.ValueLayout.JAVA_FLOAT";
       case DOUBLE -> "java.lang.foreign.ValueLayout.JAVA_DOUBLE";
-      default -> throw new IllegalArgumentException(
-          "Unexpected primitive type: " + typeMirror);
+      case null, default -> null;
     };
   }
 
@@ -479,16 +469,8 @@ sealed class TypeGenerator permits VariableGenerator {
       throw new IllegalStateException(
           "Type has no canonical scalar: " + typeMirror);
 
-    return switch (canonicalScalar) {
-      case SLONG -> "org.alveolo.ffm.NativeType.getSLong("
-          + segment + ", " + offset + ")";
-      case ULONG -> "org.alveolo.ffm.NativeType.getULong("
-          + segment + ", " + offset + ")";
-      case SIZE_T -> "org.alveolo.ffm.NativeType.getSizeT("
-          + segment + ", " + offset + ")";
-      case WCHAR_T -> "org.alveolo.ffm.NativeType.getWCharT("
-          + segment + ", " + offset + ")";
-    };
+    return "org.alveolo.ffm.NativeType.get" + canonicalScalar.accessorSuffix
+        + "(" + segment + ", " + offset + ")";
   }
 
   String canonicalSet(String segment, String offset, String value) {
@@ -496,16 +478,8 @@ sealed class TypeGenerator permits VariableGenerator {
       throw new IllegalStateException(
           "Type has no canonical scalar: " + typeMirror);
 
-    return switch (canonicalScalar) {
-      case SLONG -> "org.alveolo.ffm.NativeType.setSLong("
-          + segment + ", " + offset + ", " + value + ");";
-      case ULONG -> "org.alveolo.ffm.NativeType.setULong("
-          + segment + ", " + offset + ", " + value + ");";
-      case SIZE_T -> "org.alveolo.ffm.NativeType.setSizeT("
-          + segment + ", " + offset + ", " + value + ");";
-      case WCHAR_T -> "org.alveolo.ffm.NativeType.setWCharT("
-          + segment + ", " + offset + ", " + value + ");";
-    };
+    return "org.alveolo.ffm.NativeType.set" + canonicalScalar.accessorSuffix
+        + "(" + segment + ", " + offset + ", " + value + ");";
   }
 
   String canonicalScalarError() {
@@ -516,26 +490,27 @@ sealed class TypeGenerator permits VariableGenerator {
           + "may be used on a type";
 
     if (!isPrimitive())
-      return canonicalScalar.simpleAnnotationName()
+      return "@" + canonicalScalar.annotation.getSimpleName()
           + " is only supported on scalar values and @Address scalar pointees";
 
     if (typeMirror.getKind() != canonicalScalar.javaKind)
-      return canonicalScalar.simpleAnnotationName() + " requires Java "
-          + canonicalScalar.javaKind.name().toLowerCase();
+      return "@" + canonicalScalar.annotation.getSimpleName()
+          + " requires Java " + canonicalScalar.javaKind.name().toLowerCase();
 
     return null;
   }
 
   private static boolean hasTypeUseAnnotation(
-      TypeMirror type, String annotationName) {
-    for (var annotation : type.getAnnotationMirrors()) {
-      if (annotation.getAnnotationType().toString().equals(annotationName))
+      TypeMirror type, Class<? extends Annotation> annotation) {
+    String annotationName = annotation.getCanonicalName();
+    for (var am : type.getAnnotationMirrors()) {
+      if (am.getAnnotationType().toString().equals(annotationName))
         return true;
     }
 
     return type.getKind() == TypeKind.ARRAY
         && hasTypeUseAnnotation(
-            ((ArrayType) type).getComponentType(), annotationName);
+            ((ArrayType) type).getComponentType(), annotation);
   }
 
   private TypeElement resolveTypeAnnotationSource() {
