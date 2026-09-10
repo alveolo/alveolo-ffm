@@ -30,10 +30,23 @@ class ExecutableGenerator {
   final TypeGenerator returnGenerator;
   final List<VariableGenerator> parameterGenerators;
   final ForeignMemoryAnalyzer memoryAnalyzer;
+  private final AllocationPlan allocationPlan;
 
   record NativeArgument(String layout, String expression) {}
   record LocalAllocation(
       String name, String byteSize, String alignment) {}
+  record AllocationPlan(boolean confinedArena,
+      List<LocalAllocation> allocations, boolean shared) {
+    AllocationPlan {
+      allocations = List.copyOf(allocations);
+    }
+
+    LocalAllocation allocation(String name) {
+      return allocations.stream()
+          .filter(allocation -> allocation.name().equals(name))
+          .findFirst().orElseThrow();
+    }
+  }
 
   ExecutableGenerator(ProcessingEnvironment processingEnv,
       GeneratedTypeRegistry generatedTypes,
@@ -75,6 +88,7 @@ class ExecutableGenerator {
         .toList();
 
     hasErrors = checkParameterTypes();
+    allocationPlan = planAllocations();
   }
 
   String methodWithHandle() {
@@ -216,17 +230,17 @@ class ExecutableGenerator {
   }
 
   private String methodBody(String methodHandleExpression) {
-    if (!canPlanAllocations())
+    if (!allocationPlan.shared())
       return Stream.of(paramInitializers(),
-          invoke(methodHandleExpression, false))
+          invoke(methodHandleExpression))
           .flatMap(identity())
           .collect(joining("\n      ", "", ""));
 
     return Stream.of(
         plannedPreparations(),
-        allocationPlan().lines(),
+        allocationPlanSource().lines(),
         plannedInitializers(),
-        invoke(methodHandleExpression, true))
+        invoke(methodHandleExpression))
         .flatMap(identity())
         .collect(joining("\n      ", "", ""));
   }
@@ -318,14 +332,13 @@ class ExecutableGenerator {
   }
 
   private String confinedArena() {
-    return needsConfinedArena()
+    return allocationPlan.confinedArena()
         ? "(var arena$f = java.lang.foreign.Arena.ofConfined()) " : "";
   }
 
-  private Stream<String> invoke(
-      String methodHandleExpression, boolean plannedAllocations) {
+  private Stream<String> invoke(String methodHandleExpression) {
     var call = methodHandleExpression + ".invokeExact("
-        + params(plannedAllocations) + ")";
+        + params() + ")";
     var copyOut = copyOut().toList();
 
     if (returnGenerator.isPrimitiveAddress())
@@ -358,7 +371,7 @@ class ExecutableGenerator {
     return statementWithCopyOut(call, copyOut);
   }
 
-  private String params(boolean plannedAllocations) {
+  private String params() {
     String newLine = "\n    ";
 
     boolean needsLocalAllocator =
@@ -370,7 +383,7 @@ class ExecutableGenerator {
     var paramsList = Stream.of(
         Stream.ofNullable(needsLocalAllocator
             ? "(java.lang.foreign.SegmentAllocator) "
-                + (plannedAllocations
+                + (allocationPlan.shared()
                     ? "java.lang.foreign.SegmentAllocator.prefixAllocator("
                         + "return$allocation$f)"
                     : "arena$f")
@@ -385,7 +398,7 @@ class ExecutableGenerator {
         parameterGenerators.stream()
             .filter(not(TypeGenerator::isSegmentAllocator))
             .filter(not(TypeGenerator::isCallState))
-            .map(plannedAllocations
+            .map(allocationPlan.shared()
                 ? VariableGenerator::plannedInvoke
                 : VariableGenerator::invoke))
         .flatMap(identity());
@@ -506,12 +519,6 @@ class ExecutableGenerator {
             + call + ")";
   }
 
-  boolean needsConfinedArena() {
-    return returnGenerator.isRecord() && returnGenerator.isValue()
-        || parameterGenerators.stream()
-            .anyMatch(VariableGenerator::needsConfinedArena);
-  }
-
   private String declarations() {
     var declarations = parameterGenerators.stream()
         .filter(VariableGenerator::isCFString)
@@ -530,14 +537,20 @@ class ExecutableGenerator {
 
   }
 
-  private boolean canPlanAllocations() {
-    if (!needsConfinedArena() || localAllocations().size() < 2)
-      return false;
+  private AllocationPlan planAllocations() {
+    if (hasErrors) return new AllocationPlan(false, List.of(), false);
+
+    var confinedArena = returnGenerator.isRecord() && returnGenerator.isValue()
+        || parameterGenerators.stream()
+            .anyMatch(VariableGenerator::needsConfinedArena);
+    var allocations = confinedArena
+        ? localAllocations() : List.<LocalAllocation>of();
 
     // Such converters can allocate a runtime-dependent record graph. Keep the
     // direct-arena fallback instead of guessing a backing capacity.
-    return parameterGenerators.stream()
+    var shared = allocations.size() >= 2 && parameterGenerators.stream()
         .noneMatch(this::converterNeedsAllocator);
+    return new AllocationPlan(confinedArena, allocations, shared);
   }
 
   private boolean converterNeedsAllocator(VariableGenerator parameter) {
@@ -572,12 +585,12 @@ class ExecutableGenerator {
             <name>$allocationOffset$f, <size>)
         """
         .replace("<name>", parameter.name())
-        .replace("<size>", parameter.allocationByteSize())
+        .replace("<size>", allocationPlan.allocation(parameter.name()).byteSize())
         .strip();
   }
 
-  private String allocationPlan() {
-    var allocations = localAllocations();
+  private String allocationPlanSource() {
+    var allocations = allocationPlan.allocations();
     if (allocations.size() < 2)
       throw new IllegalStateException(
           "Allocation plan requires at least two allocations");
