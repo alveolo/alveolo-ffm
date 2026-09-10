@@ -12,10 +12,6 @@ Remaining items from the review dated 2026-07-09.
    promise of a valid terminator. Bounded decoding is a possible feature rather
    than an established binding bug. CFString conversion already uses explicit
    lengths.
-3. **Field validation is scattered across analysis and generation.** Some
-   diagnostics are emitted while writing layouts and accessors. Consolidate
-   those checks where it simplifies the code; a full intermediate-model
-   framework is not an outstanding requirement.
 
 ## Feature proposals
 

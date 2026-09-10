@@ -6,8 +6,6 @@ import static org.alveolo.ffm.processor.ProcessorUtils.sourceMethodSignature;
 import java.io.IOException;
 import java.io.Writer;
 
-import javax.annotation.processing.Messager;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
 
 /// Generates field metadata, field accessors, and record converters.
@@ -16,14 +14,11 @@ import javax.lang.model.element.ElementKind;
 /// source declaration order. Indexed field details remain delegated
 /// to [IndexedFieldGenerator].
 final class ForeignMemoryAccessorGenerator {
-  private final Messager messager;
   private final ForeignMemoryAnalyzer analyzer;
   private final IndexedFieldGenerator indexedFieldGenerator;
 
-  ForeignMemoryAccessorGenerator(ProcessingEnvironment processingEnv,
-      ForeignMemoryAnalyzer analyzer,
+  ForeignMemoryAccessorGenerator(ForeignMemoryAnalyzer analyzer,
       IndexedFieldGenerator indexedFieldGenerator) {
-    messager = processingEnv.getMessager();
     this.analyzer = analyzer;
     this.indexedFieldGenerator = indexedFieldGenerator;
   }
@@ -295,7 +290,6 @@ final class ForeignMemoryAccessorGenerator {
     var segment = target.isStatic() ? "memorySegment" : "MemorySegment$F";
 
     if (!target.isStatic() && field.isPrimitiveAddress()) {
-      reportMemoryBackedPrimitiveAddressField(field);
       writeThrowingFieldAccessors(out, target.className(), field, false);
       return;
     }
@@ -358,7 +352,6 @@ final class ForeignMemoryAccessorGenerator {
     if (isNestedAddress(field)) {
       if (!target.isStatic()
           && typeElement.getKind() == ElementKind.RECORD) {
-        reportMemoryBackedRecordAddressField(field);
         writeThrowingFieldAccessors(out, target.className(), field, false);
         return;
       }
@@ -531,24 +524,6 @@ final class ForeignMemoryAccessorGenerator {
         && !field.isPrimitiveAddress()
         && !(isNestedAddress(field)
             && field.typeElement.getKind() == ElementKind.RECORD);
-  }
-
-  private void reportMemoryBackedRecordAddressField(
-      VariableGenerator field) {
-    messager.printError(
-        "@Address record fields are not supported on memory-backed "
-            + "@Struct or @Union interfaces; use an interface struct or "
-            + "MemorySegment for persistent pointer fields",
-        field.element);
-  }
-
-  private void reportMemoryBackedPrimitiveAddressField(
-      VariableGenerator field) {
-    messager.printError(
-        "@Address primitive fields are not supported on memory-backed "
-            + "@Struct or @Union interfaces; use a memory-backed interface "
-            + "type or MemorySegment for persistent pointer fields",
-        field.element);
   }
 
   private boolean isNestedValue(VariableGenerator field) {

@@ -30,7 +30,7 @@ final class ForeignMemoryGenerator {
     objectGenerator = new ObjectMethodsGenerator(processingEnv, generatedTypes);
     var indexedFieldGenerator = new IndexedFieldGenerator(analyzer);
     accessorGenerator = new ForeignMemoryAccessorGenerator(
-        processingEnv, analyzer, indexedFieldGenerator);
+        analyzer, indexedFieldGenerator);
   }
 
   void write(TypeElement source, String kind, boolean vtable)
@@ -59,11 +59,11 @@ final class ForeignMemoryGenerator {
     var fields = model == null
         ? analyzer.inferFields(source)
         : analyzer.inferFields(model.fieldMethods());
-    analyzer.validateFields(fields);
+    analyzer.validateFields(source, fields);
     var baseFields = model == null || model.baseStruct() == null
         ? null : analyzer.inferFields(model.baseFieldMethods());
     if (baseFields != null) {
-      analyzer.validateFields(baseFields);
+      analyzer.validateFields(model.baseStruct(), baseFields);
     }
 
     writeSource(source, kind, effectiveVtable, fields,
@@ -182,11 +182,6 @@ final class ForeignMemoryGenerator {
     }
 
     for (var field : fields.fields()) {
-      if (field.unsupported() && field.canonicalScalarError() == null) {
-        processingEnv.getMessager().printError(
-            "Type is not supported: " + field.typeName(), field.element);
-      }
-
       var indexed = fields.indexedFields().get(field.name());
       var layout = indexed == null ? field.layout() : indexed.layout();
       out.write((layout + ".withName(\"" + field.name() + "\"),").indent(8));

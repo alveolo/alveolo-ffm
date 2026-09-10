@@ -395,11 +395,17 @@ final class ForeignMemoryAnalyzer {
     }
   }
 
-  void validateFields(Fields fields) {
+  void validateFields(TypeElement type, Fields fields) {
     for (var field : fields.fields()) {
       var canonicalError = field.canonicalScalarError();
       if (canonicalError != null) {
         messager.printError(canonicalError, field.element);
+        continue;
+      }
+
+      if (field.unsupported()) {
+        messager.printError(
+            "Type is not supported: " + field.typeName(), field.element);
         continue;
       }
 
@@ -424,7 +430,23 @@ final class ForeignMemoryAnalyzer {
         messager.printError(
             "String fields are not supported on @Struct or @Union memory types",
             field.element);
-        return;
+        continue;
+      }
+
+      if (type.getKind() == ElementKind.INTERFACE) {
+        if (field.isPrimitiveAddress()) {
+          messager.printError(
+              "@Address primitive fields are not supported on memory-backed "
+                  + "@Struct or @Union interfaces; use a memory-backed interface "
+                  + "type or MemorySegment for persistent pointer fields",
+              field.element);
+        } else if (field.foreignMemory && isRecordAddress(field)) {
+          messager.printError(
+              "@Address record fields are not supported on memory-backed "
+                  + "@Struct or @Union interfaces; use an interface struct or "
+                  + "MemorySegment for persistent pointer fields",
+              field.element);
+        }
       }
     }
   }
