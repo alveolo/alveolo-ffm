@@ -82,10 +82,7 @@ public class ForeignUtils {
       try {
         return load(sourceClass, override.kind(), override.value(), "");
       } catch (RuntimeException e) {
-        if (lastError != null) {
-          e.addSuppressed(lastError);
-        }
-        lastError = e;
+        lastError = chainLoadFailure(e, lastError);
       }
     }
 
@@ -128,10 +125,7 @@ public class ForeignUtils {
         try {
           return loadPathDirect(Path.of(directory, library));
         } catch (RuntimeException e) {
-          if (lastError != null) {
-            e.addSuppressed(lastError);
-          }
-          lastError = e;
+          lastError = chainLoadFailure(e, lastError);
         }
       }
     }
@@ -141,10 +135,7 @@ public class ForeignUtils {
       try {
         return loadPathDirect(jarDirectory.resolve(library));
       } catch (RuntimeException e) {
-        if (lastError != null) {
-          e.addSuppressed(lastError);
-        }
-        lastError = e;
+        lastError = chainLoadFailure(e, lastError);
       }
     }
 
@@ -153,11 +144,14 @@ public class ForeignUtils {
           ? loadPathDirect(Path.of(library))
           : loadNameDirect(library);
     } catch (RuntimeException e) {
-      if (lastError != null) {
-        e.addSuppressed(lastError);
-      }
-      throw e;
+      throw chainLoadFailure(e, lastError);
     }
+  }
+
+  private static RuntimeException chainLoadFailure(
+      RuntimeException failure, RuntimeException previous) {
+    if (previous != null) failure.addSuppressed(previous);
+    return failure;
   }
 
   private static SymbolLookup loadNameDirect(String name) {

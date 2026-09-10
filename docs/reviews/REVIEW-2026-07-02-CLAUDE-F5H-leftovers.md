@@ -2,13 +2,6 @@
 
 Remaining items from the review dated 2026-07-02.
 
-## Maintainability
-
-- **Suppressed-exception chaining in `ForeignUtils`.** Library-loading attempts
-  repeat the logic for attaching the previous failure to the latest exception.
-  A small shared helper could remove this duplication while preserving lookup
-  order and diagnostics.
-
 ## Feature proposals
 
 1. **Upcalls / function pointers.** Generate callback glue for comparators,
