@@ -172,7 +172,13 @@ The tests provide a useful foundation, but the gaps are concentrated in combinat
 
 Keep complete generated-source equivalence checks where the test is about generation, and add runtime checks for behavior those source fixtures cannot establish. Several current positive cases only assert compilation success. Existing native tests live in the benchmark module; a dedicated integration-test module would make their role clearer and let correctness runs avoid JMH/JNA/JNR dependencies when those comparisons are irrelevant.
 
-✅ JUnit and Surefire versions are now managed in the parent POM, and the executable JMH jar has the explicit name `benchmarks.jar`. Add macOS and Windows jobs before expanding platform-sensitive scalar support. ✅ Release preparation now atomically pushes the release tag and next-snapshot commits before a separate publication operation builds from that tag. Recovery instructions distinguish preparation failures, failed uploads, and uncertain or completed Central publication. ✅ Raw allocation benchmarks now consume every allocated segment and slice through JMH `Blackhole` before closing the arena. Field-access comparisons still use different access styles across AFFM, JNA, and JNR; treat them as measurements of those exact operations. Realistic mixed-call cases remain useful before using the numbers to justify allocation complexity.
+* ✅ JUnit and Surefire versions are now managed in the parent POM, and the executable JMH jar has the explicit name `benchmarks.jar`.
+* Add macOS and Windows jobs before expanding platform-sensitive scalar support.
+* ✅ Release preparation now atomically pushes the release tag and next-snapshot commits before a separate publication operation builds from that tag.
+* Recovery instructions distinguish preparation failures, failed uploads, and uncertain or completed Central publication. 
+* ✅ Raw allocation benchmarks now consume every allocated segment and slice through JMH `Blackhole` before closing the arena.
+* Field-access comparisons still use different access styles across AFFM, JNA, and JNR; treat them as measurements of those exact operations.
+* Realistic mixed-call cases remain useful before using the numbers to justify allocation complexity.
 
 The following features would be useful after the runtime and compilation defects are fixed. Their ranking follows gaps visible in this repository, not a survey of other libraries.
 

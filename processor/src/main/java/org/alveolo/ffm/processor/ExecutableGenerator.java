@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.joining;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.annotation.processing.Messager;
@@ -30,6 +31,9 @@ class ExecutableGenerator {
   final TypeGenerator returnGenerator;
   final List<VariableGenerator> parameterGenerators;
   final ForeignMemoryAnalyzer memoryAnalyzer;
+  private final List<VariableGenerator> allocatorParameters;
+  private final List<VariableGenerator> callStateParameters;
+  private final List<VariableGenerator> nativeParameters;
   private final AllocationPlan allocationPlan;
 
   record NativeArgument(String layout, String expression) {}
@@ -85,6 +89,17 @@ class ExecutableGenerator {
     parameterGenerators = element.getParameters().stream()
         .map(param -> new VariableGenerator(
             processingEnv, generatedTypes, param))
+        .toList();
+
+    allocatorParameters = parameterGenerators.stream()
+        .filter(TypeGenerator::isSegmentAllocator)
+        .toList();
+    callStateParameters = parameterGenerators.stream()
+        .filter(TypeGenerator::isCallState)
+        .toList();
+    nativeParameters = parameterGenerators.stream()
+        .filter(not(TypeGenerator::isSegmentAllocator))
+        .filter(not(TypeGenerator::isCallState))
         .toList();
 
     hasErrors = checkParameterTypes();
@@ -183,23 +198,11 @@ class ExecutableGenerator {
   String adaptDowncall(String rawHandle, boolean unbound) {
     if (!needsDowncallAdaptation()) return rawHandle;
 
-    var arguments = Stream.of(
+    var arguments = Stream.concat(
         Stream.ofNullable(unbound ? "null" : null),
-        Stream.ofNullable(returnGenerator.isRecord()
-            && returnGenerator.isValue() ? "null" : null),
-        parameterGenerators.stream()
-            .filter(TypeGenerator::isSegmentAllocator)
-            .map(_ -> "null"),
-        parameterGenerators.stream()
-            .filter(TypeGenerator::isCallState)
-            .map(_ -> "null"),
-        leadingNativeArguments.stream().map(_ -> "null"),
-        parameterGenerators.stream()
-            .filter(not(TypeGenerator::isSegmentAllocator))
-            .filter(not(TypeGenerator::isCallState))
-            .map(parameter -> parameter.needsDowncallAdaptation()
+        downcallArguments("null", _ -> "null", _ -> "null",
+            parameter -> parameter.needsDowncallAdaptation()
                 ? parameter.canonicalRuntimeType() : "null"))
-        .flatMap(identity())
         .toList();
 
     var suffix = arguments.isEmpty() ? "" : """
@@ -260,10 +263,7 @@ class ExecutableGenerator {
     var layouts = Stream.of(
         isVoid ? Stream.<String> empty() : Stream.of(returnGenerator.layout()),
         leadingNativeArguments.stream().map(NativeArgument::layout),
-        parameterGenerators.stream()
-            .filter(not(TypeGenerator::isSegmentAllocator))
-            .filter(not(TypeGenerator::isCallState))
-            .map(VariableGenerator::argumentLayout))
+        nativeParameters.stream().map(VariableGenerator::argumentLayout))
         .flatMap(identity());
 
     String prefix = isVoid
@@ -319,8 +319,7 @@ class ExecutableGenerator {
             + ".firstVariadicArg("
             + (annotation.value() + leadingNativeArguments.size()) + ")");
 
-    var callState = parameterGenerators.stream()
-        .filter(TypeGenerator::isCallState)
+    var callState = callStateParameters.stream()
         .findFirst()
         .stream()
         .map(parameter -> parameter.foreignMemoryClassName()
@@ -371,39 +370,36 @@ class ExecutableGenerator {
     return statementWithCopyOut(call, copyOut);
   }
 
+  /// The descriptor excludes Java-only allocator and capture parameters, but
+  /// the handle takes them before the native arguments. Adaptation and invocation
+  /// must use this same order.
+  private Stream<String> downcallArguments(String recordAllocator,
+      Function<VariableGenerator, String> syntheticArgument,
+      Function<NativeArgument, String> leadingArgument,
+      Function<VariableGenerator, String> nativeArgument) {
+    return Stream.of(
+        Stream.ofNullable(returnGenerator.isRecord() && returnGenerator.isValue()
+            ? recordAllocator : null),
+        allocatorParameters.stream().map(syntheticArgument),
+        callStateParameters.stream().map(syntheticArgument),
+        leadingNativeArguments.stream().map(leadingArgument),
+        nativeParameters.stream().map(nativeArgument))
+        .flatMap(identity());
+  }
+
   private String params() {
     String newLine = "\n    ";
+    var recordAllocator = "(java.lang.foreign.SegmentAllocator) "
+        + (allocationPlan.shared()
+            ? "java.lang.foreign.SegmentAllocator.prefixAllocator("
+                + "return$allocation$f)"
+            : "arena$f");
 
-    boolean needsLocalAllocator =
-        returnGenerator.isRecord() && returnGenerator.isValue();
-
-    // SegmentAllocator parameters are part of the downcall argument list only
-    // when an external allocator is required. Keep validation in sync so an
-    // allocator parameter is rejected unless it is passed here.
-    var paramsList = Stream.of(
-        Stream.ofNullable(needsLocalAllocator
-            ? "(java.lang.foreign.SegmentAllocator) "
-                + (allocationPlan.shared()
-                    ? "java.lang.foreign.SegmentAllocator.prefixAllocator("
-                        + "return$allocation$f)"
-                    : "arena$f")
-            : null),
-        parameterGenerators.stream()
-            .filter(TypeGenerator::isSegmentAllocator)
-            .map(VariableGenerator::invoke),
-        parameterGenerators.stream()
-            .filter(TypeGenerator::isCallState)
-            .map(VariableGenerator::invoke),
-        leadingNativeArguments.stream().map(NativeArgument::expression),
-        parameterGenerators.stream()
-            .filter(not(TypeGenerator::isSegmentAllocator))
-            .filter(not(TypeGenerator::isCallState))
-            .map(allocationPlan.shared()
-                ? VariableGenerator::plannedInvoke
-                : VariableGenerator::invoke))
-        .flatMap(identity());
-
-    return paramsList.collect(joining("," + newLine, newLine, ""));
+    return downcallArguments(recordAllocator,
+        VariableGenerator::invoke, NativeArgument::expression,
+        allocationPlan.shared()
+            ? VariableGenerator::plannedInvoke : VariableGenerator::invoke)
+        .collect(joining("," + newLine, newLine, ""));
   }
 
   private Stream<String> returnWithCopyOut(
@@ -723,10 +719,7 @@ class ExecutableGenerator {
     var firstVariadicArg = element.getAnnotation(FirstVariadicArg.class);
     if (firstVariadicArg != null) {
       var index = firstVariadicArg.value();
-      var nativeParameterCount = (int) parameterGenerators.stream()
-          .filter(not(TypeGenerator::isSegmentAllocator))
-          .filter(not(TypeGenerator::isCallState))
-          .count();
+      var nativeParameterCount = nativeParameters.size();
 
       if (index < 0 || index > nativeParameterCount) {
         messager.printError(
@@ -736,14 +729,8 @@ class ExecutableGenerator {
             element);
         hasUnsupported = true;
       } else {
-        var nativeIndex = 0;
-        for (var parameter : parameterGenerators) {
-          if (parameter.isSegmentAllocator() || parameter.isCallState()) {
-            continue;
-          }
-
-          if (nativeIndex >= index
-              && isUnpromotedVariadicType(parameter)) {
+        for (var parameter : nativeParameters.subList(index, nativeParameterCount)) {
+          if (isUnpromotedVariadicType(parameter)) {
             var correction = parameter.isWCharT()
                 ? "remove @WCharT and use plain int"
                 : "use " + promotedVariadicType(parameter) + " instead of "
@@ -754,7 +741,6 @@ class ExecutableGenerator {
                 parameter.element);
             hasUnsupported = true;
           }
-          nativeIndex++;
         }
       }
     }
@@ -765,11 +751,8 @@ class ExecutableGenerator {
       hasUnsupported = true;
     }
 
-    var callStates = parameterGenerators.stream()
-        .filter(TypeGenerator::isCallState)
-        .toList();
-    if (callStates.size() > 1) {
-      for (var callState : callStates) {
+    if (callStateParameters.size() > 1) {
+      for (var callState : callStateParameters) {
         messager.printError(
             "Only one @CallState parameter is allowed", callState.element);
       }
@@ -782,7 +765,7 @@ class ExecutableGenerator {
 
     if (needsExternalAllocator) {
       if (parameterGenerators.isEmpty()
-          || !parameterGenerators.get(0).isSegmentAllocator()) {
+          || !allocatorParameters.contains(parameterGenerators.getFirst())) {
         messager.printError(
             "SegmentAllocator is expected as first parameter", element);
         return true;
@@ -796,7 +779,7 @@ class ExecutableGenerator {
         continue;
       }
 
-      if (paramGen.isSegmentAllocator()) {
+      if (allocatorParameters.contains(paramGen)) {
         hasUnsupported = true;
 
         messager.printError(
