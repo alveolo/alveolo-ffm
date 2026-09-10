@@ -52,14 +52,14 @@ public class ForeignUtils {
   public static SymbolLookup libraryLookup(Class<?> sourceClass,
       SymbolLookup defaultLookup, LibrarySpec... libraries) {
     return Stream.of(libraries)
-        .map(lib -> loadPlatformLibrary(sourceClass, defaultLookup, lib))
+        .map(lib -> loadPlatformLibrary(sourceClass, lib))
         .filter(Objects::nonNull)
         .reduce(SymbolLookup::or)
         .orElse(defaultLookup);
   }
 
   private static SymbolLookup loadPlatformLibrary(
-      Class<?> sourceClass, SymbolLookup defaultLookup, LibrarySpec library) {
+      Class<?> sourceClass, LibrarySpec library) {
     var os = os();
     if (!matches(os, library.os())) return null;
 

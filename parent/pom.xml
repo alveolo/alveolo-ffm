@@ -49,22 +49,16 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
   <properties>
     <maven.compiler.release>25</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <junit.version>6.1.3</junit.version>
     <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
     <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
     <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
-    <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-    <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
+    <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+    <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-<!--
-      <dependency>
-        <groupId>io.github.dmlloyd</groupId>
-        <artifactId>jdk-classfile-backport</artifactId>
-        <version>24.beta4</version>
-      </dependency>
--->
       <dependency>
         <groupId>org.alveolo.ffm</groupId>
         <artifactId>alveolo-ffm-core</artifactId>
@@ -75,6 +69,16 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
         <artifactId>alveolo-ffm-processor</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -84,21 +88,26 @@ http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.13.0</version>
+          <version>3.16.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.3</version>
+          <version>3.1.4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.1.3</version>
+          <version>3.1.4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
+          <version>3.6.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
           <version>3.6.0</version>
         </plugin>
         <plugin>

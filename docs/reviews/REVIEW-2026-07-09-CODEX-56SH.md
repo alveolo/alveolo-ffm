@@ -174,12 +174,12 @@ Relevant code:
 - Named-module instructions are incomplete: generated code needs native access
   for the application module, while library loading and CFString support
   execute restricted operations from `org.alveolo.ffm` itself.
-- `java.logging` is required by the processor module but unused.
+- ✅ Removed the unused `java.logging` dependency from the processor module.
 - ✅ The long-division benchmark uses an `int` mask,
   `(random.nextInt() & 0xFFFFFFFF) + 1`, rather than a long mask. It can remain
   negative and has a tiny chance of producing zero. The current expression is
   `(random.nextInt() & 0xffff_ffffL) + 1`, producing a positive long denominator.
-- `${uberjar.name}` is referenced in `benchmark/pom.xml` but never defined.
+- ✅ Replaced the undefined `${uberjar.name}` with the explicit executable JMH jar name `benchmarks.jar`.
 
 ## Duplication and Maintainability
 

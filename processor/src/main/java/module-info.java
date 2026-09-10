@@ -1,6 +1,5 @@
 module org.alveolo.ffm.processor {
   requires java.compiler;
-  requires java.logging;
   requires org.alveolo.ffm;
 
   provides javax.annotation.processing.Processor with

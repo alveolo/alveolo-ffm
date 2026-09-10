@@ -171,7 +171,6 @@ sealed class TypeGenerator permits VariableGenerator {
   /// * `ValueLayout.ADDRESS` for reference types
   /// * `MemoryLayout.sequenceLayout(5L, ValueLayout.JAVA_INT)` for primitive
   ///   arrays and NIO buffers
-  // TODO support nested struct/union and reference arrays
   String layout() {
     if (hasConflictingPassModeAnnotations()
         || canonicalScalarError() != null)
@@ -200,7 +199,6 @@ sealed class TypeGenerator permits VariableGenerator {
     if (isString() || isMemorySegment())
       return "java.lang.foreign.ValueLayout.ADDRESS";
 
-    // TODO more custom structures
     return VALUE_LAYOUT_NOT_SUPPORTED;
   }
 

@@ -120,7 +120,7 @@ processor:
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-compiler-plugin</artifactId>
-      <version>3.13.0</version>
+      <version>3.16.0</version>
       <configuration>
         <annotationProcessorPaths>
           <path>
@@ -951,6 +951,16 @@ Build the benchmark module and its dependencies:
 ```sh
 mvn -pl benchmark -am package -DskipTests
 ```
+
+Run the allocation benchmarks from the executable JMH jar:
+
+```sh
+java --enable-native-access=ALL-UNNAMED \
+  -jar benchmark/target/benchmarks.jar RawBenchmark
+```
+
+Each allocation or slice is consumed by JMH before its arena closes. These
+benchmarks include arena creation, allocation, result consumption, and closing.
 
 ## Release
 

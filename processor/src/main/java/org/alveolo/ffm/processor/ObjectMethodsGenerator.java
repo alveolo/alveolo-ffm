@@ -1,9 +1,6 @@
 package org.alveolo.ffm.processor;
 
 import static java.util.stream.Collectors.joining;
-import static javax.lang.model.element.Modifier.ABSTRACT;
-import static javax.lang.model.element.Modifier.DEFAULT;
-import static javax.lang.model.element.Modifier.STATIC;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.qualifyName;
 
@@ -89,31 +86,6 @@ final class ObjectMethodsGenerator {
   static boolean isObjectMethod(ExecutableElement method) {
     return method.getAnnotation(Virtual.class) != null
         || method.getAnnotation(Symbol.class) != null;
-  }
-
-  Methods objectMethods(TypeElement iface) {
-    var methods = new ArrayList<ExecutableElement>();
-    var virtualMethods = new ArrayList<ExecutableElement>();
-    var symbolMethods = new ArrayList<ExecutableElement>();
-
-    for (var enc : iface.getEnclosedElements()) {
-      if (enc instanceof ExecutableElement method
-          && method.getModifiers().contains(ABSTRACT)
-          && !method.getModifiers().contains(STATIC)
-          && !method.getModifiers().contains(DEFAULT)) {
-        if (isObjectMethod(method)) {
-          methods.add(method);
-        }
-        if (method.getAnnotation(Virtual.class) != null) {
-          virtualMethods.add(method);
-        }
-        if (method.getAnnotation(Symbol.class) != null) {
-          symbolMethods.add(method);
-        }
-      }
-    }
-
-    return new Methods(methods, virtualMethods, symbolMethods);
   }
 
   boolean validateObjectMethods(
