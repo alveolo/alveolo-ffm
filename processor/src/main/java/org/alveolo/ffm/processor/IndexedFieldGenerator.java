@@ -1,5 +1,11 @@
 package org.alveolo.ffm.processor;
 
+import static org.alveolo.ffm.processor.FieldConversions.addressValue;
+import static org.alveolo.ffm.processor.FieldConversions.nullableAddress;
+import static org.alveolo.ffm.processor.FieldConversions.readAddress;
+import static org.alveolo.ffm.processor.FieldConversions.readValue;
+import static org.alveolo.ffm.processor.FieldConversions.writeValue;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.util.stream.IntStream;
@@ -327,7 +333,7 @@ final class IndexedFieldGenerator {
         .replace("<class>", className)
         .replace("<name>", name)
         .replace("<params>", params)
-        .replace("<address>", FieldConversions.nullableAddress(valueName, valueName)
+        .replace("<address>", nullableAddress(valueName, valueName)
             .replace("\n", "\n        "))
         .replace("<valueName>", valueName)
         .replace("<vhArgs>", vhArgs));
@@ -356,13 +362,12 @@ final class IndexedFieldGenerator {
     }
 
     if (indexed.addressElement())
-      return FieldConversions.readAddress(field,
-          name + "AsAddress$F(" + args + ")");
+      return readAddress(field, name + "AsAddress$F(" + args + ")");
 
     if (indexed.structuredValueElement())
-      return FieldConversions.readValue(field,
+      return readValue(field,
           elementSegmentCall(indexed, segment, args, isStatic))
-          .replace("\n", "\n    ");
+              .replace("\n", "\n    ");
 
     throw new IllegalStateException("Unsupported indexed getter: " + name);
   }
@@ -383,10 +388,11 @@ final class IndexedFieldGenerator {
 
     if (indexed.addressElement())
       return name + "$VarHandle$F.set(" + vhArgs + ",\n        "
-          + FieldConversions.addressValue(field, valueName, allocatorName)
-              .replace("\n", "\n        ") + ");";
+          + addressValue(field, valueName, allocatorName)
+              .replace("\n", "\n        ")
+          + ");";
 
-    return FieldConversions.writeValue(field, valueName,
+    return writeValue(field, valueName,
         elementSegmentCall(indexed, segment, args, isStatic),
         name + "$ElementMemoryLayout$F.byteSize()",
         withAllocator ? allocatorName : null).replace("\n", "\n    ");
@@ -403,9 +409,8 @@ final class IndexedFieldGenerator {
 
   private String leafOffset(IndexedField indexed) {
     var paths = IntStream.range(0, indexed.dimensions().size())
-        .mapToObj(i ->
-            "java.lang.foreign.MemoryLayout.PathElement.sequenceElement(index"
-                + i + ")")
+        .mapToObj(i -> "java.lang.foreign.MemoryLayout.PathElement"
+            + ".sequenceElement(index" + i + ")")
         .toList();
 
     return """
@@ -427,11 +432,7 @@ final class IndexedFieldGenerator {
     var indexType = dimension.typeName();
     var segmentCall = name + "AsMemorySegment$F("
         + (isStatic ? "memorySegment" : "") + ")";
-    var bufferType = primitiveBufferType(type);
-    var bufferConversion = switch (type) {
-      case "boolean", "byte" -> "";
-      default -> ".as" + capitalize(type) + "Buffer()";
-    };
+    var buffer = BufferType.forPrimitive(indexed.element().typeMirror);
 
     var template = isStatic
         ? """
@@ -507,8 +508,8 @@ final class IndexedFieldGenerator {
               }
             """;
     out.write(template
-        .replace("<bufferType>", bufferType)
-        .replace("<bufferConversion>", bufferConversion)
+        .replace("<bufferType>", buffer.type.getSimpleName())
+        .replace("<bufferConversion>", buffer.conversion)
         .replace("<segmentCall>", segmentCall)
         .replace("<indexType>", indexType)
         .replace("<class>", className == null ? "" : className)
@@ -565,23 +566,5 @@ final class IndexedFieldGenerator {
         .replace("<arrayType>", arrayType)
         .replace("<elementType>", elementType)
         .replace("<name>", name));
-  }
-
-  private String primitiveBufferType(String primitive) {
-    return switch (primitive) {
-      case "boolean", "byte" -> "ByteBuffer";
-      case "char" -> "CharBuffer";
-      case "short" -> "ShortBuffer";
-      case "int" -> "IntBuffer";
-      case "long" -> "LongBuffer";
-      case "float" -> "FloatBuffer";
-      case "double" -> "DoubleBuffer";
-      default -> throw new IllegalArgumentException(
-          "Unexpected primitive: " + primitive);
-    };
-  }
-
-  private String capitalize(String name) {
-    return Character.toTitleCase(name.charAt(0)) + name.substring(1);
   }
 }

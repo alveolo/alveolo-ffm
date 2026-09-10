@@ -79,6 +79,7 @@ sealed class TypeGenerator permits VariableGenerator {
   final TypeMirror typeMirror;
   final TypeElement typeElement;
   final GeneratedTypeRegistry.Wrapper generatedWrapper;
+  final BufferType bufferType;
   final long sequence;
 
   final boolean ambiguousCanonicalScalars;
@@ -111,6 +112,7 @@ sealed class TypeGenerator permits VariableGenerator {
     this.typeMirror = typeMirror;
     typeElement = (TypeElement) types.asElement(typeMirror);
     generatedWrapper = generatedTypes.find(typeMirror, useSite);
+    bufferType = BufferType.forType(typeName());
     this.sequence = sequence;
 
     ambiguousCanonicalScalars = Arrays.stream(CanonicalScalar.values())
@@ -245,7 +247,7 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   boolean isNioBuffer() {
-    return bufferElementKind() != null;
+    return bufferType != null;
   }
 
   TypeMirror elementType() {
@@ -297,16 +299,7 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   private TypeKind bufferElementKind() {
-    return switch (typeName()) {
-      case "java.nio.ByteBuffer" -> TypeKind.BYTE;
-      case "java.nio.CharBuffer" -> TypeKind.CHAR;
-      case "java.nio.ShortBuffer" -> TypeKind.SHORT;
-      case "java.nio.IntBuffer" -> TypeKind.INT;
-      case "java.nio.LongBuffer" -> TypeKind.LONG;
-      case "java.nio.FloatBuffer" -> TypeKind.FLOAT;
-      case "java.nio.DoubleBuffer" -> TypeKind.DOUBLE;
-      default -> null;
-    };
+    return bufferType == null ? null : TypeKind.valueOf(bufferType.name());
   }
 
   String valueLayout() {

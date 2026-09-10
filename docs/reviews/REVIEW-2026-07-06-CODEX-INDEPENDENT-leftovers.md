@@ -2,12 +2,6 @@
 
 Remaining items from the review dated 2026-07-06.
 
-## Maintainability
-
-- **Primitive-to-buffer mapping.** `TypeGenerator` maps buffer classes to
-  element types, while `IndexedFieldGenerator` separately maps primitives back
-  to buffer classes. Consolidate these mappings.
-
 ## Feature proposals
 
 1. **Ownership of returned native memory.** Custom releasers for returned C
