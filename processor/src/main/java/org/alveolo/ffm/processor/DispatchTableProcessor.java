@@ -1,6 +1,7 @@
 package org.alveolo.ffm.processor;
 
 import static javax.lang.model.SourceVersion.RELEASE_25;
+import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
@@ -24,7 +25,6 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
@@ -84,7 +84,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
       return;
     }
 
-    var methods = abstractMethods(iface);
+    var methods = abstractMethods(iface, processingEnv.getElementUtils());
     if (!validateSlots(methods)) return;
 
     var elements = processingEnv.getElementUtils();
@@ -138,15 +138,6 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
       out.write("}\n");
     }
-  }
-
-  private List<ExecutableElement> abstractMethods(TypeElement type) {
-    return processingEnv.getElementUtils().getAllMembers(type).stream()
-        .filter(ExecutableElement.class::isInstance)
-        .map(ExecutableElement.class::cast)
-        .filter(method -> method.getKind() == ElementKind.METHOD)
-        .filter(method -> method.getModifiers().contains(Modifier.ABSTRACT))
-        .toList();
   }
 
   private boolean validateSlots(List<ExecutableElement> methods) {

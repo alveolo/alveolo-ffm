@@ -2,6 +2,7 @@ package org.alveolo.ffm.processor;
 
 import static java.util.stream.Collectors.joining;
 import static javax.lang.model.SourceVersion.RELEASE_25;
+import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
@@ -24,8 +25,6 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
@@ -136,18 +135,11 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       }
 
       int index = 0;
-      for (var member : elements.getAllMembers(iface)) {
-        if (member instanceof ExecutableElement method) {
-          if (method.getKind() != ElementKind.METHOD
-              || !method.getModifiers().contains(Modifier.ABSTRACT)) {
-            continue;
-          }
+      for (var method : abstractMethods(iface, elements)) {
+        var generator = new ExecutableGenerator(processingEnv,
+            generatedTypes, method, "MethodHandle$" + index++ + "$F");
 
-          var generator = new ExecutableGenerator(processingEnv,
-              generatedTypes, method, "MethodHandle$" + index++ + "$F");
-
-          out.write(generator.methodWithHandle());
-        }
+        out.write(generator.methodWithHandle());
       }
 
       out.write("}\n");

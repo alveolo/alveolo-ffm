@@ -2,6 +2,7 @@ package org.alveolo.ffm.processor;
 
 import static java.util.stream.Collectors.joining;
 import static javax.lang.model.SourceVersion.RELEASE_25;
+import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
@@ -23,7 +24,6 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.tools.Diagnostic;
@@ -101,12 +101,7 @@ public class CallStateProcessor extends AbstractProcessor {
       }
     }
 
-    var accessors = processingEnv.getElementUtils().getAllMembers(type).stream()
-        .filter(ExecutableElement.class::isInstance)
-        .map(ExecutableElement.class::cast)
-        .filter(method -> method.getKind() == ElementKind.METHOD)
-        .filter(method -> method.getModifiers().contains(Modifier.ABSTRACT))
-        .toList();
+    var accessors = abstractMethods(type, processingEnv.getElementUtils());
 
     if (accessors.size() != 1) {
       messager.printError(

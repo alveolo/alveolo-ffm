@@ -12,9 +12,11 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.CallState;
@@ -26,6 +28,14 @@ import org.alveolo.ffm.Union;
 
 final class ProcessorUtils {
   private ProcessorUtils() {}
+
+  /// Includes inherited abstract methods in the compiler's member order.
+  static List<ExecutableElement> abstractMethods(
+      TypeElement type, Elements elements) {
+    return ElementFilter.methodsIn(elements.getAllMembers(type)).stream()
+        .filter(method -> method.getModifiers().contains(Modifier.ABSTRACT))
+        .toList();
+  }
 
   static <T extends Annotation> void validateSimpleClassName(
       TypeElement element, T annotation, String name) throws ProcessorError {
