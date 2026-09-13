@@ -2,16 +2,19 @@ package pkg;
 
 import java.lang.foreign.MemorySegment;
 
+import org.alveolo.ffm.Address;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Library;
 import org.alveolo.ffm.Out;
-import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Symbol;
+import org.alveolo.ffm.macos.CFRange;
 import org.alveolo.ffm.macos.CFString;
+import org.alveolo.ffm.macos.CFStringOwned;
+import org.alveolo.ffm.macos.CFSupport;
 
 @Library(value = "CoreFoundation", kind = Library.Kind.FRAMEWORK)
 @ForeignInterface
-public interface CoreStrings {
+public interface CoreStrings extends CFSupport {
   long CFStringGetLength(@CFString String value);
 
   long CFStringGetBytes(@CFString String value, CFRange range,
@@ -22,9 +25,10 @@ public interface CoreStrings {
   long compare(@CFString String left, @CFString String right, long options);
 
   @Symbol("CFStringCreateWithCString")
-  @CFString(owned = true) String create(
+  @CFStringOwned String create(
       MemorySegment allocator, String cString, int encoding);
-}
 
-@Struct
-record CFRange(long location, long length) {}
+  boolean CFStringFindWithOptions(@CFString String value,
+      @CFString String stringToFind, CFRange range, long options,
+      @Address CFRange result);
+}

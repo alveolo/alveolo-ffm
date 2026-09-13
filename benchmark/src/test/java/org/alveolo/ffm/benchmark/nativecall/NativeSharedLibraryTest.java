@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -63,6 +64,107 @@ class NativeSharedLibraryTest {
     fail("No usable C compiler found. Install cc, gcc, clang, or cl, "
         + "or set CC to a usable compiler." + System.lineSeparator()
         + String.join(System.lineSeparator(), failures));
+  }
+
+  @Test
+  void releasesOwnedStringsExactlyOnceAndSkipsNull() {
+    var api = OwnedTextApiFFM.INSTANCE$F;
+    var allocated = api.text_allocations();
+    var released = api.text_releases();
+    assertEquals("owned text", api.owned_text(0));
+    assertEquals("", api.owned_text(1));
+    assertNull(api.owned_text(-1));
+    assertEquals(allocated + 2, api.text_allocations());
+    assertEquals(released + 2, api.text_releases());
+  }
+
+  @Test
+  void releasesOwnedStringWhenCopyOutFails() {
+    var api = OwnedTextApiFFM.INSTANCE$F;
+    var released = api.text_releases();
+    assertThrows(NullPointerException.class,
+        () -> api.owned_text_bad_copy(new OwnedPointee[1]));
+    assertEquals(released + 1, api.text_releases());
+  }
+
+  @Test
+  void preservesCopyOutFailureAndSuppressesReleaseFailure() {
+    var api = OwnedTextApiFFM.INSTANCE$F;
+    var released = api.text_releases();
+    var failure = assertThrows(NullPointerException.class,
+        () -> api.badCopyAndRelease(new OwnedPointee[1]));
+    assertEquals(1, failure.getSuppressed().length);
+    assertEquals("release failed", failure.getSuppressed()[0].getMessage());
+    assertEquals(released + 1, api.text_releases());
+  }
+
+  @Test
+  void releasesOwnedStringWhenConversionFails() {
+    var api = OwnedConversionApiFFM.INSTANCE$F;
+    var released = api.text_releases();
+    var failure = assertThrows(IllegalStateException.class, () -> api.owned_text(0));
+    assertEquals("conversion failed", failure.getMessage());
+    assertEquals(released + 1, api.text_releases());
+  }
+
+  @Test
+  void checksReleaseSymbolBeforeAllocatingNativeReturn() {
+    var api = OwnedTextApiFFM.INSTANCE$F;
+    var allocated = api.text_allocations();
+    var released = api.text_releases();
+    assertThrows(UnsatisfiedLinkError.class, () -> api.missingRelease(0));
+    assertEquals(allocated, api.text_allocations());
+    assertEquals(released, api.text_releases());
+  }
+
+  @Test
+  void releasesOwnedRecordAndPreservesCopiedFieldsAndPointerValues() {
+    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var allocated = api.record_allocations();
+    var released = api.record_releases();
+    var record = api.owned_record(0);
+    assertEquals(new PairR(7, 11), record.pair());
+    assertArrayEquals(new int[] {13, 17}, record.values());
+    assertEquals(42, record.pointer().reinterpret(ValueLayout.JAVA_INT.byteSize())
+        .get(ValueLayout.JAVA_INT, 0));
+    assertNull(api.owned_record(-1));
+    assertEquals(allocated + 1, api.record_allocations());
+    assertEquals(released + 1, api.record_releases());
+  }
+
+  @Test
+  void releasesOwnedRecordWhenConstructorOrCopyOutFails() {
+    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var released = api.record_releases();
+    var failure = assertThrows(IllegalArgumentException.class, () -> api.owned_record(1));
+    assertEquals("conversion failed", failure.getMessage());
+    assertEquals(released + 1, api.record_releases());
+    assertThrows(NullPointerException.class,
+        () -> api.owned_record_bad_copy(new OwnedPointee[1]));
+    assertEquals(released + 2, api.record_releases());
+  }
+
+  @Test
+  void preservesRecordConversionFailureAndSuppressesReleaseFailure() {
+    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var released = api.record_releases();
+    var failure = assertThrows(IllegalArgumentException.class, () -> api.failingRelease(1));
+    assertEquals("conversion failed", failure.getMessage());
+    assertEquals(1, failure.getSuppressed().length);
+    assertEquals("release failed", failure.getSuppressed()[0].getMessage());
+    assertEquals(released + 1, api.record_releases());
+    assertThrows(IllegalStateException.class, () -> api.failingRelease(0));
+    assertEquals(released + 2, api.record_releases());
+  }
+
+  @Test
+  void checksReleaseSymbolBeforeAllocatingNativeRecord() {
+    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var allocated = api.record_allocations();
+    var released = api.record_releases();
+    assertThrows(UnsatisfiedLinkError.class, () -> api.missingRelease(0));
+    assertEquals(allocated, api.record_allocations());
+    assertEquals(released, api.record_releases());
   }
 
   @Test

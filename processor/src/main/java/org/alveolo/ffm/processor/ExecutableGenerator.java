@@ -5,6 +5,7 @@ import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -12,7 +13,10 @@ import java.util.stream.Stream;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.FirstVariadicArg;
@@ -23,6 +27,9 @@ class ExecutableGenerator {
   final Messager messager;
   final Elements elements;
   final ExecutableElement element;
+  final ProcessingEnvironment processingEnv;
+  final TypeElement bindingType;
+  final String bindingQualifier;
   final boolean hasErrors;
   final String methodHandleName;
   final boolean instanceMethodHandle;
@@ -32,10 +39,10 @@ class ExecutableGenerator {
   final TypeGenerator returnGenerator;
   final List<VariableGenerator> parameterGenerators;
   final ForeignMemoryAnalyzer memoryAnalyzer;
-  private final List<VariableGenerator> allocatorParameters;
-  private final List<VariableGenerator> callStateParameters;
-  private final List<VariableGenerator> nativeParameters;
-  private final AllocationPlan allocationPlan;
+  final List<VariableGenerator> allocatorParameters;
+  final List<VariableGenerator> callStateParameters;
+  final List<VariableGenerator> nativeParameters;
+  final AllocationPlan allocationPlan;
 
   record NativeArgument(String layout, String expression) {}
 
@@ -78,6 +85,29 @@ class ExecutableGenerator {
       boolean instanceMethodHandle,
       List<NativeArgument> leadingNativeArguments,
       String linkerExpression, String lookupExpression) {
+    this(processingEnv, generatedTypes, element, methodHandleName,
+        instanceMethodHandle, leadingNativeArguments, linkerExpression,
+        lookupExpression, (TypeElement) element.getEnclosingElement());
+  }
+
+  ExecutableGenerator(ProcessingEnvironment processingEnv,
+      GeneratedTypeRegistry generatedTypes,
+      ExecutableElement element, String methodHandleName,
+      boolean instanceMethodHandle,
+      List<NativeArgument> leadingNativeArguments,
+      String linkerExpression, String lookupExpression,
+      TypeElement bindingType) {
+    this.processingEnv = processingEnv;
+    // Generated vtable methods receive the original object explicitly.
+    var self = ProcessorUtils.isAlveoloGeneratedSpecification(bindingType)
+        ? element.getParameters().stream()
+            .filter(
+                parameter -> parameter.getSimpleName().contentEquals("self$f"))
+            .findFirst().orElse(null)
+        : null;
+    this.bindingType = self == null ? bindingType
+        : (TypeElement) processingEnv.getTypeUtils().asElement(self.asType());
+    bindingQualifier = self == null ? "" : "self$f.";
     messager = processingEnv.getMessager();
     elements = processingEnv.getElementUtils();
     this.element = element;
@@ -150,7 +180,7 @@ class ExecutableGenerator {
           }
         """
         .replace("<signature>", signature())
-        .replace("    <symbolGuard>\n", symbolGuard())
+        .replace("    <symbolGuard>\n", symbolGuard() + releaseGuards())
         .replace("    <declarations>\n", declarations())
         .replace("<confinedArena>", confinedArena())
         .replace("<body>", methodBody(methodHandleExpression))
@@ -167,6 +197,48 @@ class ExecutableGenerator {
         .replace("<mh>", methodHandleName)
         .replace("<message>", elements.getConstantExpression(
             "Native symbol not found: " + name(element)));
+  }
+
+  private ExecutableElement releaseTarget(String name) {
+    var memorySegment = elements.getTypeElement(
+        TypeGenerator.MEMORY_SEGMENT).asType();
+    return ElementFilter.methodsIn(elements.getAllMembers(bindingType)).stream()
+        .filter(method -> method.getSimpleName().contentEquals(name))
+        .filter(method -> !method.getModifiers().contains(Modifier.STATIC)
+            && !method.getModifiers().contains(Modifier.PRIVATE))
+        .filter(method -> method.getReturnType().getKind() == TypeKind.VOID
+            && method.getParameters().size() == 1
+            && processingEnv.getTypeUtils().isSameType(
+                method.getParameters().getFirst().asType(), memorySegment))
+        .findFirst().orElse(null);
+  }
+
+  private String releaseGuards() {
+    if (instanceMethodHandle || !leadingNativeArguments.isEmpty()) return "";
+    var names = new LinkedHashSet<String>();
+    if (returnGenerator.releaseMethod() != null) {
+      names.add(returnGenerator.releaseMethod());
+    }
+    if (parameterGenerators.stream().anyMatch(TypeGenerator::isCFString)) {
+      names.add("CFRelease");
+    }
+    var methods = ProcessorUtils.abstractMethods(bindingType, elements);
+    var guards = new StringBuilder();
+    for (var name : names) {
+      var target = releaseTarget(name);
+      var index = methods.indexOf(target);
+      if (index < 0) {
+        continue; // Default helpers are responsible for their calls.
+      }
+      guards.append("""
+              if (MethodHandle$<index>$F == null)
+                throw new UnsatisfiedLinkError(<message>);
+          """
+          .replace("<index>", Integer.toString(index))
+          .replace("<message>", elements.getConstantExpression(
+              "Native symbol not found: " + name(target))));
+    }
+    return guards.toString();
   }
 
   String methodHandleDeclaration() {
@@ -302,10 +374,13 @@ class ExecutableGenerator {
   }
 
   String returnTypeName() {
+    if (returnGenerator.isRecord() && returnGenerator.releaseMethod() != null)
+      return returnGenerator.bridgeTypeName();
+
     if (returnGenerator.foreignMemoryImplementation)
       return returnGenerator.typeName();
 
-    if (returnGenerator.isCFString())
+    if (returnGenerator.isString())
       return returnGenerator.typeName();
 
     if (returnGenerator.isPrimitive())
@@ -345,6 +420,9 @@ class ExecutableGenerator {
     var call = methodHandleExpression + ".invokeExact("
         + params() + ")";
     var copyOut = copyOut().toList();
+
+    if (returnGenerator.releaseMethod() != null)
+      return releasedInvoke(call, copyOut);
 
     if (returnGenerator.isPrimitiveAddress())
       return primitiveAddressInvoke(call, copyOut);
@@ -453,33 +531,39 @@ class ExecutableGenerator {
   }
 
   private Stream<String> cfStringInvoke(String call, List<String> copyOut) {
-    var result = "(java.lang.foreign.MemorySegment) " + call;
-
-    if (!returnGenerator.isOwnedCFString())
-      return returnWithCopyOut(
-          "org.alveolo.ffm.macos.CFStringSupport.toJavaString(" + result + ")",
-          copyOut);
-
-    var conversion = returnWithCopyOut(
-        """
-            org.alveolo.ffm.macos.CFStringSupport
-                .toJavaString(cfStringResult$f)
-            """
-            .stripTrailing(),
+    return returnWithCopyOut(
+        bindingQualifier + "fromCFString((java.lang.foreign.MemorySegment) "
+            + call + ")",
         copyOut);
+  }
 
+  private Stream<String> releasedInvoke(String call, List<String> copyOut) {
+    // Java requires a receiver for a method named yield.
+    var releaseQualifier = bindingQualifier.isEmpty()
+        && returnGenerator.releaseMethod().equals("yield") ? "this."
+            : bindingQualifier;
+    var conversion = returnGenerator.isRecord()
+        ? recordExpression("nativeResult$f")
+        : returnGenerator.isCFString()
+            ? bindingQualifier + "fromCFString(nativeResult$f)"
+        : "nativeResult$f.equals(java.lang.foreign.MemorySegment.NULL) ? null\n"
+            + "    : nativeResult$f.reinterpret(Long.MAX_VALUE).getString(0L)";
+    var body = Stream.concat(copyOut.stream(),
+        Stream.of("return " + conversion + ";")).collect(joining("\n"));
     return """
-        var cfStringResult$f = <result>;
-        try {
-        <conversion>
-        } finally {
-          org.alveolo.ffm.macos.CFStringSupport.release(cfStringResult$f);
+        var nativeResult$f = (java.lang.foreign.MemorySegment) <call>;
+        try (var release$f = (java.lang.AutoCloseable) () -> {
+          if (!nativeResult$f.equals(java.lang.foreign.MemorySegment.NULL))
+            <qualifier><release>(nativeResult$f);
+        }) {
+        <body>
         }
         """
-        .stripTrailing()
-        .replace("<result>", result)
-        .replace("<conversion>", conversion.collect(joining("\n  ", "  ", "")))
-        .lines();
+        .replace("<call>", call)
+        .replace("<release>", returnGenerator.releaseMethod())
+        .replace("<qualifier>", releaseQualifier)
+        .replace("<body>", body.indent(2).stripTrailing())
+        .stripTrailing().lines();
   }
 
   private Stream<String> primitiveAddressInvoke(
@@ -688,7 +772,7 @@ class ExecutableGenerator {
 
     if (p.isCFString())
       return Stream.of(p.cfStringName()
-          + " = org.alveolo.ffm.macos.CFStringSupport.toCFString("
+          + " = " + bindingQualifier + "toCFString("
           + p.name() + ");");
 
     return p.isCallArrayOrBuffer()
@@ -706,8 +790,13 @@ class ExecutableGenerator {
   private String finallyBlock() {
     var releases = parameterGenerators.stream()
         .filter(VariableGenerator::isCFString)
-        .map(p -> "      org.alveolo.ffm.macos.CFStringSupport.release("
-            + p.cfStringName() + ");")
+        .map(p -> """
+                  if (!<pointer>.equals(java.lang.foreign.MemorySegment.NULL))
+                    <qualifier>CFRelease(<pointer>);
+            """
+            .replace("<pointer>", p.cfStringName())
+            .replace("<qualifier>", bindingQualifier)
+            .stripTrailing())
         .collect(joining("\n"));
 
     if (releases.isEmpty()) return "";
@@ -717,7 +806,42 @@ class ExecutableGenerator {
 
   /// @return true if any method parameter has an unsupported type.
   boolean checkParameterTypes() {
-    boolean hasUnsupported = false;
+    boolean hasUnsupported = !returnGenerator.bindingAnnotations
+        .validate(processingEnv, bindingType, element);
+    hasUnsupported |= !BindingAnnotations.validateNested(
+        processingEnv, element.getReturnType(), bindingType, element);
+    for (var parameter : parameterGenerators) {
+      hasUnsupported |= !parameter.bindingAnnotations
+          .validate(processingEnv, bindingType, parameter.element);
+      hasUnsupported |= !BindingAnnotations.validateNested(
+          processingEnv, parameter.typeMirror, bindingType, parameter.element);
+      if (parameter.releaseMethod() != null) {
+        messager.printError(
+            "@Release is only supported on String or @Address record return types",
+            parameter.element);
+        hasUnsupported = true;
+      }
+      if (parameter.isCFString() && !parameter.isString()) {
+        messager.printError("@CFString is only supported on java.lang.String",
+            parameter.element);
+        hasUnsupported = true;
+      }
+    }
+    if (returnGenerator.releaseMethod() != null) {
+      if (!returnGenerator.isString()
+          && !(returnGenerator.isRecord() && returnGenerator.isAddress())) {
+        messager.printError(
+            "@Release is only supported on String or @Address record return types",
+            element);
+        hasUnsupported = true;
+      }
+      if (releaseTarget(returnGenerator.releaseMethod()) == null) {
+        messager.printError("@Release requires an instance method void "
+            + returnGenerator.releaseMethod() + "(MemorySegment) on "
+            + bindingType.getQualifiedName(), element);
+        hasUnsupported = true;
+      }
+    }
 
     var returnCanonicalError = returnGenerator.canonicalScalarError();
     if (returnCanonicalError != null) {
@@ -801,24 +925,6 @@ class ExecutableGenerator {
       if (canonicalError != null) {
         hasUnsupported = true;
         messager.printError(canonicalError, paramGen.element);
-        continue;
-      }
-
-      if (paramGen.isCFString() && !paramGen.isString()) {
-        hasUnsupported = true;
-
-        messager.printError(
-            "@CFString is only supported on java.lang.String",
-            paramGen.element);
-        continue;
-      }
-
-      if (paramGen.isOwnedCFString()) {
-        hasUnsupported = true;
-
-        messager.printError(
-            "@CFString(owned = true) is only supported on return types",
-            paramGen.element);
         continue;
       }
 

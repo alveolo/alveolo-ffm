@@ -75,6 +75,13 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesOwnedRecordReturnCleanup() {
+    var c = compile("interface/OwnedRecords.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.OwnedRecordsFFM", "interface/OwnedRecordsFFM.java");
+  }
+
+  @Test
   void generatesNullablePointerConversions() {
     var c = compile("interface/NullableCalls.java");
     assertThat(c).succeeded();
@@ -393,14 +400,14 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
         package test;
         @org.alveolo.ffm.ForeignInterface
         public interface Lib {
-          void f(@org.alveolo.ffm.macos.CFString(owned = true) String value);
+          void f(@org.alveolo.ffm.macos.CFStringOwned String value);
         }
         """);
 
     var c = compile(lib);
 
     assertThat(c).hadErrorContaining(
-        "@CFString(owned = true) is only supported on return types");
+        "@Release is only supported on String or @Address record return types");
   }
 
   @Test

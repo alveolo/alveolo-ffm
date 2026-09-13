@@ -124,8 +124,8 @@ final class ObjectMethodsGenerator {
         ? null
         : ProcessorUtils.foreignInterfaceClassName(
             symbolOwner, processingEnv.getElementUtils());
-    var symbolGenerators = symbolGenerators(methods, symbolOwnerClassName);
-    var virtualGenerators = virtualGenerators(methods.virtualMethods());
+    var symbolGenerators = symbolGenerators(iface, methods, symbolOwnerClassName);
+    var virtualGenerators = virtualGenerators(iface, methods.virtualMethods());
 
     return new Prepared(methods, symbolGenerators, virtualGenerators);
   }
@@ -270,27 +270,27 @@ final class ObjectMethodsGenerator {
   }
 
   private List<ExecutableGenerator> symbolGenerators(
-      Methods objectMethods, String symbolOwnerClassName) {
+      TypeElement iface, Methods objectMethods, String symbolOwnerClassName) {
     var symbolMethods = objectMethods.symbolMethods();
     return IntStream.range(0, symbolMethods.size())
         .mapToObj(index -> symbolGenerator(
-            symbolMethods.get(index), index, symbolOwnerClassName))
+            iface, symbolMethods.get(index), index, symbolOwnerClassName))
         .toList();
   }
 
   private List<ExecutableGenerator> virtualGenerators(
-      List<ExecutableElement> methods) {
+      TypeElement iface, List<ExecutableElement> methods) {
     return methods.stream()
         .map(method -> new ExecutableGenerator(
             processingEnv, generatedTypes, method,
             "UnusedMethodHandle$F", true,
             List.of(new ExecutableGenerator.NativeArgument(
                 "java.lang.foreign.ValueLayout.ADDRESS", "this")),
-            "", ""))
+            "", "", iface))
         .toList();
   }
 
-  private ExecutableGenerator symbolGenerator(ExecutableElement method,
+  private ExecutableGenerator symbolGenerator(TypeElement iface, ExecutableElement method,
       int index, String symbolOwnerClassName) {
     return new ExecutableGenerator(
         processingEnv, generatedTypes, method,
@@ -299,7 +299,7 @@ final class ObjectMethodsGenerator {
             "java.lang.foreign.ValueLayout.ADDRESS",
             "this.MemorySegment$F")),
         symbolOwnerClassName + ".Linker$F",
-        symbolOwnerClassName + ".SymbolLookup$F");
+        symbolOwnerClassName + ".SymbolLookup$F", iface);
   }
 
   private void writeVirtualMethod(Writer out, ExecutableGenerator generator)

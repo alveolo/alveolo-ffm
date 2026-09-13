@@ -35,7 +35,7 @@ import org.alveolo.ffm.Value;
 import org.alveolo.ffm.Virtual;
 import org.alveolo.ffm.WCharT;
 import org.alveolo.ffm.macos.CFString;
-import org.alveolo.ffm.macos.CFStringSupport;
+import org.alveolo.ffm.macos.CFSupport;
 import org.alveolo.ffm.processor.fixture.BinaryFieldsParent;
 
 import com.google.testing.compile.Compilation;
@@ -45,7 +45,7 @@ abstract class AbstractProcessorTest {
     Address.class,
     CallState.class,
     CFString.class,
-    CFStringSupport.class,
+    CFSupport.class,
     DispatchTable.class,
     FirstVariadicArg.class,
     Fields.class,

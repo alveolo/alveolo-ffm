@@ -30,7 +30,6 @@ import org.alveolo.ffm.ULong;
 import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Value;
 import org.alveolo.ffm.WCharT;
-import org.alveolo.ffm.macos.CFString;
 
 sealed class TypeGenerator permits VariableGenerator {
   enum CanonicalScalar {
@@ -92,7 +91,7 @@ sealed class TypeGenerator permits VariableGenerator {
   final boolean typeValue;
 
   private final boolean callState;
-  private final CFString cfString;
+  final BindingAnnotations bindingAnnotations;
 
   TypeGenerator(ProcessingEnvironment processingEnv,
       GeneratedTypeRegistry generatedTypes, TypeMirror typeMirror,
@@ -123,7 +122,7 @@ sealed class TypeGenerator permits VariableGenerator {
         .findFirst().orElse(null);
     typeUseAddress = hasTypeUseAnnotation(typeMirror, Address.class);
     typeUseValue = hasTypeUseAnnotation(typeMirror, Value.class);
-    cfString = typeMirror.getAnnotation(CFString.class);
+    bindingAnnotations = BindingAnnotations.read(processingEnv, typeMirror, useSite);
 
     foreignMemoryImplementation = generatedWrapper != null
         || hasWrapperMemorySegment(typeElement);
@@ -169,6 +168,21 @@ sealed class TypeGenerator permits VariableGenerator {
   /// annotations must survive so the processor consuming that specification sees
   /// the same native pass mode.
   String bridgeTypeName() {
+    // Conversion metadata can come from method/parameter annotations,
+    // which cannot simply be copied onto a generated return/parameter type.
+    if ((isString() || isRecord()) && (isCFString() || releaseMethod() != null
+        || !bindingAnnotations.requirements().isEmpty())) {
+      var annotations = new ArrayList<String>();
+      for (var annotation : typeMirror.getAnnotationMirrors()) {
+        if (!BindingAnnotations.participates(processingEnv, annotation))
+          annotations.add(annotation.toString());
+      }
+      annotations.addAll(bindingAnnotations.source(elements));
+      var name = typeElement.getQualifiedName().toString();
+      var qualifier = name.substring(0, name.length() - typeElement.getSimpleName().length());
+      return qualifier
+          + String.join(" ", annotations) + " " + typeElement.getSimpleName();
+    }
     if (generatedWrapper == null)
       return typeMirror.toString();
 
@@ -385,11 +399,11 @@ sealed class TypeGenerator permits VariableGenerator {
   }
 
   boolean isCFString() {
-    return cfString != null;
+    return bindingAnnotations.cfString();
   }
 
-  boolean isOwnedCFString() {
-    return cfString != null && cfString.owned();
+  String releaseMethod() {
+    return bindingAnnotations.release();
   }
 
   boolean needsConfinedArena() {

@@ -53,6 +53,25 @@ class RecordStructContractTest extends AbstractProcessorTest {
 
   @ParameterizedTest(name = "pass mode: [{0}]")
   @MethodSource("passModes")
+  void rejectsCoreRangeWrapperComponentsRegardlessOfPassMode(String passMode) {
+    var source = forSourceString("test.Snapshot", """
+        package test;
+        import org.alveolo.ffm.*;
+        import org.alveolo.ffm.macos.CFRange;
+
+        @Struct record Snapshot(%s CFRange range) {}
+        """.formatted(passMode));
+
+    var compilation = compile(source);
+
+    assertThat(compilation).failed();
+    assertThat(compilation).hadErrorCount(1);
+    assertEquals(MEMORY_BACKED_COMPONENT,
+        compilation.errors().getFirst().getMessage(Locale.ROOT));
+  }
+
+  @ParameterizedTest(name = "pass mode: [{0}]")
+  @MethodSource("passModes")
   void rejectsGeneratedWrapperComponentsRegardlessOfPassMode(String passMode) {
     var source = forSourceString("test.Snapshot", """
         package test;

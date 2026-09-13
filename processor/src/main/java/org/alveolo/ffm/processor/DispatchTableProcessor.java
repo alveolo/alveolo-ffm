@@ -71,6 +71,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
   private void writeFile(TypeElement iface,
       GeneratedTypeRegistry generatedTypes) throws IOException {
+    if (!BindingAnnotations.validateBinding(processingEnv, iface)) return;
     if (iface.getKind() != ElementKind.INTERFACE) {
       processingEnv.getMessager().printError(
           "@DispatchTable is only allowed on interfaces", iface);
@@ -118,7 +119,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
           .replace("<interface>", ifaceSimpleName)
           .replace("<slotCount>", Long.toString(slotCount(methods))));
 
-      var generators = generators(methods, generatedTypes);
+      var generators = generators(iface, methods, generatedTypes);
       writeConstructor(out, simpleClassName, generators);
 
       for (var i = 0; i < generators.size(); i++) {
@@ -173,11 +174,12 @@ public class DispatchTableProcessor extends AbstractProcessor {
   }
 
   private List<ExecutableGenerator> generators(
-      List<ExecutableElement> methods, GeneratedTypeRegistry generatedTypes) {
+      TypeElement iface, List<ExecutableElement> methods, GeneratedTypeRegistry generatedTypes) {
     return IntStream.range(0, methods.size())
         .mapToObj(index -> new ExecutableGenerator(
             processingEnv, generatedTypes, methods.get(index),
-            "MethodHandle$" + index + "$F", true))
+            "MethodHandle$" + index + "$F", true,
+            List.of(), "Linker$F", "SymbolLookup$F", iface))
         .toList();
   }
 

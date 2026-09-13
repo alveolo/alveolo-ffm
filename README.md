@@ -51,6 +51,7 @@ NativeMathFFM.INSTANCE$F.scale(values, 10);
 - Input/output transfer control with `@In` and `@Out`.
 - Fixed extents with `@Sequence` and buffer windows for subregions.
 - UTF-8 native string parameters.
+- Composable `@Require` interface contracts and `@Release` return cleanup.
 - macOS CoreFoundation `CFStringRef` helpers.
 
 Generated names are intentionally predictable:
@@ -905,6 +906,92 @@ do not transfer ownership: the containing struct does not extend the pointee
 lifetime. Record pointee setters may materialize storage in a caller-supplied
 allocator, whose lifetime the caller must manage.
 
+## Owned Returns and Composition
+
+A plain `String` return copies a borrowed, NUL-terminated UTF-8 string into
+Java. For an owned return, name its release method with `@Release`:
+
+```java
+@ForeignInterface
+@Library("messages")
+public interface Messages {
+  @Release("destroy_message")
+  String create_message();
+
+  void destroy_message(MemorySegment pointer);
+}
+```
+
+The release target is an instance method on the binding, including an inherited
+native declaration or default Java helper. It must accept one `MemorySegment`
+and return `void`. Generated code retains the original native pointer and
+releases it once after copying the result, including when conversion or argument
+copy-out fails. NULL maps to Java `null` and skips release. A cleanup failure is
+suppressed when result processing has already failed. For directly bound release
+methods, a foreign interface checks the release symbol before the allocating
+call. Default helpers are responsible for the native calls they make internally.
+
+`@Release` also supports records returned by address. The pointed-to struct is
+copied into a Java record before the original pointer is released:
+
+```java
+@Struct
+record Pair(int left, int right) {}
+
+@ForeignInterface
+@Library("pairs")
+interface Pairs {
+  @Address @Release("destroy_pair")
+  Pair create_pair();
+
+  void destroy_pair(MemorySegment pointer);
+}
+```
+
+Without `@Release`, an `@Address` record return copies the data and leaves the
+native allocation untouched. `MemorySegment` components retain their pointer
+values; `@Release` only passes the original return pointer to the named destructor.
+The caller chooses the destructor and manages the lifetimes of component pointers.
+
+`@Release` is rejected on parameters, fields, nested type positions, by-value
+record returns, and return types other than strings or address-style records.
+Raw `MemorySegment` and memory-backed interface returns require explicit cleanup.
+
+`@Require` checks that the actual binding being generated extends the specified
+interfaces, directly or transitively. It neither adds interfaces nor loads
+libraries. Requirements can appear on a binding or support interface, or on a
+native return or parameter type. Multiple requirements are additive:
+
+```java
+interface MessageMemory {
+  void destroy_message(MemorySegment pointer);
+}
+
+@Require(MessageMemory.class)
+@Release("destroy_message")
+@Target(ElementType.TYPE_USE)
+@Retention(RetentionPolicy.CLASS)
+@interface OwnedMessage {}
+
+@ForeignInterface
+@Library("messages")
+interface Messages extends MessageMemory {
+  @OwnedMessage String create_message();
+}
+```
+
+`@Require`, `@Release`, and `@CFString` may be bundled in custom marker
+annotations, including through other bundles. Each annotation in the chain must
+have CLASS or RUNTIME retention; runtime reflection is not used. Identical
+release operations are deduplicated, conflicting release operations are compile
+errors, and all interface requirements must be satisfied. Recognized annotations
+can themselves carry requirements. Composition does not override usage
+restrictions or move annotations between type positions.
+
+Bundles have fixed metadata: annotation-element forwarding is not supported,
+and custom bundles declaring annotation elements are rejected. Composition of
+generator entry points such as `@ForeignInterface` and `@Struct` is not supported.
+
 ## CoreFoundation Strings
 
 On macOS, `org.alveolo.ffm.macos.CFString` can convert Java strings to
@@ -913,20 +1000,48 @@ On macOS, `org.alveolo.ffm.macos.CFString` can convert Java strings to
 ```java
 @Library(value = "CoreFoundation", kind = Library.Kind.FRAMEWORK)
 @ForeignInterface
-public interface CoreStrings {
+public interface CoreStrings extends CFSupport {
   long CFStringGetLength(@CFString String value);
 
   @Symbol("CFStringCreateWithCString")
-  @CFString(owned = true)
+  @CFStringOwned
   String create(MemorySegment allocator, String cString, int encoding);
 }
 ```
 
 Parameter `@CFString String` values are converted before the call and released
-afterwards. Return values are borrowed by default; set `owned = true` for
-CoreFoundation Create/Copy-rule returns that the generated wrapper must release.
+afterwards. Return values are borrowed by default; use `@CFStringOwned` for
+CoreFoundation Create/Copy-rule returns. This annotation is the ordinary
+composition of `@CFString` and `@CFRelease`. `@CFRelease` composes
+`@Release("CFRelease")` with `@Require(CFSupport.class)` and can be reused
+independently of the conversion annotation, subject to the same return-type
+restrictions as `@Release`.
+
+`@CFString` itself carries `@Require(CFSupport.class)`. The application
+binding extends `CFSupport`, generating its inherited native declarations
+alongside the application's methods. Default `toCFString` and `fromCFString`
+helpers call those methods on the same binding instance. Generated cleanup calls
+`CFRelease` directly for non-NULL temporary arguments and owned returns. Configure
+CoreFoundation lookup on the application binding; the support interface has no
+separate lookup or singleton.
+
 Conversions preserve UTF-16 characters, including embedded NULs. A Java `null`
 maps to a null `CFStringRef` and vice versa.
+
+The native character-buffer parameters use `MemorySegment`.
+`CFStringGetCharacters` takes `CFRange`: a memory-backed wrapper marked `@Value`
+by default, with `location()` / `length()` accessors and fluent setters.
+Use `@Address CFRange` for pointer parameters such as output ranges. Construct it
+over an existing segment, or allocate its storage with a caller-supplied allocator:
+
+```java
+var range = new CFRange(arena).location(start).length(count);
+binding.CFStringGetCharacters(value, range, characters);
+```
+
+The caller owns the backing memory's lifetime. The default `fromCFString` helper
+places the range and character buffer in one arena allocation; the generated
+native call passes the range's backing segment directly by value.
 
 ## Development
 
@@ -941,6 +1056,9 @@ Run the processor-focused tests:
 ```sh
 mvn -pl processor -am test
 ```
+
+CFString conversion strategies and measured tradeoffs are documented in the
+[CFString benchmark report](docs/benchmarks/cfstring-2026-09-13/README.md).
 
 The benchmark module contains end-to-end native tests. They compile a small C
 library during the JUnit setup and exercise generated bindings against the real

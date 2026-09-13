@@ -227,7 +227,7 @@ final class ProcessorUtils {
             + "generated identifiers: " + name);
   }
 
-  private static boolean isAlveoloGeneratedSpecification(
+  static boolean isAlveoloGeneratedSpecification(
       TypeElement element) {
     for (var annotation : element.getAnnotationMirrors()) {
       if (!annotation.getAnnotationType().toString()

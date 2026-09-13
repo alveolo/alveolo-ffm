@@ -73,6 +73,7 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       GeneratedTypeRegistry generatedTypes) throws IOException {
     var messager = processingEnv.getMessager();
 
+    if (!BindingAnnotations.validateBinding(processingEnv, iface)) return;
     if (iface.getKind() != ElementKind.INTERFACE) {
       messager.printError("@ForeignInterface is only allowed on interfaces",
           iface);
@@ -131,7 +132,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       int index = 0;
       for (var method : abstractMethods(iface, elements)) {
         var generator = new ExecutableGenerator(processingEnv,
-            generatedTypes, method, "MethodHandle$" + index++ + "$F");
+            generatedTypes, method, "MethodHandle$" + index++ + "$F", false,
+            List.of(), "Linker$F", "SymbolLookup$F", iface);
 
         out.write(generator.methodWithHandle());
       }

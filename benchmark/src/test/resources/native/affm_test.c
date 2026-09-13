@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <wchar.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -268,3 +269,68 @@ EXPORT int32_t sum_int3_value(int3_value value) {
   value.values[0] = 777;
   return result;
 }
+
+static int text_allocations_count;
+static int text_releases_count;
+
+EXPORT char* owned_text(int kind) {
+  if (kind < 0) return NULL;
+  const char* source = kind == 0 ? "owned text" : "";
+  size_t size = strlen(source) + 1;
+  char* text = (char*) malloc(size);
+  if (text != NULL) {
+    memcpy(text, source, size);
+    text_allocations_count++;
+  }
+  return text;
+}
+
+EXPORT char* owned_text_bad_copy(int** output) {
+  *output = NULL;
+  return owned_text(0);
+}
+
+EXPORT void release_text(void* text) {
+  text_releases_count++;
+  free(text);
+}
+
+EXPORT int text_allocations(void) { return text_allocations_count; }
+EXPORT int text_releases(void) { return text_releases_count; }
+
+typedef struct owned_record_value {
+  pair pair;
+  int* pointer;
+  int values[2];
+} owned_record_value;
+
+static int record_allocations_count;
+static int record_releases_count;
+
+EXPORT owned_record_value* owned_record(int kind) {
+  static int borrowed = 42;
+  if (kind < 0) return NULL;
+  owned_record_value* result = (owned_record_value*) malloc(sizeof(owned_record_value));
+  if (result != NULL) {
+    result->pair.left = kind == 0 ? 7 : -7;
+    result->pair.right = 11;
+    result->pointer = &borrowed;
+    result->values[0] = 13;
+    result->values[1] = 17;
+    record_allocations_count++;
+  }
+  return result;
+}
+
+EXPORT owned_record_value* owned_record_bad_copy(int** output) {
+  *output = NULL;
+  return owned_record(0);
+}
+
+EXPORT void release_record(void* pointer) {
+  record_releases_count++;
+  free(pointer);
+}
+
+EXPORT int record_allocations(void) { return record_allocations_count; }
+EXPORT int record_releases(void) { return record_releases_count; }

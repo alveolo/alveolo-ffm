@@ -35,6 +35,7 @@ final class ForeignMemoryGenerator {
 
   void write(TypeElement source, String kind, boolean vtable)
       throws IOException {
+    if (!BindingAnnotations.validateBinding(processingEnv, source)) return;
     analyzer.validateRecordComponents(source);
 
     var isStructInterface = kind.equals("struct")

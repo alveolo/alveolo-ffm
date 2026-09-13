@@ -397,6 +397,12 @@ final class ForeignMemoryAnalyzer {
 
   void validateFields(TypeElement type, Fields fields) {
     for (var field : fields.fields()) {
+      field.bindingAnnotations.validate(processingEnv, type, field.element);
+      BindingAnnotations.validateNested(processingEnv, field.typeMirror, type, field.element);
+      if (field.releaseMethod() != null) {
+        messager.printError("@Release is only supported on String or @Address record return types, not fields",
+            field.element);
+      }
       var canonicalError = field.canonicalScalarError();
       if (canonicalError != null) {
         messager.printError(canonicalError, field.element);
