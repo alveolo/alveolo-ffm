@@ -112,7 +112,7 @@ processor:
   <dependency>
     <groupId>org.alveolo.ffm</groupId>
     <artifactId>alveolo-ffm-core</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.2.0</version>
   </dependency>
 </dependencies>
 
@@ -127,7 +127,7 @@ processor:
           <path>
             <groupId>org.alveolo.ffm</groupId>
             <artifactId>alveolo-ffm-processor</artifactId>
-            <version>0.0.2-SNAPSHOT</version>
+            <version>0.2.0</version>
           </path>
         </annotationProcessorPaths>
       </configuration>
