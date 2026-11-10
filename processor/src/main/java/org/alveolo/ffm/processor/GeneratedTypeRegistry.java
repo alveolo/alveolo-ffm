@@ -1,6 +1,7 @@
 package org.alveolo.ffm.processor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +13,6 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 
 import org.alveolo.ffm.CallState;
 import org.alveolo.ffm.Struct;
@@ -24,18 +23,16 @@ import org.alveolo.ffm.Union;
 final class GeneratedTypeRegistry {
   record Wrapper(String className, TypeElement specification) {}
 
-  private final Elements elements;
-  private final Types types;
+  private final ProcessingEnvironment processingEnv;
+  private final Map<TypeElement, StructInterfaceModel> structs = new HashMap<>();
   private final Map<String, List<Wrapper>> byQualifiedName;
   private final Map<String, List<Wrapper>> bySimpleName;
 
   private GeneratedTypeRegistry(
-      Elements elements,
-      Types types,
+      ProcessingEnvironment processingEnv,
       Map<String, List<Wrapper>> byQualifiedName,
       Map<String, List<Wrapper>> bySimpleName) {
-    this.elements = elements;
-    this.types = types;
+    this.processingEnv = processingEnv;
     this.byQualifiedName = byQualifiedName;
     this.bySimpleName = bySimpleName;
   }
@@ -62,14 +59,18 @@ final class GeneratedTypeRegistry {
       add(simple, simpleName(className), wrapper);
     }
 
-    return new GeneratedTypeRegistry(
-        elements, processingEnv.getTypeUtils(), qualified, simple);
+    return new GeneratedTypeRegistry(processingEnv, qualified, simple);
+  }
+
+  StructInterfaceModel struct(TypeElement specification) {
+    return structs.computeIfAbsent(specification,
+        type -> new StructInterfaceModel(processingEnv, type));
   }
 
   Wrapper find(TypeMirror type, Element useSite) {
     if (type.getKind() != TypeKind.ERROR) return null;
 
-    var typeElement = types.asElement(type);
+    var typeElement = processingEnv.getTypeUtils().asElement(type);
     if (typeElement instanceof TypeElement errorElement) {
       var qualifiedName = errorElement.getQualifiedName().toString();
       var exact = unique(byQualifiedName.get(qualifiedName));
@@ -96,7 +97,7 @@ final class GeneratedTypeRegistry {
   private Wrapper findInSamePackage(String simpleName, Element useSite) {
     if (useSite == null || simpleName.isEmpty()) return null;
 
-    var packageName = elements.getPackageOf(useSite)
+    var packageName = processingEnv.getElementUtils().getPackageOf(useSite)
         .getQualifiedName().toString();
     var qualifiedName = ProcessorUtils.qualifyName(packageName, simpleName);
     return unique(byQualifiedName.get(qualifiedName));

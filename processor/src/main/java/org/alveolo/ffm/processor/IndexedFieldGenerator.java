@@ -33,7 +33,8 @@ final class IndexedFieldGenerator {
         """
         .replace("<name>", name));
 
-    for (var i = 0; i < indexed.dimensions().size(); i++) {
+    int firstFixed = indexed.flexible() ? 1 : 0;
+    for (var i = firstFixed; i < indexed.dimensions().size(); i++) {
       out.write("""
 
             public static final java.lang.foreign.MemoryLayout.PathElement
@@ -50,15 +51,28 @@ final class IndexedFieldGenerator {
           public static final java.lang.foreign.MemoryLayout
               <name>$MemoryLayout$F =
                   MemoryLayout$F.select(<name>$PathElement$F);
+        """.replace("<name>", name));
 
-          public static final java.lang.foreign.MemoryLayout
-              <name>$ElementMemoryLayout$F =
-              <elementLayout>;
-        """
-        .replace("<name>", name)
-        .replace("<elementLayout>", indexed.element().layout()));
+    if (indexed.hasElementSlice()) {
+      out.write("""
 
-    for (var i = 0; i < indexed.dimensions().size(); i++) {
+            public static final java.lang.foreign.MemoryLayout
+                <name>$ElementMemoryLayout$F =
+                <elementLayout>;
+          """.replace("<name>", name)
+              .replace("<elementLayout>", indexed.element().layout()));
+    }
+
+    if (indexed.flexible()) {
+      out.write("""
+
+            private static final java.lang.foreign.MemoryLayout <name>$RowLayout$F =
+                ((java.lang.foreign.SequenceLayout) <name>$MemoryLayout$F).elementLayout();
+            private static final long <name>$Offset$F =
+                MemoryLayout$F.byteOffset(<name>$PathElement$F);
+          """.replace("<name>", name));
+    }
+    for (var i = firstFixed; i < indexed.dimensions().size(); i++) {
       out.write("""
 
             public static final long <name>$Sequence<index>Dimension$F =
@@ -75,17 +89,20 @@ final class IndexedFieldGenerator {
     if (indexed.structuredValueElement()) return;
 
     var name = indexed.element().name();
-    var paths = IntStream.range(0, indexed.dimensions().size())
+    var paths = IntStream.range(indexed.flexible() ? 1 : 0, indexed.dimensions().size())
         .mapToObj(i -> name + "$Sequence" + i + "PathElement$F")
         .toList();
 
+    var handle = indexed.flexible()
+        ? "<name>$RowLayout$F.arrayElementVarHandle(<paths>)"
+        : "MemoryLayout$F.varHandle(\n              <name>$PathElement$F, <paths>)";
     out.write("""
 
           public static final java.lang.invoke.VarHandle <name>$VarHandle$F =
               java.lang.invoke.MethodHandles.insertCoordinates(
-                  MemoryLayout$F.varHandle(
-                      <name>$PathElement$F, <paths>), 1, 0L);
+                  <handle>, 1, 0L);
         """
+        .replace("<handle>", handle)
         .replace("<name>", name)
         .replace("<paths>", String.join(", ", paths)));
   }
@@ -118,7 +135,7 @@ final class IndexedFieldGenerator {
         .replace("<name>", name)
         .replace("<params>", params)
         .replace("<expression>", getterExpression(
-            indexed, "MemorySegment$F", args, false)));
+            indexed, indexed.instanceSegment(), args, false)));
 
     out.write("""
 
@@ -136,7 +153,7 @@ final class IndexedFieldGenerator {
         .replace("<type>", field.typeName())
         .replace("<valueName>", valueName)
         .replace("<body>", setterBody(
-            indexed, "MemorySegment$F", args, false, needsAllocator)));
+            indexed, indexed.instanceSegment(), args, false, needsAllocator)));
 
     if (indexed.oneDimensional() && indexed.primitive()) {
       writePrimitiveConveniences(out, className, indexed, false);
@@ -252,6 +269,8 @@ final class IndexedFieldGenerator {
   private void writeSegmentHelpers(
       Writer out, IndexedField indexed, boolean isStatic)
       throws IOException {
+    if (!indexed.hasElementSlice()) return;
+
     var name = indexed.element().name();
     var params = indexed.helperParameterDeclarations();
     var receiverAndParams = isStatic
@@ -260,27 +279,29 @@ final class IndexedFieldGenerator {
     var offsetArgument = (leafOffset(indexed) + ",")
         .replace("\n", "\n        ");
 
-    var wholeFieldTemplate = isStatic
-        ? """
+    if (!indexed.flexible()) {
+      var wholeFieldTemplate = isStatic
+          ? """
 
-              public static java.lang.foreign.MemorySegment
-                  <name>AsMemorySegment$F(
-                      java.lang.foreign.MemorySegment memorySegment) {
-                return memorySegment.asSlice(
-                    MemoryLayout$F.byteOffset(<name>$PathElement$F),
-                    <name>$MemoryLayout$F.byteSize());
-              }
-            """
-        : """
+                public static java.lang.foreign.MemorySegment
+                    <name>AsMemorySegment$F(
+                        java.lang.foreign.MemorySegment memorySegment) {
+                  return memorySegment.asSlice(
+                      MemoryLayout$F.byteOffset(<name>$PathElement$F),
+                      <name>$MemoryLayout$F.byteSize());
+                }
+              """
+          : """
 
-              public java.lang.foreign.MemorySegment
-                  <name>AsMemorySegment$F() {
-                return MemorySegment$F.asSlice(
-                    MemoryLayout$F.byteOffset(<name>$PathElement$F),
-                    <name>$MemoryLayout$F.byteSize());
-              }
-            """;
-    out.write(wholeFieldTemplate.replace("<name>", name));
+                public java.lang.foreign.MemorySegment
+                    <name>AsMemorySegment$F() {
+                  return MemorySegment$F.asSlice(
+                      MemoryLayout$F.byteOffset(<name>$PathElement$F),
+                      <name>$MemoryLayout$F.byteSize());
+                }
+              """;
+      out.write(wholeFieldTemplate.replace("<name>", name));
+    }
 
     var elementTemplate = isStatic
         ? """
@@ -297,12 +318,13 @@ final class IndexedFieldGenerator {
 
               public java.lang.foreign.MemorySegment
                   <name>AsMemorySegment$F(<receiverAndParams>) {
-                return MemorySegment$F.asSlice(
+                return <segment>.asSlice(
                     <offsetArgument>
                     <name>$ElementMemoryLayout$F.byteSize());
               }
             """;
     out.write(elementTemplate
+        .replace("<segment>", indexed.instanceSegment())
         .replace("<name>", name)
         .replace("<receiverAndParams>", receiverAndParams)
         .replace("<offsetArgument>", offsetArgument));
@@ -312,8 +334,7 @@ final class IndexedFieldGenerator {
       IndexedField indexed) throws IOException {
     var name = indexed.element().name();
     var params = indexed.helperParameterDeclarations();
-    var args = indexed.helperParameterNames();
-    var vhArgs = "MemorySegment$F, " + args;
+    var vhArgs = indexed.instanceSegment() + ", " + indexed.helperParameterNames();
     var valueName = "value";
 
     out.write("""
@@ -408,11 +429,19 @@ final class IndexedFieldGenerator {
   }
 
   private String leafOffset(IndexedField indexed) {
-    var paths = IntStream.range(0, indexed.dimensions().size())
+    var paths = IntStream.range(indexed.flexible() ? 1 : 0, indexed.dimensions().size())
         .mapToObj(i -> "java.lang.foreign.MemoryLayout.PathElement"
             + ".sequenceElement(index" + i + ")")
         .toList();
 
+    if (indexed.flexible()) {
+      var name = indexed.element().name();
+      var row = name + "$RowLayout$F";
+      var rowOffset = "Math.multiplyExact(index0, " + row + ".byteSize())";
+      if (paths.isEmpty()) return rowOffset;
+      return rowOffset + "\n    + " + row + ".byteOffset(\n        "
+          + String.join(",\n        ", paths) + ")";
+    }
     return """
         MemoryLayout$F.byteOffset(
             <name>$PathElement$F,
@@ -430,8 +459,11 @@ final class IndexedFieldGenerator {
     var type = indexed.element().typeName();
     var dimension = indexed.dimensions().getFirst();
     var indexType = dimension.typeName();
-    var segmentCall = name + "AsMemorySegment$F("
-        + (isStatic ? "memorySegment" : "") + ")";
+    var length = indexed.flexible()
+        ? indexed.instanceSegment() + ".byteSize() / " + name + "$RowLayout$F.byteSize()"
+        : name + "$Sequence0Dimension$F";
+    var segmentCall = indexed.flexible() ? indexed.instanceSegment()
+        : name + "AsMemorySegment$F(" + (isStatic ? "memorySegment" : "") + ")";
     var buffer = BufferType.forPrimitive(indexed.element().typeMirror);
 
     var template = isStatic
@@ -485,7 +517,7 @@ final class IndexedFieldGenerator {
 
               public <type>[] <name>ToArray$F() {
                 var result =
-                    new <type>[(int) <name>$Sequence0Dimension$F];
+                    new <type>[<arrayLength>];
                 for (<indexType> index = 0;
                     index < result.length; index++) {
                   result[(int) index] = <name>(index);
@@ -495,10 +527,10 @@ final class IndexedFieldGenerator {
 
               public <class> <name>FromArray$F(<type>[] value) {
                 java.util.Objects.requireNonNull(value, "value");
-                if (value.length != <name>$Sequence0Dimension$F) {
+                if (value.length != <length>) {
                   throw new IllegalArgumentException(
                       "<name> length must be "
-                          + <name>$Sequence0Dimension$F);
+                          + <length>);
                 }
                 for (<indexType> index = 0;
                     index < value.length; index++) {
@@ -508,6 +540,9 @@ final class IndexedFieldGenerator {
               }
             """;
     out.write(template
+        .replace("<length>", length)
+        .replace("<arrayLength>", indexed.flexible()
+            ? "Math.toIntExact(" + length + ")" : "(int) " + length)
         .replace("<bufferType>", buffer.type.getSimpleName())
         .replace("<bufferConversion>", buffer.conversion)
         .replace("<segmentCall>", segmentCall)

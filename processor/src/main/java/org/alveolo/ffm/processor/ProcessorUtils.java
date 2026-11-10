@@ -19,6 +19,10 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 
@@ -178,7 +182,7 @@ final class ProcessorUtils {
   }
 
   static String sourceMethodSignature(ExecutableElement method) {
-    return "public " + method.getReturnType() + " "
+    return "public " + sourceType(method.getReturnType()) + " "
         + method.getSimpleName()
         + method.getParameters().stream()
             .map(ProcessorUtils::sourceParameter)
@@ -186,7 +190,28 @@ final class ProcessorUtils {
   }
 
   static String sourceParameter(VariableElement parameter) {
-    return parameter.asType() + " " + parameter.getSimpleName();
+    return sourceType(parameter.asType()) + " " + parameter.getSimpleName();
+  }
+
+  private static String sourceType(TypeMirror type) {
+    return switch (type.getKind()) {
+      case BOOLEAN, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE, VOID ->
+        type.getKind().name().toLowerCase();
+      case ARRAY -> sourceType(((ArrayType) type).getComponentType()) + "[]";
+      case DECLARED, ERROR -> {
+        var declared = (DeclaredType) type;
+        var element = (TypeElement) declared.asElement();
+        var enclosing = declared.getEnclosingType();
+        var name = enclosing.getKind() == TypeKind.NONE
+            ? element.getQualifiedName().toString()
+            : sourceType(enclosing) + "." + element.getSimpleName();
+        var arguments = declared.getTypeArguments();
+        yield arguments.isEmpty() ? name : arguments.stream()
+            .map(ProcessorUtils::sourceType)
+            .collect(joining(", ", name + "<", ">"));
+      }
+      default -> type.toString();
+    };
   }
 
   static String osArray(Library.OS[] oses) {

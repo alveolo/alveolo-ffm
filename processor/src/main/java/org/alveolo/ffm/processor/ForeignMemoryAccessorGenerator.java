@@ -24,7 +24,7 @@ final class ForeignMemoryAccessorGenerator {
   }
 
   void writeInterfaceFields(Writer out, String className,
-      ForeignMemoryAnalyzer.Fields fields) throws IOException {
+      ForeignMemoryAnalyzer.Fields fields, FlexibleArrayGenerator flexible) throws IOException {
     var target = AccessorTarget.fluent(className);
     for (var field : fields.fields()) {
       var indexed = fields.indexedFields().get(field.name());
@@ -38,7 +38,9 @@ final class ForeignMemoryAccessorGenerator {
 
       writeMetadata(out, field);
       writeVarHandle(out, field);
-      if (field.isNioBuffer()) {
+      if (flexible != null && field == flexible.count()) {
+        flexible.writeCountGetter(out);
+      } else if (field.isNioBuffer()) {
         writeThrowingFieldAccessors(out, className, field, false);
       } else {
         writeAccessors(out, target, field);
@@ -370,81 +372,57 @@ final class ForeignMemoryAccessorGenerator {
       return;
     }
 
-    if (field.needsDowncallAdaptation()) {
-      writeAdaptedAccessors(out, target, field, segment);
-      return;
-    }
+    writeAccessor(out, target.getterHead(field), scalarGetterBody(field, segment));
+    writeAccessor(out, target.setterHead(field, false),
+        scalarSetterBody(field, segment, "value", !target.isStatic()));
+  }
 
-    writeGetter(out, target, field,
-        "(<type>) <name>$VarHandle$F.get(<segment>)"
-            .replace("<type>", field.typeName())
-            .replace("<segment>", segment)
-            .replace("<name>", name));
-    writeSetter(out, target, field, false,
-        "<name>$VarHandle$F.set(<segment>, value);"
-            .replace("<segment>", segment)
-            .replace("<name>", name));
+  static String scalarGetterBody(VariableGenerator field, String segment) {
+    var getter = field.needsDowncallAdaptation() ? "$get$F.invokeExact" : "$VarHandle$F.get";
+    return scalarAccessBody(field, "return (" + field.typeName() + ") "
+        + field.name() + getter + "(" + segment + ");");
+  }
+
+  static String scalarSetterBody(VariableGenerator field, String segment,
+      String value, boolean fluent) {
+    var setter = field.needsDowncallAdaptation() ? "$set$F.invokeExact" : "$VarHandle$F.set";
+    return scalarAccessBody(field, field.name() + setter + "(" + segment + ", " + value + ");"
+        + (fluent ? "\nreturn this;" : ""));
+  }
+
+  private static String scalarAccessBody(VariableGenerator field, String statements) {
+    if (!field.needsDowncallAdaptation()) return statements;
+    return """
+        try {
+        <statements>
+        } catch (RuntimeException|Error exception$f) {
+          throw exception$f;
+        } catch (Throwable throwable$f) {
+          throw new AssertionError(throwable$f);
+        }
+        """.stripTrailing().replace("<statements>", statements.indent(2).stripTrailing());
   }
 
   private void writeGetter(Writer out, AccessorTarget target,
       VariableGenerator field, String expression) throws IOException {
-    out.write("""
-
-          <head> {
-            return <expression>;
-          }
-        """
-        .replace("<head>", target.getterHead(field))
-        .replace("<expression>", expression.replace("\n", "\n    ")));
-  }
-
-  private void writeAdaptedAccessors(Writer out, AccessorTarget target,
-      VariableGenerator field, String segment) throws IOException {
-    var name = field.name();
-    var setterResult = target.isStatic() ? "" : "\n      return this;";
-
-    out.write("""
-
-          <getterHead> {
-            try {
-              return (<type>) <name>$get$F.invokeExact(<segment>);
-            } catch (RuntimeException|Error exception$f) {
-              throw exception$f;
-            } catch (Throwable throwable$f) {
-              throw new AssertionError(throwable$f);
-            }
-          }
-
-          <setterHead> {
-            try {
-              <name>$set$F.invokeExact(<segment>, value);<setterResult>
-            } catch (RuntimeException|Error exception$f) {
-              throw exception$f;
-            } catch (Throwable throwable$f) {
-              throw new AssertionError(throwable$f);
-            }
-          }
-        """
-        .replace("<getterHead>", target.getterHead(field))
-        .replace("<setterHead>", target.setterHead(field, false))
-        .replace("<setterResult>", setterResult)
-        .replace("<segment>", segment)
-        .replace("<type>", field.typeName())
-        .replace("<name>", name));
+    writeAccessor(out, target.getterHead(field), "return " + expression + ";");
   }
 
   private void writeSetter(Writer out, AccessorTarget target,
       VariableGenerator field, boolean needsAllocator, String body)
       throws IOException {
-    var statements = target.isStatic() ? body : body + "\nreturn this;";
+    writeAccessor(out, target.setterHead(field, needsAllocator),
+        target.isStatic() ? body : body + "\nreturn this;");
+  }
 
+  private void writeAccessor(Writer out, String head, String statements) throws IOException {
     out.write("""
 
           <head> {
             <statements>
           }
         """
-        .replace("<head>", target.setterHead(field, needsAllocator))
+        .replace("<head>", head)
         .replace("<statements>", statements.replace("\n", "\n    ")));
   }
 
@@ -516,6 +494,7 @@ final class ForeignMemoryAccessorGenerator {
       AccessorTarget target, VariableGenerator field) {
     return field.isString()
         || field.unsupported()
+        || field.flexibleUseError(true) != null
         || (target.isStatic() && field.isArrayOrBuffer());
   }
 

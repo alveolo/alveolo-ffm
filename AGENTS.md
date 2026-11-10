@@ -3,13 +3,19 @@ This project is a wrapper around Java Foreign Function and Memory API.
 ## Source code
 
 - Java 25, JMH benchmarks, Maven
-- No external dependencies for core
+- no external dependencies for core
 - indentation base is two spaces
 - Markdown style JavaDoc
-- prefer elegant concise simple code
+- start from the closest existing implementation. For each difference, identify
+  the task requirement it satisfies or the bug you can reproduce without it
+- when reverting a decision, remove everything that existed solely to support it
+- before adding a test, identify the regression the existing tests would miss
 - design with records / immutable objects
 - no stupid getters - just expose final field
 - test code generation with full equivalence, not contains
+- report annotation processor errors on the offending declaration and continue
+  generating compilable Java. Preserve the API and behavior of unaffected
+  members of the same type and of other types in the compilation.
 - Record-based `@Struct` declarations are concise snapshots. Never support
   memory-backed struct/union interfaces, call-state wrappers, or their generated
   classes as record components, including with `@Value`, `@Address`, or through

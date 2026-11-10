@@ -91,6 +91,7 @@ sealed class TypeGenerator permits VariableGenerator {
   final boolean typeValue;
 
   private final boolean callState;
+  private final StructInterfaceModel struct;
   final BindingAnnotations bindingAnnotations;
 
   TypeGenerator(ProcessingEnvironment processingEnv,
@@ -130,6 +131,9 @@ sealed class TypeGenerator permits VariableGenerator {
         || isForeignMemorySpecification(typeElement);
 
     var annotationSource = resolveTypeAnnotationSource();
+    struct = annotationSource != null && annotationSource.getKind() == ElementKind.INTERFACE
+        && annotationSource.getAnnotation(Struct.class) != null
+        ? generatedTypes.struct(annotationSource) : null;
     typeAddress = annotationSource != null
         && annotationSource.getAnnotation(Address.class) != null;
     typeValue = annotationSource != null
@@ -458,6 +462,15 @@ sealed class TypeGenerator permits VariableGenerator {
         || (!typeUseAddress && !typeUseValue && typeAddress && typeValue);
   }
 
+  String flexibleUseError(boolean readsAddress) {
+    var flexible = struct == null ? null : struct.resolve().flexible();
+    if (flexible == null) return null;
+    if (isValue()) return "A struct with a flexible member cannot be used by value";
+    return readsAddress && flexible.value().isEmpty()
+        ? "An externally sized flexible struct pointer requires MemorySegment and an explicit flexibleLength"
+        : null;
+  }
+
   boolean hasCanonicalScalar() {
     return canonicalScalar != null;
   }
@@ -524,16 +537,31 @@ sealed class TypeGenerator permits VariableGenerator {
     if (generatedWrapper != null)
       return generatedWrapper.specification();
 
-    if (!foreignMemoryImplementation)
-      return typeElement;
+    return foreignMemoryImplementation ? wrapperSpecification(typeElement) : typeElement;
+  }
 
-    for (var iface : typeElement.getInterfaces()) {
+  TypeElement layoutSpecification() {
+    var specification = resolveTypeAnnotationSource();
+    if (foreignMemoryImplementation && specification == typeElement) {
+      // A Java subclass can inherit its generated wrapper's layout.
+      for (var member : elements.getAllMembers(typeElement)) {
+        if (member.getKind() == ElementKind.FIELD
+            && member.getSimpleName().contentEquals("MemoryLayout$F")) {
+          return wrapperSpecification((TypeElement) member.getEnclosingElement());
+        }
+      }
+    }
+    return specification;
+  }
+
+  private TypeElement wrapperSpecification(TypeElement wrapper) {
+    for (var iface : wrapper.getInterfaces()) {
       if (types.asElement(iface) instanceof TypeElement spec
           && isForeignMemorySpecification(spec))
         return spec;
     }
 
-    return typeElement;
+    return wrapper;
   }
 
   private static boolean isForeignMemorySpecification(TypeElement type) {

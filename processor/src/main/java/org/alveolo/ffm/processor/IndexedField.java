@@ -49,6 +49,14 @@ record IndexedField(
     return dimensions.size() == 1;
   }
 
+  boolean flexible() {
+    return dimensions.getFirst().size() == 0;
+  }
+
+  String instanceSegment() {
+    return flexible() ? element.name() + "$MemorySegment$F" : "MemorySegment$F";
+  }
+
   String accessorParameterDeclarations() {
     return IntStream.range(0, dimensions.size())
         .mapToObj(i -> dimensions.get(i).typeName() + " index" + i + "$f")
@@ -84,5 +92,9 @@ record IndexedField(
 
   boolean structuredValueElement() {
     return element.foreignMemory && element.isValue();
+  }
+
+  boolean hasElementSlice() {
+    return !flexible() || structuredValueElement();
   }
 }

@@ -15,14 +15,15 @@ import java.lang.annotation.Target;
 /// interface accessors define fields in declaration order. Reusable parent
 /// interfaces can define inherited field placement with [Fields].
 ///
-/// An interface struct may extend one other interface struct. Its generated
-/// layout appends fields to the complete base layout, and its generated wrapper
+/// A fixed-size interface struct may extend one fixed-size interface struct.
+/// Its generated layout appends fields to the complete base layout, and its wrapper
 /// extends the base wrapper. Inherited fluent setters are overridden with the
 /// derived wrapper return type.
 ///
 /// @see [Union] for C unions
 /// @see [Fields] for reusable inherited field mappings
 /// @see [Sequence] for fixed-size inline array fields.
+/// @see [Flexible] for a trailing variable-length array.
 @Target(TYPE)
 @Retention(CLASS)
 public @interface Struct {

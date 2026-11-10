@@ -47,7 +47,7 @@ NativeMathFFM.INSTANCE$F.scale(values, 10);
 - Pass-by-value and pass-by-address control with `@Value` and `@Address`.
 - Platform C scalars with `@SLong`, `@ULong`, `@SizeT`, and `@WCharT`.
 - Primitive-array, record-array, and `java.nio.*Buffer` pointer parameters.
-- Fixed, indexed inline arrays on memory-backed struct interfaces.
+- Fixed inline arrays and trailing flexible array members on memory-backed struct interfaces.
 - Input/output transfer control with `@In` and `@Out`.
 - Fixed extents with `@Sequence` and buffer windows for subregions.
 - UTF-8 native string parameters.
@@ -637,9 +637,8 @@ aliases the parent segment.
 
 Indexed array fields are supported on memory-backed interfaces. A source
 interface declares only the indexed getter; generated setters and low-level
-views must not be redeclared. Every dimension must be positive. Flexible array
-members and pointer-to-array fields need an explicit `MemorySegment` binding;
-they are not represented by `@Sequence(0)` or by Java multidimensional arrays.
+views must not be redeclared. Every `@Sequence` dimension must be positive.
+Pointer-to-array fields use an explicit `MemorySegment` binding.
 
 Value-style record structs can instead use a one-dimensional array component:
 
@@ -653,6 +652,58 @@ Their elements are limited to primitives or value-style `@Struct` records;
 address elements and multidimensional Java arrays require a memory-backed
 interface. The components remain ordinary mutable Java arrays, so the record's
 generated `equals` and `hashCode` retain Java array reference semantics.
+
+### Flexible array members
+
+Use `@Flexible` on the outermost index of the last field of a memory-backed
+`@Struct`. Inner dimensions have fixed `@Sequence` lengths. This binds C's
+`char rows[][10]` with a count in the header.
+
+```java
+@Struct
+interface Names {
+  int count();
+  byte rows(@Flexible("count") long row, @Sequence(10) int column);
+}
+
+var names = new NamesFM(arena, 3);             // initializes count to 3
+names.rows(2, 9, (byte) 'x');
+var existing = new NamesFM(boundedSegment);    // reads count from the header
+var nativeNames = NamesFM.reinterpret$F(ptr);
+```
+
+`new NamesFM(boundedSegment, n)` preserves the header count and stores the
+supplied segment in `MemorySegment$F` with its original bounds. To initialize
+a new struct in caller-provided storage, use
+`new NamesFM(SegmentAllocator.prefixAllocator(boundedSegment), n)`.
+The count must be nonnegative and fit the header field, index type and Java
+`long`. Plain `byte`, `short`, `int` and `long` are signed. `char` is unsigned.
+Platform scalars such as `@SizeT` use their ABI range. Constructor and allocator
+lengths use the count field's Java type.
+
+When the length comes from elsewhere, omit the field name, e.g.
+`@Value PacketFM packets(@Flexible long index)`. Pass the length to
+`new TransferFM(arena, n)`, `new TransferFM(segment, n)` or
+`TransferFM.reinterpret$F(ptr, n)` as a `long`. This also supports counts
+decoded with `Integer.toUnsignedLong` from a native `uint32_t`.
+
+Both forms expose the tail as a public final `MemorySegment`. For `Names`,
+`names.rows$MemorySegment$F` starts at the first row and spans exactly
+`10 * n` bytes, even if the header count later changes. A count of zero gives
+an empty tail. Indexed accessors and the public tail handle use this segment.
+`NamesFM.rows$VarHandle$F.get(names.rows$MemorySegment$F, 1L, 2L)` reads
+column 2 of row 1 at byte offset 12 within the tail.
+
+A native call passes `MemorySegment$F` directly. The caller must ensure the
+count in an existing or modified header stays between zero and the allocated
+capacity while native code uses the pointer.
+
+Pass flexible structs by address. `reinterpret$F` maps native NULL to Java
+`null`. A non-null pointer must cover the entire object.
+For an externally sized pointer result or pointer field, bind `MemorySegment`
+and pass its length to `reinterpret$F`. Use `@Fields` to share a header.
+Embedding a struct by value and physical `@Struct` inheritance require
+fixed-size layouts.
 
 ### Contiguous arrays of structs
 
@@ -1026,7 +1077,9 @@ CoreFoundation lookup on the application binding; the support interface has no
 separate lookup or singleton.
 
 Conversions preserve UTF-16 characters, including embedded NULs. A Java `null`
-maps to a null `CFStringRef` and vice versa.
+maps to a null `CFStringRef` and vice versa. If CoreFoundation cannot allocate
+a `CFString` for a non-null Java string, `toCFString` throws `OutOfMemoryError`.
+For an `@CFString` argument, this happens before the target function is called.
 
 The native character-buffer parameters use `MemorySegment`.
 `CFStringGetCharacters` takes `CFRange`: a memory-backed wrapper marked `@Value`

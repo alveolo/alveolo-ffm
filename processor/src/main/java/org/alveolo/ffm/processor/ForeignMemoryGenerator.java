@@ -17,6 +17,7 @@ import javax.lang.model.element.TypeElement;
 /// Coordinates generation of one foreign-memory companion class.
 final class ForeignMemoryGenerator {
   private final ProcessingEnvironment processingEnv;
+  private final GeneratedTypeRegistry generatedTypes;
   private final ForeignMemoryAnalyzer analyzer;
   private final ObjectMethodsGenerator objectGenerator;
   private final ForeignMemoryAccessorGenerator accessorGenerator;
@@ -25,6 +26,7 @@ final class ForeignMemoryGenerator {
   ForeignMemoryGenerator(ProcessingEnvironment processingEnv,
       GeneratedTypeRegistry generatedTypes, LayoutCycleValidator layoutCycles) {
     this.processingEnv = processingEnv;
+    this.generatedTypes = generatedTypes;
     this.layoutCycles = layoutCycles;
     analyzer = new ForeignMemoryAnalyzer(processingEnv, generatedTypes);
     objectGenerator = new ObjectMethodsGenerator(processingEnv, generatedTypes);
@@ -41,7 +43,7 @@ final class ForeignMemoryGenerator {
     var isStructInterface = kind.equals("struct")
         && source.getKind() == ElementKind.INTERFACE;
     var model = isStructInterface
-        ? new StructInterfaceModel(processingEnv).analyze(source) : null;
+        ? generatedTypes.struct(source).analyze() : null;
     if (model != null && !model.valid()) return;
 
     var objectMethods = model == null
@@ -60,21 +62,24 @@ final class ForeignMemoryGenerator {
     var fields = model == null
         ? analyzer.inferFields(source)
         : analyzer.inferFields(model.fieldMethods());
-    analyzer.validateFields(source, fields);
+    var validated = analyzer.validateFields(source, fields, model);
+    fields = validated.fields();
+    var flexible = validated.flexible();
     var baseFields = model == null || model.baseStruct() == null
         ? null : analyzer.inferFields(model.baseFieldMethods());
     if (baseFields != null) {
-      analyzer.validateFields(model.baseStruct(), baseFields);
+      baseFields = analyzer.validateFields(model.baseStruct(), baseFields, null).fields();
     }
 
     writeSource(source, kind, effectiveVtable, fields,
-        baseFields, preparedObjectMethods,
+        baseFields, flexible, preparedObjectMethods,
         model == null ? null : model.baseStruct());
   }
 
   private void writeSource(TypeElement source, String kind, boolean vtable,
       ForeignMemoryAnalyzer.Fields fields,
       ForeignMemoryAnalyzer.Fields baseFields,
+      FlexibleArrayGenerator flexible,
       ObjectMethodsGenerator.Prepared objectMethods,
       TypeElement baseStruct)
       throws IOException {
@@ -123,7 +128,7 @@ final class ForeignMemoryGenerator {
           .replace("<generator>",
               ForeignMemoryProcessor.class.getCanonicalName())
           .replace("<modifier>", source.getKind() == ElementKind.INTERFACE
-              && kind.equals("struct") ? "public" : "public final")
+              && kind.equals("struct") && flexible == null ? "public" : "public final")
           .replace("<declaration>", declaration));
 
       writeLayout(out, fields, kind, vtable && baseStruct == null,
@@ -131,22 +136,24 @@ final class ForeignMemoryGenerator {
       if (vtable && baseStruct == null) {
         objectGenerator.writeVtableMetadata(out);
       }
-      if (!vtable) {
-        writeAllocators(out);
+      if (flexible == null) {
+        if (!vtable) writeAllocators(out);
+        writeReinterprets(out, source, simpleClassName);
+        writeArrayElementHelpers(out, source, simpleClassName);
+      } else {
+        flexible.writeStorage(out, simpleClassName, vtable);
       }
-      writeReinterprets(out, source, simpleClassName);
-      writeArrayElementHelpers(out, source, simpleClassName);
 
       switch (source.getKind()) {
         case INTERFACE -> {
           writeConstructors(out, simpleClassName, vtableSimpleName,
-              vtable, objectMethods.hasUsableVirtualMethods(), baseClassName);
+              vtable, objectMethods.hasUsableVirtualMethods(), baseClassName, flexible);
           if (baseFields != null) {
             accessorGenerator.writeInheritedFluentSetters(
                 out, simpleClassName, baseFields);
           }
           accessorGenerator.writeInterfaceFields(
-              out, simpleClassName, fields);
+              out, simpleClassName, fields, flexible);
           objectGenerator.writeSymbolHolder(out, objectMethods);
           objectGenerator.writeObjectMethods(out, objectMethods);
         }
@@ -282,13 +289,19 @@ final class ForeignMemoryGenerator {
 
   private void writeConstructors(Writer out, String className,
       String vtableTypeName, boolean vtable, boolean hasVirtualMethods,
-      String baseClassName)
+      String baseClassName, FlexibleArrayGenerator flexible)
       throws IOException {
     if (baseClassName == null) {
       out.write("""
 
             public final java.lang.foreign.MemorySegment MemorySegment$F;
           """);
+    }
+    if (flexible != null) {
+      out.write("""
+
+            public final java.lang.foreign.MemorySegment <name>$MemorySegment$F;
+          """.replace("<name>", flexible.array().element().name()));
     }
 
     if (hasVirtualMethods) {
@@ -299,25 +312,43 @@ final class ForeignMemoryGenerator {
           .replace("<vtableType>", vtableTypeName));
     }
 
+    var lengthParameter = flexible == null
+        ? "" : ", " + flexible.lengthType() + " flexibleLength";
     if (!vtable) {
+      var lengthArgument = flexible == null ? "" : ", flexibleLength";
       out.write("""
 
-            public <class>(java.lang.foreign.SegmentAllocator allocator) {
-              this(allocate$F(allocator));
+            public <class>(java.lang.foreign.SegmentAllocator allocator<lengthParameter>) {
+              this(allocate$F(allocator<lengthArgument>)<lengthArgument>);
+            }
+          """
+          .replace("<class>", className)
+          .replace("<lengthParameter>", lengthParameter)
+          .replace("<lengthArgument>", lengthArgument));
+    }
+
+    if (flexible != null && flexible.count() != null) {
+      out.write("""
+
+            public <class>(java.lang.foreign.MemorySegment memorySegment) {
+              this(memorySegment, readFlexibleLength$F(memorySegment));
             }
           """.replace("<class>", className));
     }
-
-    var memoryInitializer = baseClassName == null
-        ? "this.MemorySegment$F = memorySegment;"
-        : "super(memorySegment);";
     out.write("""
 
-          public <class>(java.lang.foreign.MemorySegment memorySegment) {
-            <memoryInitializer>
-        """
-        .replace("<class>", className)
-        .replace("<memoryInitializer>", memoryInitializer));
+          public <class>(java.lang.foreign.MemorySegment memorySegment<lengthParameter>) {
+        """.replace("<class>", className).replace("<lengthParameter>", lengthParameter));
+    out.write(baseClassName == null
+        ? "    this.MemorySegment$F = memorySegment;\n"
+        : "    super(memorySegment);\n");
+    if (flexible != null) {
+      out.write("""
+              this.<name>$MemorySegment$F = memorySegment.asSlice(
+                  <name>$Offset$F, <scale>(0L, flexibleLength));
+          """.replace("<name>", flexible.array().element().name())
+              .replace("<scale>", flexible.scaleMethod()));
+    }
 
     if (vtable && (baseClassName == null || hasVirtualMethods)) {
       out.write("""

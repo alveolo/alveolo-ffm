@@ -5,20 +5,29 @@ import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.STATIC;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+
+import org.alveolo.ffm.Flexible;
+import org.alveolo.ffm.Struct;
+import org.alveolo.ffm.Union;
 
 /// Analyzes the fields and conversion requirements of a generated foreign
 /// memory type.
@@ -29,9 +38,12 @@ final class ForeignMemoryAnalyzer {
       List<ExecutableElement> unsupportedMethods
   ) {}
 
+  record ValidatedFields(Fields fields, FlexibleArrayGenerator flexible) {}
+
   private final ProcessingEnvironment processingEnv;
   private final GeneratedTypeRegistry generatedTypes;
   private final Messager messager;
+  private final Map<TypeElement, Boolean> emptyLayouts = new HashMap<>();
 
   ForeignMemoryAnalyzer(ProcessingEnvironment processingEnv,
       GeneratedTypeRegistry generatedTypes) {
@@ -45,14 +57,55 @@ final class ForeignMemoryAnalyzer {
     if (type.getKind() == ElementKind.RECORD)
       return inferRecordFields(type);
 
-    var methods = type.getEnclosedElements().stream()
+    return inferFields(declaredFieldMethods(type));
+  }
+
+  private static List<ExecutableElement> declaredFieldMethods(TypeElement type) {
+    return type.getEnclosedElements().stream()
         .filter(ExecutableElement.class::isInstance)
         .map(ExecutableElement.class::cast)
         .filter(method -> method.getModifiers().contains(ABSTRACT))
         .filter(method -> !method.getModifiers().contains(STATIC))
         .filter(method -> !method.getModifiers().contains(DEFAULT))
         .toList();
-    return inferFields(methods);
+  }
+
+  private boolean hasEmptyLayout(TypeElement type) {
+    var struct = type.getAnnotation(Struct.class);
+    if (struct == null && type.getAnnotation(Union.class) == null) return false;
+
+    // Leave recursive by-value layouts to LayoutCycleValidator.
+    var known = emptyLayouts.putIfAbsent(type, false);
+    if (known != null) return known;
+
+    boolean empty;
+    if (type.getKind() == ElementKind.RECORD) {
+      empty = type.getRecordComponents().stream()
+          .allMatch(component -> emptyField(component, component.asType()));
+    } else {
+      Stream<ExecutableElement> fields;
+      if (struct == null) {
+        fields = declaredFieldMethods(type).stream();
+      } else {
+        var model = generatedTypes.struct(type).resolve();
+        if (!model.valid() || model.vtable() || model.flexible() != null) return false;
+        fields = Stream.concat(model.baseFieldMethods().stream(), model.fieldMethods().stream());
+      }
+      empty = fields.allMatch(method -> emptyField(method, method.getReturnType()));
+    }
+    emptyLayouts.put(type, empty);
+    return empty;
+  }
+
+  private boolean emptyField(Element member, TypeMirror type) {
+    if (type instanceof ArrayType array) type = array.getComponentType();
+    return type instanceof DeclaredType
+        && emptyValue(new TypeGenerator(processingEnv, generatedTypes, type, member));
+  }
+
+  private boolean emptyValue(TypeGenerator element) {
+    return element.foreignMemory && element.isValue()
+        && hasEmptyLayout(element.layoutSpecification());
   }
 
   Fields inferFields(List<ExecutableElement> declarations) {
@@ -203,15 +256,26 @@ final class ForeignMemoryAnalyzer {
         valid = false;
       }
 
-      if (!TypeGenerator.hasSequence(parameter.asType(), parameter)) {
+      var flexible = parameter.getAnnotation(Flexible.class) != null;
+      if (flexible) {
+        if (!parameter.equals(accessor.getParameters().getFirst())) {
+          messager.printError("@Flexible must be the outermost dimension", parameter);
+          valid = false;
+        }
+        if (TypeGenerator.hasSequence(parameter.asType(), parameter)) {
+          messager.printError(
+              "@Flexible cannot share an index with @Sequence", parameter);
+          valid = false;
+        }
+      } else if (!TypeGenerator.hasSequence(parameter.asType(), parameter)) {
         messager.printError(
             "Each indexed field parameter must carry @Sequence", parameter);
         valid = false;
         continue;
       }
 
-      var size = TypeGenerator.sequence(parameter.asType(), parameter);
-      if (size <= 0) {
+      var size = flexible ? 0L : TypeGenerator.sequence(parameter.asType(), parameter);
+      if (!flexible && size <= 0) {
         messager.printError(
             "Indexed field @Sequence value must be positive", parameter);
         valid = false;
@@ -315,6 +379,12 @@ final class ForeignMemoryAnalyzer {
 
   private boolean validIndexedElement(
       VariableGenerator element, boolean recordSnapshot) {
+    var flexibleError = element.flexibleUseError(true);
+    if (flexibleError != null) {
+      messager.printError(flexibleError, element.element);
+      return false;
+    }
+
     if (element.hasCanonicalScalar()) {
       messager.printError(
           "Canonical C scalar array and indexed-field elements are not yet "
@@ -395,8 +465,16 @@ final class ForeignMemoryAnalyzer {
     }
   }
 
-  void validateFields(TypeElement type, Fields fields) {
+  ValidatedFields validateFields(TypeElement type, Fields fields,
+      StructInterfaceModel.Result model) {
+    var validated = validateFlexibleFields(fields, model);
+    fields = validated.fields();
     for (var field : fields.fields()) {
+      var flexibleError = field.flexibleUseError(true);
+      if (flexibleError != null) {
+        messager.printError(flexibleError, field.element);
+        continue;
+      }
       field.bindingAnnotations.validate(processingEnv, type, field.element);
       BindingAnnotations.validateNested(processingEnv, field.typeMirror, type, field.element);
       if (field.releaseMethod() != null) {
@@ -415,7 +493,8 @@ final class ForeignMemoryAnalyzer {
         continue;
       }
 
-      if (fields.indexedFields().containsKey(field.name())) {
+      var indexed = fields.indexedFields().get(field.name());
+      if (indexed != null) {
         if (field.isString()) {
           messager.printError(
               "String elements are not supported in indexed fields",
@@ -455,6 +534,72 @@ final class ForeignMemoryAnalyzer {
         }
       }
     }
+    return validated;
+  }
+
+  private ValidatedFields validateFlexibleFields(Fields fields,
+      StructInterfaceModel.Result model) {
+    FlexibleArrayGenerator flexible = null;
+    var candidates = fields.indexedFields().values().stream()
+        .filter(IndexedField::flexible)
+        .toList();
+    for (var array : candidates) {
+      var resolved = flexibleArray(array, fields, model);
+      if (resolved == null) {
+        fields = withoutIndexedField(fields, array);
+      } else {
+        flexible = resolved;
+      }
+    }
+    return new ValidatedFields(fields, flexible);
+  }
+
+  private FlexibleArrayGenerator flexibleArray(IndexedField array, Fields fields,
+      StructInterfaceModel.Result model) {
+    String error = null;
+    if (model == null) {
+      error = "@Flexible is only allowed on the last field of a @Struct interface";
+    } else if (model.baseStruct() != null) {
+      error = "Physical @Struct inheritance requires fixed-size structs";
+    } else if (array.element() != fields.fields().getLast()) {
+      error = "@Flexible is only allowed on the last field of a @Struct interface";
+    } else if (!model.vtable() && fields.fields().size() == 1) {
+      error = "A flexible member requires a preceding header field";
+    } else if (emptyValue(array.element())) {
+      error = "Native array elements must have nonzero size: " + array.element().typeName();
+    }
+    if (error != null) {
+      messager.printError(error, array.declaration());
+      return null;
+    }
+
+    var declaration = (ExecutableElement) array.declaration();
+    var annotation = declaration.getParameters().getFirst()
+        .getAnnotation(Flexible.class);
+    var countName = annotation.value();
+    if (countName.isEmpty()) return new FlexibleArrayGenerator(array, null);
+    var count = fields.fields().stream().filter(field -> field.name().equals(countName))
+        .findFirst().orElse(null);
+    if (count != null && !fields.indexedFields().containsKey(countName)
+        && !count.isPrimitiveAddress()) {
+      switch (count.typeMirror.getKind()) {
+        case BYTE, SHORT, CHAR, INT, LONG -> { return new FlexibleArrayGenerator(array, count); }
+      }
+    }
+    messager.printError("@Flexible count '" + countName
+        + "' must name an integral scalar header field", array.declaration());
+    return null;
+  }
+
+  private Fields withoutIndexedField(Fields fields, IndexedField indexed) {
+    var remaining = fields.fields().stream()
+        .filter(field -> field != indexed.element())
+        .toList();
+    var indexedFields = new LinkedHashMap<>(fields.indexedFields());
+    indexedFields.remove(indexed.element().name());
+    var unsupported = new ArrayList<>(fields.unsupportedMethods());
+    addUnsupportedMethod(unsupported, (ExecutableElement) indexed.declaration());
+    return new Fields(remaining, indexedFields, unsupported);
   }
 
   boolean needsAllocatorWrite(VariableGenerator variable) {

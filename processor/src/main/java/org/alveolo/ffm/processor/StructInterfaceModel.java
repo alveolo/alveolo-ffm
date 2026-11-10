@@ -17,6 +17,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ExecutableType;
 
 import org.alveolo.ffm.Fields;
+import org.alveolo.ffm.Flexible;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.Virtual;
@@ -29,6 +30,7 @@ final class StructInterfaceModel {
       List<ExecutableElement> fieldMethods,
       List<ExecutableElement> baseFieldMethods,
       ObjectMethodsGenerator.Methods objectMethods,
+      Flexible flexible,
       boolean vtable,
       boolean valid
   ) {}
@@ -48,21 +50,34 @@ final class StructInterfaceModel {
       List<ExecutableElement> methods, TypeElement owner) {}
 
   private final ProcessingEnvironment processingEnv;
+  private final TypeElement target;
   private final List<Family> families = new ArrayList<>();
   private final List<FieldGroup> fieldGroups = new ArrayList<>();
   private final LinkedHashMap<String, FieldGroup> fieldsByName =
       new LinkedHashMap<>();
   private final List<Mapping> objectMappings = new ArrayList<>();
   private final Set<String> visitedTypes = new HashSet<>();
-  private boolean valid = true;
+  private final List<ProcessorError> errors = new ArrayList<>();
+  private Result result;
+  private Flexible flexible;
 
-  StructInterfaceModel(ProcessingEnvironment processingEnv) {
+  StructInterfaceModel(ProcessingEnvironment processingEnv, TypeElement target) {
     this.processingEnv = processingEnv;
+    this.target = target;
+    visit(target);
   }
 
-  Result analyze(TypeElement target) {
+  Result analyze() {
+    var model = resolve();
+    // Only the processor generating this struct reports its mapping errors.
+    errors.forEach(error -> processingEnv.getMessager()
+        .printError(error.getMessage(), error.element));
+    return model;
+  }
+
+  Result resolve() {
+    if (result != null) return result;
     var baseStruct = baseStruct(target);
-    visit(target);
     validateMappedOverrides();
     validateMappedMethods(target);
     validateVirtualSlots();
@@ -106,6 +121,9 @@ final class StructInterfaceModel {
     var struct = target.getAnnotation(Struct.class);
     var vtable = struct.vtable();
     if (baseStruct != null) {
+      if (baseFieldMethods.stream().anyMatch(StructInterfaceModel::isFlexible)) {
+        error("Physical @Struct inheritance requires fixed-size structs", target);
+      }
       var baseVtable = effectiveVtable(baseStruct);
       if (vtable && !baseVtable) {
         error("A derived @Struct cannot add a vtable to its inherited "
@@ -123,11 +141,12 @@ final class StructInterfaceModel {
       }
     }
 
-    return new Result(baseStruct, List.copyOf(fieldMethods),
+    result = new Result(baseStruct, List.copyOf(fieldMethods),
         List.copyOf(baseFieldMethods),
         new ObjectMethodsGenerator.Methods(
             methods, virtualMethods, symbolMethods),
-        vtable, valid);
+        flexible, vtable, errors.isEmpty());
+    return result;
   }
 
   private void visit(TypeElement type) {
@@ -255,6 +274,9 @@ final class StructInterfaceModel {
     }
 
     family.mapping = new Mapping(kind, method);
+    if (kind == Kind.FIELD && flexible == null && !method.getParameters().isEmpty()) {
+      flexible = method.getParameters().getFirst().getAnnotation(Flexible.class);
+    }
     return true;
   }
 
@@ -396,6 +418,11 @@ final class StructInterfaceModel {
         .toList();
   }
 
+  private static boolean isFlexible(ExecutableElement method) {
+    return !method.getParameters().isEmpty()
+        && method.getParameters().getFirst().getAnnotation(Flexible.class) != null;
+  }
+
   private static String mappingName(Kind kind) {
     return switch (kind) {
       case FIELD -> "@Fields or @Struct";
@@ -406,7 +433,6 @@ final class StructInterfaceModel {
 
   private void error(String message,
       javax.lang.model.element.Element element) {
-    processingEnv.getMessager().printError(message, element);
-    valid = false;
+    errors.add(new ProcessorError(element, message));
   }
 }

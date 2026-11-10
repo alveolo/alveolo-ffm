@@ -25,13 +25,16 @@ public interface CFSupport {
 
   /// Converts a Java String to an owned native reference.
   /// Returns [MemorySegment#NULL] for null input, never Java null.
-  /// Overrides must preserve this return contract.
+  /// For non-null input, returns a non-null reference or throws [OutOfMemoryError]
+  /// if CoreFoundation cannot allocate the string. Overrides must preserve this contract.
   default MemorySegment toCFString(String value) {
     if (value == null) return MemorySegment.NULL;
 
     try (var arena = Arena.ofConfined()) {
       var characters = arena.allocateFrom(JAVA_CHAR, value.toCharArray());
-      return CFStringCreateWithCharacters(MemorySegment.NULL, characters, value.length());
+      var string = CFStringCreateWithCharacters(MemorySegment.NULL, characters, value.length());
+      if (isNull(string)) throw new OutOfMemoryError("CoreFoundation could not allocate CFString");
+      return string;
     }
   }
 

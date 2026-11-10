@@ -20,6 +20,7 @@ import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.FirstVariadicArg;
+import org.alveolo.ffm.Flexible;
 import org.alveolo.ffm.Symbol;
 import org.alveolo.ffm.processor.TypeGenerator.CanonicalScalar;
 
@@ -810,7 +811,22 @@ class ExecutableGenerator {
         .validate(processingEnv, bindingType, element);
     hasUnsupported |= !BindingAnnotations.validateNested(
         processingEnv, element.getReturnType(), bindingType, element);
+    var flexibleReturnError = returnGenerator.flexibleUseError(true);
+    if (flexibleReturnError != null) {
+      messager.printError(flexibleReturnError, element);
+      return true;
+    }
     for (var parameter : parameterGenerators) {
+      if (parameter.element.getAnnotation(Flexible.class) != null) {
+        messager.printError("@Flexible is only allowed on an indexed struct field parameter",
+            parameter.element);
+        hasUnsupported = true;
+      }
+      var flexibleError = parameter.flexibleUseError(false);
+      if (flexibleError != null) {
+        messager.printError(flexibleError, parameter.element);
+        hasUnsupported = true;
+      }
       hasUnsupported |= !parameter.bindingAnnotations
           .validate(processingEnv, bindingType, parameter.element);
       hasUnsupported |= !BindingAnnotations.validateNested(

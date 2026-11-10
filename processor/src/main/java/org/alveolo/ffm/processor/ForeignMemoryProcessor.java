@@ -24,6 +24,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 
 import org.alveolo.ffm.Fields;
+import org.alveolo.ffm.Flexible;
 import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Union;
 import org.alveolo.ffm.Virtual;
@@ -32,6 +33,7 @@ import org.alveolo.ffm.Virtual;
   "org.alveolo.ffm.Struct",
   "org.alveolo.ffm.Union",
   "org.alveolo.ffm.Fields",
+  "org.alveolo.ffm.Flexible",
   "org.alveolo.ffm.Virtual",
 })
 @SupportedSourceVersion(RELEASE_25)
@@ -49,6 +51,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
     var processedTypes = new HashSet<TypeElement>();
 
     for (var annotation : annotations) {
+      if (annotation.getQualifiedName().contentEquals(Flexible.class.getCanonicalName())) {
+        validateFlexibleAnnotations(roundEnv.getElementsAnnotatedWith(annotation));
+        continue;
+      }
       if (annotation.getQualifiedName().contentEquals(
           Virtual.class.getCanonicalName())) {
         validateVirtualAnnotations(roundEnv.getElementsAnnotatedWith(
@@ -148,6 +154,17 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           || method.getModifiers().contains(DEFAULT)) {
         messager.printError(
             "@Virtual is only allowed on abstract instance methods", element);
+      }
+    }
+  }
+
+  private void validateFlexibleAnnotations(Set<? extends Element> parameters) {
+    for (var parameter : parameters) {
+      var method = (ExecutableElement) parameter.getEnclosingElement();
+      if (method.getEnclosingElement().getKind() != ElementKind.INTERFACE
+          || !method.getModifiers().contains(ABSTRACT)) {
+        processingEnv.getMessager().printError(
+            "@Flexible is only allowed on an indexed struct field parameter", parameter);
       }
     }
   }
