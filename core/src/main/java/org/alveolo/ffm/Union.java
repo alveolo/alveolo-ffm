@@ -8,6 +8,8 @@ import java.lang.annotation.Target;
 
 /// Marks an interface as a C union definition. Fields are inferred from
 /// accessor methods.
+/// A zero-sized union may be used by address, but not by value or as a
+/// contiguous array element.
 ///
 /// @see [Struct] for C structs
 /// @see [Sequence] for fixed-size inline array fields.

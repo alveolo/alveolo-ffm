@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 /// On an array or typed NIO-buffer call parameter, this requests aggregate
 /// pass-by-value semantics. Such a parameter must be non-null and carry
 /// [Sequence] so its native layout is fixed when the downcall handle is created.
+/// Zero-sized native types cannot be used by value or as array elements.
 ///
 /// @see [Address] for pointer semantics.
 @Target(TYPE_USE)

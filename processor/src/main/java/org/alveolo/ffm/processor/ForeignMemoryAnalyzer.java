@@ -43,7 +43,7 @@ final class ForeignMemoryAnalyzer {
   private final ProcessingEnvironment processingEnv;
   private final GeneratedTypeRegistry generatedTypes;
   private final Messager messager;
-  private final Map<TypeElement, Boolean> emptyLayouts = new HashMap<>();
+  private final Map<TypeElement, Boolean> zeroSizedLayouts = new HashMap<>();
 
   ForeignMemoryAnalyzer(ProcessingEnvironment processingEnv,
       GeneratedTypeRegistry generatedTypes) {
@@ -70,18 +70,18 @@ final class ForeignMemoryAnalyzer {
         .toList();
   }
 
-  private boolean hasEmptyLayout(TypeElement type) {
+  boolean hasZeroSizedLayout(TypeElement type) {
     var struct = type.getAnnotation(Struct.class);
     if (struct == null && type.getAnnotation(Union.class) == null) return false;
 
     // Leave recursive by-value layouts to LayoutCycleValidator.
-    var known = emptyLayouts.putIfAbsent(type, false);
+    var known = zeroSizedLayouts.putIfAbsent(type, false);
     if (known != null) return known;
 
-    boolean empty;
+    boolean zeroSized;
     if (type.getKind() == ElementKind.RECORD) {
-      empty = type.getRecordComponents().stream()
-          .allMatch(component -> emptyField(component, component.asType()));
+      zeroSized = type.getRecordComponents().stream()
+          .allMatch(component -> zeroSizedField(component, component.asType()));
     } else {
       Stream<ExecutableElement> fields;
       if (struct == null) {
@@ -91,21 +91,36 @@ final class ForeignMemoryAnalyzer {
         if (!model.valid() || model.vtable() || model.flexible() != null) return false;
         fields = Stream.concat(model.baseFieldMethods().stream(), model.fieldMethods().stream());
       }
-      empty = fields.allMatch(method -> emptyField(method, method.getReturnType()));
+      zeroSized = fields.allMatch(
+          method -> zeroSizedField(method, method.getReturnType()));
     }
-    emptyLayouts.put(type, empty);
-    return empty;
+    zeroSizedLayouts.put(type, zeroSized);
+    return zeroSized;
   }
 
-  private boolean emptyField(Element member, TypeMirror type) {
+  private boolean zeroSizedField(Element member, TypeMirror type) {
     if (type instanceof ArrayType array) type = array.getComponentType();
     return type instanceof DeclaredType
-        && emptyValue(new TypeGenerator(processingEnv, generatedTypes, type, member));
+        && isZeroSizedValue(
+            new TypeGenerator(processingEnv, generatedTypes, type, member));
   }
 
-  private boolean emptyValue(TypeGenerator element) {
-    return element.foreignMemory && element.isValue()
-        && hasEmptyLayout(element.layoutSpecification());
+  boolean isZeroSizedValue(TypeGenerator value) {
+    if (!value.foreignMemory || !value.isValue()) return false;
+    var specification = value.layoutSpecification();
+    return specification != null && hasZeroSizedLayout(specification);
+  }
+
+  String zeroSizedValueError(TypeGenerator value) {
+    if (isZeroSizedValue(value))
+      return "Zero-sized native types can only be used by address";
+
+    if (value.isValueStructRecordArray()) {
+      var element = value.arrayComponentGenerator();
+      if (isZeroSizedValue(element))
+        return "Native array elements must have nonzero size: " + element.typeName();
+    }
+    return null;
   }
 
   Fields inferFields(List<ExecutableElement> declarations) {
@@ -385,6 +400,13 @@ final class ForeignMemoryAnalyzer {
       return false;
     }
 
+    if (isZeroSizedValue(element)) {
+      messager.printError(
+          "Native array elements must have nonzero size: " + element.typeName(),
+          element.element);
+      return false;
+    }
+
     if (element.hasCanonicalScalar()) {
       messager.printError(
           "Canonical C scalar array and indexed-field elements are not yet "
@@ -473,6 +495,11 @@ final class ForeignMemoryAnalyzer {
       var flexibleError = field.flexibleUseError(true);
       if (flexibleError != null) {
         messager.printError(flexibleError, field.element);
+        continue;
+      }
+      if (isZeroSizedValue(field)) {
+        messager.printError(
+            "Zero-sized native types can only be used by address", field.element);
         continue;
       }
       field.bindingAnnotations.validate(processingEnv, type, field.element);
@@ -565,8 +592,6 @@ final class ForeignMemoryAnalyzer {
       error = "@Flexible is only allowed on the last field of a @Struct interface";
     } else if (!model.vtable() && fields.fields().size() == 1) {
       error = "A flexible member requires a preceding header field";
-    } else if (emptyValue(array.element())) {
-      error = "Native array elements must have nonzero size: " + array.element().typeName();
     }
     if (error != null) {
       messager.printError(error, array.declaration());

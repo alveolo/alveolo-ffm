@@ -248,7 +248,8 @@ final class VariableGenerator extends TypeGenerator {
 
     var size = allocationLayout() + ".byteSize()";
     return isRecord() && isAddress()
-        ? "(" + name + " == null ? 0L : " + size + ")" : size;
+        ? "(" + name + " == null ? 0L : Math.max(1L, " + size + "))"
+        : size;
   }
 
   String allocationAlignment() {

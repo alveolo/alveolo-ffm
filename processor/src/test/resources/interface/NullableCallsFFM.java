@@ -77,7 +77,7 @@ public final class NullableCallsFFM implements NullableCalls {
     try (var arena$f = java.lang.foreign.Arena.ofConfined()) {
       var text$bytes$f = text == null ? null : text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
       var item$allocationOffset$f = 0L;
-      var allocationOffset$f = (item == null ? 0L : pkg.NullItemFM.MemoryLayout$F.byteSize());
+      var allocationOffset$f = (item == null ? 0L : Math.max(1L, pkg.NullItemFM.MemoryLayout$F.byteSize()));
       allocationOffset$f = Math.addExact(
           allocationOffset$f,
           Math.floorMod(-allocationOffset$f, 1L));
@@ -88,7 +88,7 @@ public final class NullableCallsFFM implements NullableCalls {
           ? java.lang.foreign.MemorySegment.NULL
           : arena$f.allocate(allocationOffset$f, pkg.NullItemFM.MemoryLayout$F.byteAlignment());
       var item$MemorySegment$f = (java.lang.foreign.MemorySegment) (item == null ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
-          item$allocationOffset$f, (item == null ? 0L : pkg.NullItemFM.MemoryLayout$F.byteSize())));
+          item$allocationOffset$f, (item == null ? 0L : Math.max(1L, pkg.NullItemFM.MemoryLayout$F.byteSize()))));
       if (item != null) {
         pkg.NullItemFM.toMemorySegment$F(item, item$MemorySegment$f);
       }

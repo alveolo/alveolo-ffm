@@ -160,7 +160,7 @@ public final class PassModeFFM implements PassMode {
           Math.floorMod(-allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
       var address$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize()));
+          allocationOffset$f, (address == null ? 0L : Math.max(1L, passmode.AddressRecordFM.MemoryLayout$F.byteSize())));
       var allocation$MemorySegment$f = allocationOffset$f == 0L
           ? java.lang.foreign.MemorySegment.NULL
           : arena$f.allocate(allocationOffset$f, Math.max(Math.max(passmode.DefaultRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()), passmode.AddressRecordFM.MemoryLayout$F.byteAlignment()));
@@ -171,7 +171,7 @@ public final class PassModeFFM implements PassMode {
           value$allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteSize());
       passmode.ValueRecordFM.toMemorySegment$F(value, value$MemorySegment$f);
       var address$MemorySegment$f = (java.lang.foreign.MemorySegment) (address == null ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
-          address$allocationOffset$f, (address == null ? 0L : passmode.AddressRecordFM.MemoryLayout$F.byteSize())));
+          address$allocationOffset$f, (address == null ? 0L : Math.max(1L, passmode.AddressRecordFM.MemoryLayout$F.byteSize()))));
       if (address != null) {
         passmode.AddressRecordFM.toMemorySegment$F(address, address$MemorySegment$f);
       }
@@ -213,7 +213,7 @@ public final class PassModeFFM implements PassMode {
           Math.floorMod(-allocationOffset$f, passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()));
       var recordAddress$allocationOffset$f = allocationOffset$f;
       allocationOffset$f = Math.addExact(
-          allocationOffset$f, (recordAddress == null ? 0L : passmode.ValueRecordFM.MemoryLayout$F.byteSize()));
+          allocationOffset$f, (recordAddress == null ? 0L : Math.max(1L, passmode.ValueRecordFM.MemoryLayout$F.byteSize())));
       var allocation$MemorySegment$f = allocationOffset$f == 0L
           ? java.lang.foreign.MemorySegment.NULL
           : arena$f.allocate(allocationOffset$f, Math.max(passmode.AddressRecordFM.MemoryLayout$F.byteAlignment(), passmode.ValueRecordFM.MemoryLayout$F.byteAlignment()));
@@ -221,7 +221,7 @@ public final class PassModeFFM implements PassMode {
           recordValue$allocationOffset$f, passmode.AddressRecordFM.MemoryLayout$F.byteSize());
       passmode.AddressRecordFM.toMemorySegment$F(recordValue, recordValue$MemorySegment$f);
       var recordAddress$MemorySegment$f = (java.lang.foreign.MemorySegment) (recordAddress == null ? java.lang.foreign.MemorySegment.NULL : allocation$MemorySegment$f.asSlice(
-          recordAddress$allocationOffset$f, (recordAddress == null ? 0L : passmode.ValueRecordFM.MemoryLayout$F.byteSize())));
+          recordAddress$allocationOffset$f, (recordAddress == null ? 0L : Math.max(1L, passmode.ValueRecordFM.MemoryLayout$F.byteSize()))));
       if (recordAddress != null) {
         passmode.ValueRecordFM.toMemorySegment$F(recordAddress, recordAddress$MemorySegment$f);
       }

@@ -70,9 +70,10 @@ final class ForeignMemoryGenerator {
     if (baseFields != null) {
       baseFields = analyzer.validateFields(model.baseStruct(), baseFields, null).fields();
     }
+    var zeroSized = analyzer.hasZeroSizedLayout(source);
 
     writeSource(source, kind, effectiveVtable, fields,
-        baseFields, flexible, preparedObjectMethods,
+        baseFields, flexible, zeroSized, preparedObjectMethods,
         model == null ? null : model.baseStruct());
   }
 
@@ -80,6 +81,7 @@ final class ForeignMemoryGenerator {
       ForeignMemoryAnalyzer.Fields fields,
       ForeignMemoryAnalyzer.Fields baseFields,
       FlexibleArrayGenerator flexible,
+      boolean zeroSized,
       ObjectMethodsGenerator.Prepared objectMethods,
       TypeElement baseStruct)
       throws IOException {
@@ -137,9 +139,10 @@ final class ForeignMemoryGenerator {
         objectGenerator.writeVtableMetadata(out);
       }
       if (flexible == null) {
-        if (!vtable) writeAllocators(out);
-        writeReinterprets(out, source, simpleClassName);
-        writeArrayElementHelpers(out, source, simpleClassName);
+        if (!vtable) writeAllocators(out, !zeroSized);
+        writeReinterprets(out, source, simpleClassName, !zeroSized);
+        if (!zeroSized)
+          writeArrayElementHelpers(out, source, simpleClassName);
       } else {
         flexible.writeStorage(out, simpleClassName, vtable);
       }
@@ -198,7 +201,7 @@ final class ForeignMemoryGenerator {
     out.write("      }));\n");
   }
 
-  private void writeAllocators(Writer out) throws IOException {
+  private void writeAllocators(Writer out, boolean bulk) throws IOException {
     out.write("""
 
           public static java.lang.foreign.MemorySegment allocate$F(
@@ -206,6 +209,10 @@ final class ForeignMemoryGenerator {
             return allocator.allocate(
               MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
           }
+        """);
+
+    if (!bulk) return;
+    out.write("""
 
           public static java.lang.foreign.MemorySegment allocate$F(
               java.lang.foreign.SegmentAllocator allocator, long count) {
@@ -218,7 +225,7 @@ final class ForeignMemoryGenerator {
   }
 
   private void writeReinterprets(
-      Writer out, TypeElement source, String simpleClassName)
+      Writer out, TypeElement source, String simpleClassName, boolean bulk)
       throws IOException {
     var isRecord = source.getKind() == ElementKind.RECORD;
     var returnType = isRecord
@@ -236,6 +243,12 @@ final class ForeignMemoryGenerator {
             return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
                 ? null : <expression>;
           }
+        """
+        .replace("<type>", returnType)
+        .replace("<expression>", expression));
+
+    if (!bulk) return;
+    out.write("""
 
           public static java.lang.foreign.MemorySegment reinterpret$F(
               java.lang.foreign.MemorySegment memorySegment, long count) {
@@ -245,9 +258,7 @@ final class ForeignMemoryGenerator {
             return memorySegment.reinterpret(Math.multiplyExact(
                 MemoryLayout$F.byteSize(), count));
           }
-        """
-        .replace("<type>", returnType)
-        .replace("<expression>", expression));
+        """);
   }
 
   private void writeArrayElementHelpers(

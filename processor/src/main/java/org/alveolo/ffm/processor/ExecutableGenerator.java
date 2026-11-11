@@ -816,6 +816,12 @@ class ExecutableGenerator {
       messager.printError(flexibleReturnError, element);
       return true;
     }
+    var zeroSizedReturn = memoryAnalyzer.isZeroSizedValue(returnGenerator);
+    if (zeroSizedReturn) {
+      messager.printError(
+          "Zero-sized native types can only be used by address", element);
+      hasUnsupported = true;
+    }
     for (var parameter : parameterGenerators) {
       if (parameter.element.getAnnotation(Flexible.class) != null) {
         messager.printError("@Flexible is only allowed on an indexed struct field parameter",
@@ -910,8 +916,9 @@ class ExecutableGenerator {
       hasUnsupported = true;
     }
 
-    boolean needsExternalAllocator = (returnGenerator.foreignMemory)
+    boolean valueInterfaceReturn = returnGenerator.foreignMemory
         && !returnGenerator.isRecord() && returnGenerator.isValue();
+    boolean needsExternalAllocator = !zeroSizedReturn && valueInterfaceReturn;
 
     if (needsExternalAllocator) {
       if (parameterGenerators.isEmpty()
@@ -922,7 +929,9 @@ class ExecutableGenerator {
       }
     }
 
-    boolean skipExternalAllocator = needsExternalAllocator;
+    boolean skipExternalAllocator = valueInterfaceReturn
+        && !parameterGenerators.isEmpty()
+        && allocatorParameters.contains(parameterGenerators.getFirst());
     for (var paramGen : parameterGenerators) {
       if (skipExternalAllocator) {
         skipExternalAllocator = false;
@@ -934,6 +943,13 @@ class ExecutableGenerator {
 
         messager.printError(
             "SegmentAllocator is not expected", paramGen.element);
+        continue;
+      }
+
+      var zeroSizedError = memoryAnalyzer.zeroSizedValueError(paramGen);
+      if (zeroSizedError != null) {
+        hasUnsupported = true;
+        messager.printError(zeroSizedError, paramGen.element);
         continue;
       }
 

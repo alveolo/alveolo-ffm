@@ -10,6 +10,8 @@ import java.lang.annotation.Target;
 /// snapshot declarations and cannot contain memory-backed struct/union types or
 /// their generated wrappers, even with [Value] or [Address]. This also applies
 /// through nested records and record arrays. Use an interface for mixed layouts.
+/// A zero-sized struct may be used by address or as an empty physical base, but
+/// not as an ordinary by-value field or a contiguous array element.
 ///
 /// Direct, otherwise-unmapped
 /// interface accessors define fields in declaration order. Reusable parent

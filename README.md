@@ -633,7 +633,9 @@ Value/address annotations apply to every element: `@Value Point`
 produces contiguous inline `Point` storage, while `@Address Point` produces an
 inline array of pointer slots. A value-style record element returned by an
 indexed getter is a snapshot; a memory-backed interface element is a view that
-aliases the parent segment.
+aliases the parent segment. Value elements must have a nonzero native size.
+Address elements may refer to a zero-sized struct or union used as an opaque
+marker because the pointer slots themselves have a nonzero stride.
 
 Indexed array fields are supported on memory-backed interfaces. A source
 interface declares only the indexed getter; generated setters and low-level
@@ -725,6 +727,11 @@ layouts. `reinterpret$F(segment, count)` gives pointer-like native memory an
 explicit array extent; the caller remains responsible for proving that many
 elements are accessible and for keeping the underlying memory alive.
 
+These bulk helpers are omitted when the effective layout is zero-sized because
+such a layout has no element stride or segment bounds. Its companion retains
+the single-object allocator, `MemorySegment` constructor and `reinterpret$F`
+helper for address use.
+
 For a memory-backed interface, `at$F(segment, index)` returns an element view
 that aliases the array. For a record, `at$F(...)` returns a detached snapshot.
 No generic whole-element copy helper is generated.
@@ -735,6 +742,14 @@ The processor has defaults that match the common Java shape:
 
 - records are value-like
 - interfaces are address-like memory wrappers
+
+A zero-sized struct or union is allowed as an address-like marker. It may also
+serve as an empty physical base. Passing an empty record with `@Address`
+materializes a temporary zero-byte snapshot for the duration of the call; like
+other record snapshots, it does not preserve native pointer identity. A
+zero-sized type cannot be used as an ordinary by-value field, passed by value,
+or used as a contiguous array element. Arrays of pointers to such a type remain
+valid.
 
 Override that with `@Value` or `@Address` on a type use:
 
