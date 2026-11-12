@@ -13,7 +13,7 @@ public final class NamesFM implements Names {
                 java.lang.foreign.ValueLayout.JAVA_BYTE)).withName("rows"),
       }));
 
-  public static java.lang.foreign.MemorySegment allocate$F(
+  public static java.lang.foreign.MemorySegment allocateFlexible$F(
       java.lang.foreign.SegmentAllocator allocator,
       int flexibleLength) {
     var memorySegment = allocator.allocate(
@@ -28,7 +28,14 @@ public final class NamesFM implements Names {
     if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;
     int flexibleLength = readFlexibleLength$F(
         memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+    return reinterpretFlexible$F(memorySegment, flexibleLength);
+  }
+
+  public static NamesFM reinterpretFlexible$F(
+      java.lang.foreign.MemorySegment memorySegment,
+      int flexibleLength) {
     long byteSize = Math.max(MemoryLayout$F.byteSize(), rows$RowLayout$F.scale(rows$Offset$F, flexibleLength));
+    if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;
     return new NamesFM(memorySegment.reinterpret(byteSize), flexibleLength);
   }
 
@@ -37,7 +44,7 @@ public final class NamesFM implements Names {
   public final java.lang.foreign.MemorySegment rows$MemorySegment$F;
 
   public NamesFM(java.lang.foreign.SegmentAllocator allocator, int flexibleLength) {
-    this(allocate$F(allocator, flexibleLength), flexibleLength);
+    this(allocateFlexible$F(allocator, flexibleLength), flexibleLength);
   }
 
   public NamesFM(java.lang.foreign.MemorySegment memorySegment) {
@@ -45,9 +52,14 @@ public final class NamesFM implements Names {
   }
 
   public NamesFM(java.lang.foreign.MemorySegment memorySegment, int flexibleLength) {
+    this(memorySegment, memorySegment.asSlice(
+        rows$Offset$F, rows$RowLayout$F.scale(0L, flexibleLength)));
+  }
+
+  private NamesFM(java.lang.foreign.MemorySegment memorySegment,
+      java.lang.foreign.MemorySegment flexibleMemorySegment) {
     this.MemorySegment$F = memorySegment;
-    this.rows$MemorySegment$F = memorySegment.asSlice(
-        rows$Offset$F, rows$RowLayout$F.scale(0L, flexibleLength));
+    this.rows$MemorySegment$F = flexibleMemorySegment;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement

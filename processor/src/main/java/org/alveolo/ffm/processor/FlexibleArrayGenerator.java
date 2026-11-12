@@ -9,7 +9,8 @@ import java.io.Writer;
 import javax.lang.model.type.TypeKind;
 
 /// Generates single-object allocation and wrapping for a struct with a
-/// flexible array member. The bounded tail excludes any trailing ABI padding.
+/// flexible array member. Explicit element counts exclude trailing ABI padding;
+/// byte-sized views bound the complete object to the supplied extent.
 record FlexibleArrayGenerator(IndexedField array, VariableGenerator count) {
   void writeStorage(Writer out, String className, boolean vtable) throws IOException {
     var name = array.element().name();
@@ -35,7 +36,7 @@ record FlexibleArrayGenerator(IndexedField array, VariableGenerator count) {
     if (!vtable) {
       out.write("""
 
-            public static java.lang.foreign.MemorySegment allocate$F(
+            public static java.lang.foreign.MemorySegment allocateFlexible$F(
                 java.lang.foreign.SegmentAllocator allocator,
                 <lengthType> flexibleLength) {
           """.replace("<lengthType>", lengthType()));
@@ -55,22 +56,42 @@ record FlexibleArrayGenerator(IndexedField array, VariableGenerator count) {
       out.write("  }\n");
     }
 
-    out.write("""
-
-          public static <class> reinterpret$F(
-              java.lang.foreign.MemorySegment memorySegment<parameter>) {
-        """.replace("<class>", className).replace("<parameter>", count == null
-            ? ", long flexibleLength" : ""));
     if (count != null) {
       out.write("""
+
+            public static <class> reinterpret$F(
+                java.lang.foreign.MemorySegment memorySegment) {
               if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;
               <lengthType> flexibleLength = readFlexibleLength$F(
                   memorySegment.reinterpret(MemoryLayout$F.byteSize()));
-          """.replace("<lengthType>", lengthType()));
+              return reinterpretFlexible$F(memorySegment, flexibleLength);
+            }
+          """.replace("<class>", className)
+          .replace("<lengthType>", lengthType()));
     }
+
+    if (count == null) {
+      out.write("""
+
+            public static <class> reinterpret$F(
+                java.lang.foreign.MemorySegment memorySegment, long byteSize) {
+              if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;
+              var bounded = memorySegment.reinterpret(byteSize);
+              return new <class>(bounded, bounded.asSlice(<name>$Offset$F));
+            }
+          """.replace("<class>", className)
+          .replace("<name>", name));
+    }
+
+    out.write("""
+
+          public static <class> reinterpretFlexible$F(
+              java.lang.foreign.MemorySegment memorySegment,
+              <lengthType> flexibleLength) {
+        """.replace("<class>", className)
+        .replace("<lengthType>", lengthType()));
     out.write("    long byteSize = " + byteSize + ";\n");
-    if (count == null)
-      out.write("    if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;\n");
+    out.write("    if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;\n");
     out.write("""
             return new <class>(memorySegment.reinterpret(byteSize), flexibleLength);
           }

@@ -48,7 +48,8 @@ class FlexibleStructTest {
   void wrapsReadOnlyStorageWithAnExplicitCapacity() {
     try (var arena = Arena.ofConfined()) {
       var bytes = arena.allocate(64, FlexibleRowsFM.MemoryLayout$F.byteAlignment());
-      FlexibleRowsFM.allocate$F(SegmentAllocator.prefixAllocator(bytes), (byte) 1);
+      FlexibleRowsFM.allocateFlexible$F(
+          SegmentAllocator.prefixAllocator(bytes), (byte) 1);
       var readOnly = bytes.asReadOnly();
       var rows = new FlexibleRowsFM(readOnly, (byte) 2);
       assertSame(readOnly, rows.MemorySegment$F);
@@ -74,10 +75,13 @@ class FlexibleStructTest {
           () -> new FlexibleRowsFM(arena, (byte) -1));
       assertThrows(IllegalArgumentException.class, () -> new FlexiblePacketsFM(arena, -1));
       assertThrows(IllegalArgumentException.class,
-          () -> FlexiblePacketsFM.reinterpret$F(MemorySegment.NULL, -1));
+          () -> FlexiblePacketsFM.reinterpretFlexible$F(
+              MemorySegment.NULL, -1));
       assertThrows(ArithmeticException.class, () -> new FlexiblePacketsFM(arena, Long.MAX_VALUE));
       assertNull(FlexibleRowsFM.reinterpret$F(MemorySegment.NULL));
-      assertNull(FlexiblePacketsFM.reinterpret$F(MemorySegment.NULL, 3));
+      assertNull(FlexiblePacketsFM.reinterpret$F(MemorySegment.NULL, 0));
+      assertNull(FlexiblePacketsFM.reinterpretFlexible$F(
+          MemorySegment.NULL, 3));
     }
   }
 
@@ -118,6 +122,13 @@ class FlexibleStructTest {
       assertEquals(one.MemorySegment$F.byteSize(), empty.MemorySegment$F.byteSize());
       assertEquals(0, empty.data$MemorySegment$F.byteSize());
       assertThrows(IndexOutOfBoundsException.class, () -> empty.data(0));
+      var extent = PaddedBytesFM.reinterpret$F(
+          MemorySegment.ofAddress(one.MemorySegment$F.address()),
+          one.MemorySegment$F.byteSize());
+      assertEquals(one.MemorySegment$F.byteSize()
+              - PaddedBytesFM.MemoryLayout$F.byteOffset(
+                  PaddedBytesFM.data$PathElement$F),
+          extent.data$MemorySegment$F.byteSize());
       var shortView = new PaddedBytesFM(one.MemorySegment$F.asSlice(1, 10), 1);
       shortView.data(0, (byte) 11);
       assertEquals(11, one.MemorySegment$F.get(ValueLayout.JAVA_BYTE, 10));
@@ -130,7 +141,7 @@ class FlexibleStructTest {
       var request = new FlexiblePacketsFM(arena, 2).streamId(42);
       request.packets(1).left(19);
       var address = MemorySegment.ofAddress(request.MemorySegment$F.address());
-      var alias = FlexiblePacketsFM.reinterpret$F(address, 2);
+      var alias = FlexiblePacketsFM.reinterpretFlexible$F(address, 2);
       assertEquals(42, alias.streamId());
       assertEquals(19, alias.packets(1).left());
       alias.packets(1).right(27);
@@ -141,6 +152,14 @@ class FlexibleStructTest {
       assertThrows(IndexOutOfBoundsException.class, () -> alias.packets(-1));
       assertThrows(ArithmeticException.class, () -> alias.packets(1L << 61));
       assertThrows(IndexOutOfBoundsException.class, () -> new FlexiblePacketsFM(request.MemorySegment$F, 3));
+
+      var sized = FlexiblePacketsFM.reinterpret$F(
+          address, request.MemorySegment$F.byteSize());
+      assertEquals(request.MemorySegment$F.byteSize(),
+          sized.MemorySegment$F.byteSize());
+      assertEquals(2 * PairSFM.MemoryLayout$F.byteSize(),
+          sized.packets$MemorySegment$F.byteSize());
+      assertEquals(27, sized.packets(1).right());
     }
   }
 

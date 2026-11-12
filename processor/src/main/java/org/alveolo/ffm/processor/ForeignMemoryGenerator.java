@@ -214,7 +214,7 @@ final class ForeignMemoryGenerator {
     if (!bulk) return;
     out.write("""
 
-          public static java.lang.foreign.MemorySegment allocate$F(
+          public static java.lang.foreign.MemorySegment allocateSequence$F(
               java.lang.foreign.SegmentAllocator allocator, long count) {
             if (count < 0) {
               throw new IllegalArgumentException("count must be non-negative");
@@ -250,7 +250,7 @@ final class ForeignMemoryGenerator {
     if (!bulk) return;
     out.write("""
 
-          public static java.lang.foreign.MemorySegment reinterpret$F(
+          public static java.lang.foreign.MemorySegment reinterpretSequence$F(
               java.lang.foreign.MemorySegment memorySegment, long count) {
             if (count < 0) {
               throw new IllegalArgumentException("count must be non-negative");
@@ -327,13 +327,15 @@ final class ForeignMemoryGenerator {
         ? "" : ", " + flexible.lengthType() + " flexibleLength";
     if (!vtable) {
       var lengthArgument = flexible == null ? "" : ", flexibleLength";
+      var allocate = flexible == null ? "allocate$F" : "allocateFlexible$F";
       out.write("""
 
             public <class>(java.lang.foreign.SegmentAllocator allocator<lengthParameter>) {
-              this(allocate$F(allocator<lengthArgument>)<lengthArgument>);
+              this(<allocate>(allocator<lengthArgument>)<lengthArgument>);
             }
           """
           .replace("<class>", className)
+          .replace("<allocate>", allocate)
           .replace("<lengthParameter>", lengthParameter)
           .replace("<lengthArgument>", lengthArgument));
     }
@@ -350,15 +352,25 @@ final class ForeignMemoryGenerator {
 
           public <class>(java.lang.foreign.MemorySegment memorySegment<lengthParameter>) {
         """.replace("<class>", className).replace("<lengthParameter>", lengthParameter));
+    if (flexible != null) {
+      out.write("""
+              this(memorySegment, memorySegment.asSlice(
+                  <name>$Offset$F, <scale>(0L, flexibleLength)));
+            }
+
+            private <class>(java.lang.foreign.MemorySegment memorySegment,
+                java.lang.foreign.MemorySegment flexibleMemorySegment) {
+          """
+          .replace("<class>", className)
+          .replace("<name>", flexible.array().element().name())
+          .replace("<scale>", flexible.scaleMethod()));
+    }
     out.write(baseClassName == null
         ? "    this.MemorySegment$F = memorySegment;\n"
         : "    super(memorySegment);\n");
     if (flexible != null) {
-      out.write("""
-              this.<name>$MemorySegment$F = memorySegment.asSlice(
-                  <name>$Offset$F, <scale>(0L, flexibleLength));
-          """.replace("<name>", flexible.array().element().name())
-              .replace("<scale>", flexible.scaleMethod()));
+      out.write("    this.<name>$MemorySegment$F = flexibleMemorySegment;\n"
+          .replace("<name>", flexible.array().element().name()));
     }
 
     if (vtable && (baseClassName == null || hasVirtualMethods)) {

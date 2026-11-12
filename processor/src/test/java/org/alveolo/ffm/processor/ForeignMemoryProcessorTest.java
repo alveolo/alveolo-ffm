@@ -492,9 +492,9 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
             ArraySnapshot detached = ArraySnapshotFM.fromMemorySegment$F(
                 snapshotMemory);
 
-            var pointArray = ArrayPointFM.allocate$F(arena, 2);
+            var pointArray = ArrayPointFM.allocateSequence$F(arena, 2);
             ArrayPoint first = ArrayPointFM.at$F(pointArray, 0);
-            MemorySegment bounded = ArrayPointFM.reinterpret$F(
+            MemorySegment bounded = ArrayPointFM.reinterpretSequence$F(
                 pointArray, 2);
           }
         }
@@ -876,7 +876,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
           void allocate(java.lang.foreign.Arena arena) {
             new %1$s(arena);
             %1$s.allocate$F(arena);
-            %1$s.allocate$F(arena, 2);
+            %1$s.allocateSequence$F(arena, 2);
           }
         }
         """.formatted(wrapper));

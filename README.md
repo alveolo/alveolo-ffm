@@ -476,7 +476,8 @@ The processor generates a layout helper with:
 
 - `MemoryLayout$F`
 - `<field>$PathElement$F` path elements and `<field>$VarHandle$F` var handles
-- `allocate$F(...)`
+- `allocate$F(...)` and, where applicable, `allocateSequence$F(...)` or
+  `allocateFlexible$F(...)`
 - `toMemorySegment$F(...)` and `fromMemorySegment$F(...)` record conversion
   helpers
 
@@ -685,9 +686,19 @@ lengths use the count field's Java type.
 
 When the length comes from elsewhere, omit the field name, e.g.
 `@Value PacketFM packets(@Flexible long index)`. Pass the length to
-`new TransferFM(arena, n)`, `new TransferFM(segment, n)` or
-`TransferFM.reinterpret$F(ptr, n)` as a `long`. This also supports counts
-decoded with `Integer.toUnsignedLong` from a native `uint32_t`.
+`new TransferFM(arena, n)`, `new TransferFM(segment, n)`,
+`TransferFM.allocateFlexible$F(allocator, n)` or
+`TransferFM.reinterpretFlexible$F(ptr, n)` as a `long`. This also supports
+counts decoded with `Integer.toUnsignedLong` from a native `uint32_t`.
+
+When a native API supplies the complete object size in bytes rather than an
+element count, use `TransferFM.reinterpret$F(ptr, byteSize)`. Like
+`MemorySegment.reinterpret(long)`, the argument is a byte size. The generated
+wrapper bounds `MemorySegment$F` to that extent and derives the available
+flexible tail. This overload is generated only without a linked count; a linked
+count already provides the object extent through `reinterpret$F(ptr)`. The
+byte-sized tail contains every byte after its offset, including any trailing
+ABI padding. Use `reinterpretFlexible$F` when the exact logical count is known.
 
 Both forms expose the tail as a public final `MemorySegment`. For `Names`,
 `names.rows$MemorySegment$F` starts at the first row and spans exactly
@@ -717,15 +728,15 @@ arrays:
 record Point(int x, int y) {}
 
 try (var arena = Arena.ofConfined()) {
-  var points = PointFM.allocate$F(arena, 3);
+  var points = PointFM.allocateSequence$F(arena, 3);
   var first = PointFM.at$F(points, 0);
 }
 ```
 
-`allocate$F(allocator, count)` creates contiguous storage for `count`
-layouts. `reinterpret$F(segment, count)` gives pointer-like native memory an
-explicit array extent; the caller remains responsible for proving that many
-elements are accessible and for keeping the underlying memory alive.
+`allocateSequence$F(allocator, count)` creates contiguous storage for `count`
+layouts. `reinterpretSequence$F(segment, count)` gives pointer-like native
+memory an explicit sequence extent; the caller remains responsible for proving
+that many elements are accessible and for keeping the underlying memory alive.
 
 These bulk helpers are omitted when the effective layout is zero-sized because
 such a layout has no element stride or segment bounds. Its companion retains
@@ -866,8 +877,8 @@ not native contiguous-array carriers.
 
 Array and buffer return types are rejected because a native pointer return has
 no implied extent or lifetime. Bind it as `MemorySegment`, then use the target
-struct's `reinterpret$F(segment, count)` and `at$F(...)` helpers when the
-native contract supplies a trustworthy element count.
+struct's `reinterpretSequence$F(segment, count)` and `at$F(...)` helpers when
+the native contract supplies a trustworthy element count.
 
 ### Extent
 

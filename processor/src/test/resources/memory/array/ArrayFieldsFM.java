@@ -30,7 +30,7 @@ public class ArrayFieldsFM implements ArrayFields {
       MemoryLayout$F.byteSize(), MemoryLayout$F.byteAlignment());
   }
 
-  public static java.lang.foreign.MemorySegment allocate$F(
+  public static java.lang.foreign.MemorySegment allocateSequence$F(
       java.lang.foreign.SegmentAllocator allocator, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");
@@ -44,7 +44,7 @@ public class ArrayFieldsFM implements ArrayFields {
         ? null : new ArrayFieldsFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret$F(
+  public static java.lang.foreign.MemorySegment reinterpretSequence$F(
       java.lang.foreign.MemorySegment memorySegment, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");

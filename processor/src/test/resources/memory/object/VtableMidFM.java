@@ -16,7 +16,7 @@ public class VtableMidFM extends pkg.VtableBaseFM implements VtableMid {
         ? null : new VtableMidFM(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
   }
 
-  public static java.lang.foreign.MemorySegment reinterpret$F(
+  public static java.lang.foreign.MemorySegment reinterpretSequence$F(
       java.lang.foreign.MemorySegment memorySegment, long count) {
     if (count < 0) {
       throw new IllegalArgumentException("count must be non-negative");

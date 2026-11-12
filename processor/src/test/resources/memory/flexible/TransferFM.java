@@ -12,7 +12,7 @@ public final class TransferFM implements Transfer {
             pkg.PacketFM.MemoryLayout$F).withName("packets"),
       }));
 
-  public static java.lang.foreign.MemorySegment allocate$F(
+  public static java.lang.foreign.MemorySegment allocateFlexible$F(
       java.lang.foreign.SegmentAllocator allocator, long flexibleLength) {
     return allocator.allocate(
         Math.max(MemoryLayout$F.byteSize(), packets$RowLayout$F.scale(packets$Offset$F, flexibleLength)),
@@ -20,7 +20,15 @@ public final class TransferFM implements Transfer {
   }
 
   public static TransferFM reinterpret$F(
-      java.lang.foreign.MemorySegment memorySegment, long flexibleLength) {
+      java.lang.foreign.MemorySegment memorySegment, long byteSize) {
+    if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;
+    var bounded = memorySegment.reinterpret(byteSize);
+    return new TransferFM(bounded, bounded.asSlice(packets$Offset$F));
+  }
+
+  public static TransferFM reinterpretFlexible$F(
+      java.lang.foreign.MemorySegment memorySegment,
+      long flexibleLength) {
     long byteSize = Math.max(MemoryLayout$F.byteSize(), packets$RowLayout$F.scale(packets$Offset$F, flexibleLength));
     if (memorySegment.equals(java.lang.foreign.MemorySegment.NULL)) return null;
     return new TransferFM(memorySegment.reinterpret(byteSize), flexibleLength);
@@ -31,13 +39,18 @@ public final class TransferFM implements Transfer {
   public final java.lang.foreign.MemorySegment packets$MemorySegment$F;
 
   public TransferFM(java.lang.foreign.SegmentAllocator allocator, long flexibleLength) {
-    this(allocate$F(allocator, flexibleLength), flexibleLength);
+    this(allocateFlexible$F(allocator, flexibleLength), flexibleLength);
   }
 
   public TransferFM(java.lang.foreign.MemorySegment memorySegment, long flexibleLength) {
+    this(memorySegment, memorySegment.asSlice(
+        packets$Offset$F, packets$RowLayout$F.scale(0L, flexibleLength)));
+  }
+
+  private TransferFM(java.lang.foreign.MemorySegment memorySegment,
+      java.lang.foreign.MemorySegment flexibleMemorySegment) {
     this.MemorySegment$F = memorySegment;
-    this.packets$MemorySegment$F = memorySegment.asSlice(
-        packets$Offset$F, packets$RowLayout$F.scale(0L, flexibleLength));
+    this.packets$MemorySegment$F = flexibleMemorySegment;
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement

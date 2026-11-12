@@ -79,7 +79,7 @@ class StructBufferAccessTest {
           () -> NativeHeaderFM.toMemorySegment$F(arena,
               new NativeHeader(new byte[2], source.points())));
 
-      var pairs = PairRFM.allocate$F(arena, 2);
+      var pairs = PairRFM.allocateSequence$F(arena, 2);
       var pairSize = PairRFM.MemoryLayout$F.byteSize();
       PairRFM.toMemorySegment$F(
           new PairR(10, 20), pairs.asSlice(0, pairSize));

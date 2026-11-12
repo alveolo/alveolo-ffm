@@ -21,6 +21,8 @@ public @interface Flexible {
   /// AFFM generates only the count getter. The caller must keep the header
   /// count between zero and the allocated capacity during native use.
   /// Ordinary Java integer fields retain their signedness.
-  /// With no linked field, callers supply the length explicitly.
+  /// With no linked field, callers use generated `allocateFlexible$F` or
+  /// `reinterpretFlexible$F` helpers when they know the element count, or
+  /// `reinterpret$F` when a native API supplies the complete byte size.
   String value() default "";
 }
