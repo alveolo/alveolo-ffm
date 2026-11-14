@@ -38,6 +38,7 @@ import org.alveolo.ffm.WCharT;
 import org.alveolo.ffm.macos.CFString;
 import org.alveolo.ffm.macos.CFSupport;
 import org.alveolo.ffm.processor.fixture.BinaryFieldsParent;
+import org.alveolo.ffm.windows.WString;
 
 import com.google.testing.compile.Compilation;
 
@@ -67,6 +68,7 @@ abstract class AbstractProcessorTest {
     Value.class,
     Virtual.class,
     WCharT.class,
+    WString.class,
     BinaryFieldsParent.class,
   };
 

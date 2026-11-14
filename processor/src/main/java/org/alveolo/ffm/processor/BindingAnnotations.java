@@ -27,11 +27,13 @@ import javax.lang.model.util.Elements;
 import org.alveolo.ffm.Release;
 import org.alveolo.ffm.Require;
 import org.alveolo.ffm.macos.CFString;
+import org.alveolo.ffm.windows.WString;
 
 /// Fixed binding annotation bundles, interpreted without loading user classes.
 /// Expansion preserves type positions; callers decide which positions apply.
 record BindingAnnotations(
     boolean cfString,
+    boolean wString,
     String release,
     List<Requirement> requirements,
     List<String> errors
@@ -39,10 +41,12 @@ record BindingAnnotations(
   record Requirement(TypeMirror type, String origin) {}
 
   private static final String CF_STRING = CFString.class.getCanonicalName();
+  private static final String W_STRING = WString.class.getCanonicalName();
   private static final String RELEASE = Release.class.getCanonicalName();
   private static final String REQUIRE = Require.class.getCanonicalName();
 
-  private static final Set<String> LEAVES = Set.of(CF_STRING, RELEASE, REQUIRE);
+  private static final Set<String> LEAVES =
+      Set.of(CF_STRING, W_STRING, RELEASE, REQUIRE);
 
   static BindingAnnotations read(
       ProcessingEnvironment env, AnnotatedConstruct... sites) {
@@ -54,7 +58,8 @@ record BindingAnnotations(
         }
       }
     }
-    return new BindingAnnotations(reader.cfString, reader.release,
+    return new BindingAnnotations(reader.cfString, reader.wString,
+        reader.release,
         List.copyOf(reader.requirements.values()), List.copyOf(reader.errors));
   }
 
@@ -69,6 +74,9 @@ record BindingAnnotations(
     var result = new ArrayList<String>();
     if (cfString) {
       result.add("@" + CF_STRING);
+    }
+    if (wString) {
+      result.add("@" + W_STRING);
     }
     if (release != null) {
       result.add("@" + RELEASE
@@ -87,6 +95,11 @@ record BindingAnnotations(
     var valid = errors.isEmpty();
     for (var error : errors) {
       env.getMessager().printError(error, useSite);
+    }
+    if (cfString && wString) {
+      env.getMessager().printError(
+          "@CFString and @WString cannot be used together", useSite);
+      valid = false;
     }
     var types = env.getTypeUtils();
     for (var requirement : requirements) {
@@ -118,9 +131,10 @@ record BindingAnnotations(
       return true;
     var annotations = read(env, type);
     var valid = annotations.validate(env, binding, type);
-    if (annotations.cfString || annotations.release != null) {
+    if (annotations.cfString || annotations.wString
+        || annotations.release != null) {
       env.getMessager().printError(
-          "@CFString and @Release are not supported on binding declarations",
+          "@CFString, @WString, and @Release are not supported on binding declarations",
           type);
       valid = false;
     }
@@ -142,9 +156,10 @@ record BindingAnnotations(
     for (var component : nested) {
       var annotations = read(env, component);
       valid &= annotations.validate(env, binding, useSite);
-      if (annotations.release != null || annotations.cfString) {
+      if (annotations.release != null || annotations.cfString
+          || annotations.wString) {
         env.getMessager().printError(
-            "@Release and @CFString are not supported on nested type positions",
+            "@Release, @CFString, and @WString are not supported on nested type positions",
             useSite);
         valid = false;
       }
@@ -159,6 +174,7 @@ record BindingAnnotations(
         new LinkedHashMap<>();
     final Set<String> errors = new LinkedHashSet<>();
     boolean cfString;
+    boolean wString;
     String release;
     String releaseOrigin;
 
@@ -200,6 +216,8 @@ record BindingAnnotations(
       }
       if (name.equals(CF_STRING)) {
         cfString = true;
+      } else if (name.equals(W_STRING)) {
+        wString = true;
       } else if (name.equals(RELEASE)) {
         var value = (String) value(annotation).getValue();
         if (release != null && !release.equals(value)) {

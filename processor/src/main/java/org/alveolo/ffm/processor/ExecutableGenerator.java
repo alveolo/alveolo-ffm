@@ -523,8 +523,9 @@ class ExecutableGenerator {
         copyOut.stream(),
         """
             return stringResult$f.equals(java.lang.foreign.MemorySegment.NULL) ? null
-                : stringResult$f.reinterpret(Long.MAX_VALUE).getString(0L);
+                : <conversion>;
             """
+            .replace("<conversion>", stringConversion("stringResult$f"))
             .stripTrailing()
             .lines());
 
@@ -548,7 +549,7 @@ class ExecutableGenerator {
         : returnGenerator.isCFString()
             ? bindingQualifier + "fromCFString(nativeResult$f)"
         : "nativeResult$f.equals(java.lang.foreign.MemorySegment.NULL) ? null\n"
-            + "    : nativeResult$f.reinterpret(Long.MAX_VALUE).getString(0L)";
+            + "    : " + stringConversion("nativeResult$f");
     var body = Stream.concat(copyOut.stream(),
         Stream.of("return " + conversion + ";")).collect(joining("\n"));
     return """
@@ -776,6 +777,9 @@ class ExecutableGenerator {
           + " = " + bindingQualifier + "toCFString("
           + p.name() + ");");
 
+    if (p.isWString())
+      return p.localStringInitializer().lines();
+
     return p.isCallArrayOrBuffer()
         ? p.arrayOrBufferInitializer().lines()
         : Stream.empty();
@@ -845,6 +849,11 @@ class ExecutableGenerator {
       }
       if (parameter.isCFString() && !parameter.isString()) {
         messager.printError("@CFString is only supported on java.lang.String",
+            parameter.element);
+        hasUnsupported = true;
+      }
+      if (parameter.isWString() && !parameter.isString()) {
+        messager.printError("@WString is only supported on java.lang.String",
             parameter.element);
         hasUnsupported = true;
       }
@@ -1049,8 +1058,21 @@ class ExecutableGenerator {
       messager.printError(
           "@CFString is only supported on java.lang.String", element);
     }
+    if (returnGenerator.isWString() && !returnGenerator.isString()) {
+      hasUnsupported = true;
+
+      messager.printError(
+          "@WString is only supported on java.lang.String", element);
+    }
 
     return hasUnsupported;
+  }
+
+  private String stringConversion(String segment) {
+    var charset = returnGenerator.isWString()
+        ? ", java.nio.charset.StandardCharsets.UTF_16LE" : "";
+    return segment + ".reinterpret(Long.MAX_VALUE).getString(0L"
+        + charset + ")";
   }
 
   private boolean isUnpromotedVariadicType(VariableGenerator parameter) {

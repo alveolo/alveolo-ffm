@@ -51,7 +51,7 @@ NativeMathFFM.INSTANCE$F.scale(values, 10);
 - Fixed inline arrays and trailing flexible array members on memory-backed struct interfaces.
 - Input/output transfer control with `@In` and `@Out`.
 - Fixed extents with `@Sequence` and buffer windows for subregions.
-- UTF-8 native string parameters.
+- UTF-8 native strings and Windows UTF-16LE `WCHAR` strings.
 - Composable `@Require` interface contracts and `@Release` return cleanup.
 - macOS CoreFoundation `CFStringRef` helpers.
 
@@ -1015,6 +1015,25 @@ struct and inherit its arena lifetime. Pointer elements stored with `@Address`
 do not transfer ownership: the containing struct does not extend the pointee
 lifetime. Record pointee setters may materialize storage in a caller-supplied
 allocator, whose lifetime the caller must manage.
+
+## Windows Strings
+
+`org.alveolo.ffm.windows.WString` maps a Java `String` to a NUL-terminated
+Windows `WCHAR` string:
+
+```java
+MemorySegment CreateFileW(
+    LastError error, @WString String path, int access, ...);
+```
+
+Parameters are encoded as UTF-16LE without a byte-order mark in temporary
+two-byte-aligned storage. Java `null` maps to native NULL. A `@WString String`
+return is decoded as a borrowed NUL-terminated UTF-16LE pointer, with the same
+termination and lifetime requirements as an ordinary UTF-8 `String` return.
+
+`@WString` represents one string pointer. It does not convert output buffers,
+`REG_MULTI_SZ`, inline character arrays, or C `wchar_t`; use arrays or bounded
+`MemorySegment` values when those contracts need an explicit size.
 
 ## Owned Returns and Composition
 

@@ -79,6 +79,7 @@ final class VariableGenerator extends TypeGenerator {
   /// * `argX.MemorySegment$F` for a struct/union implementation by reference
   /// * `((StructFM) argX).MemorySegment$F` for an interface by reference
   /// * `arena$f.allocateFrom(argX)` for Java `String` to C `char*` conversion
+  /// * `argX$MemorySegment$f` for Java `@WString String` conversion
   /// * `argX$CFString$f` for Java `@CFString String` conversion
   /// * `StructFM.toMemorySegment$F(arena$f, argX)` for records conversion
   String invoke() {
@@ -93,6 +94,9 @@ final class VariableGenerator extends TypeGenerator {
 
     if (isCFString())
       return cfStringName();
+
+    if (isWString())
+      return segmentName();
 
     if (isString())
       return nullableInvoke("arena$f.allocateFrom(" + name() + ")");
@@ -124,7 +128,7 @@ final class VariableGenerator extends TypeGenerator {
   String preparation() {
     if (isString() && !isCFString())
       return "var " + bytesName() + " = " + name() + " == null ? null : "
-          + name() + ".getBytes(java.nio.charset.StandardCharsets.UTF_8);";
+          + name() + ".getBytes(" + stringCharset() + ");";
 
     if (!isCallArrayOrBuffer()) return "";
 
@@ -186,15 +190,14 @@ final class VariableGenerator extends TypeGenerator {
             java.lang.foreign.MemorySegment.copy(
                 <bytes>, 0, <segment>,
                 java.lang.foreign.ValueLayout.JAVA_BYTE, 0, <bytes>.length);
-            <segment>.set(
-                java.lang.foreign.ValueLayout.JAVA_BYTE, <bytes>.length,
-                (byte) 0);
+            <terminator>
           }
           """
           .replace("<segment>", segmentName())
           .replace("<name>", name)
           .replace("<memorySegment>", memorySegment)
           .replace("<bytes>", bytesName())
+          .replace("<terminator>", stringTerminator())
           .stripTrailing();
 
     if (isRecord()) {
@@ -234,8 +237,7 @@ final class VariableGenerator extends TypeGenerator {
 
   String allocationByteSize() {
     if (isString() && !isCFString())
-      return "(" + name + " == null ? 0L : Math.addExact((long) "
-          + bytesName() + ".length, 1L))";
+      return "(" + name + " == null ? 0L : " + stringByteSize() + ")";
 
     if (isCallArrayOrBuffer()) {
       var size = arrayOrBufferAllocationSize();
@@ -253,8 +255,45 @@ final class VariableGenerator extends TypeGenerator {
   }
 
   String allocationAlignment() {
+    if (isWString())
+      return "java.lang.foreign.ValueLayout.JAVA_CHAR.byteAlignment()";
     return isString() && !isCFString()
         ? "1L" : allocationLayout() + ".byteAlignment()";
+  }
+
+  String localStringInitializer() {
+    return preparation() + "\n" + initializer(
+        "arena$f.allocate(\n    " + stringByteSize() + ",\n    "
+            + allocationAlignment() + ")");
+  }
+
+  private String stringCharset() {
+    return "java.nio.charset.StandardCharsets."
+        + (isWString() ? "UTF_16LE" : "UTF_8");
+  }
+
+  private int stringTerminatorSize() {
+    return isWString() ? Character.BYTES : 1;
+  }
+
+  private String stringByteSize() {
+    return "Math.addExact((long) " + bytesName() + ".length, "
+        + stringTerminatorSize() + "L)";
+  }
+
+  private String stringTerminator() {
+    if (isWString()) {
+      return ("<segment>.set(\n"
+          + "      java.lang.foreign.ValueLayout.JAVA_CHAR, <bytes>.length,\n"
+          + "      (char) 0);")
+          .replace("<segment>", segmentName())
+          .replace("<bytes>", bytesName());
+    }
+    return ("<segment>.set(\n"
+        + "      java.lang.foreign.ValueLayout.JAVA_BYTE, <bytes>.length,\n"
+        + "      (byte) 0);")
+        .replace("<segment>", segmentName())
+        .replace("<bytes>", bytesName());
   }
 
   private String allocationLayout() {

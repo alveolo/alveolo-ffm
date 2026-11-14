@@ -280,6 +280,14 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void generatesWindowsStringsFFM() {
+    var c = compile("interface/WindowsStrings.java");
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.WindowsStringsFFM",
+        "interface/WindowsStringsFFM.java");
+  }
+
+  @Test
   void generatesLibraryFFM() {
     var c = compile("interface/NativeTest.java");
     assertThat(c).succeeded();
@@ -392,6 +400,42 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
 
     assertThat(c).hadErrorContaining(
         "@CFString is only supported on java.lang.String");
+  }
+
+  @Test
+  void failsWhenWStringIsUsedOnNonString() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib {
+          @org.alveolo.ffm.windows.WString int result();
+          void f(@org.alveolo.ffm.windows.WString int value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@WString is only supported on java.lang.String");
+    assertThat(c).hadErrorCount(2);
+  }
+
+  @Test
+  void failsWhenStringMappingsConflict() {
+    var lib = forSourceString("test.Lib", """
+        package test;
+        @org.alveolo.ffm.ForeignInterface
+        public interface Lib extends org.alveolo.ffm.macos.CFSupport {
+          void f(@org.alveolo.ffm.macos.CFString
+              @org.alveolo.ffm.windows.WString String value);
+        }
+        """);
+
+    var c = compile(lib);
+
+    assertThat(c).hadErrorContaining(
+        "@CFString and @WString cannot be used together");
+    assertThat(c).hadErrorCount(1);
   }
 
   @Test

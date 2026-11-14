@@ -174,7 +174,8 @@ sealed class TypeGenerator permits VariableGenerator {
   String bridgeTypeName() {
     // Conversion metadata can come from method/parameter annotations,
     // which cannot simply be copied onto a generated return/parameter type.
-    if ((isString() || isRecord()) && (isCFString() || releaseMethod() != null
+    if ((isString() || isRecord()) && (isCFString() || isWString()
+        || releaseMethod() != null
         || !bindingAnnotations.requirements().isEmpty())) {
       var annotations = new ArrayList<String>();
       for (var annotation : typeMirror.getAnnotationMirrors()) {
@@ -404,6 +405,10 @@ sealed class TypeGenerator permits VariableGenerator {
 
   boolean isCFString() {
     return bindingAnnotations.cfString();
+  }
+
+  boolean isWString() {
+    return bindingAnnotations.wString();
   }
 
   String releaseMethod() {

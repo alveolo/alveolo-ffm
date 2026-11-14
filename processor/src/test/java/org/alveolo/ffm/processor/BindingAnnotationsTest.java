@@ -12,6 +12,7 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
       import java.lang.foreign.MemorySegment;
       import org.alveolo.ffm.*;
       import org.alveolo.ffm.macos.*;
+      import org.alveolo.ffm.windows.*;
       """;
 
   @Test
@@ -46,6 +47,30 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
     assertThat(composed).succeeded();
     assertThat(composed).generatedSourceFile("test.LibFFM")
         .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibFFM").orElseThrow());
+  }
+
+  @Test
+  void generatesComposedWStringExactlyLikeDirectWString() {
+    var direct = compile(forSourceString("test.Lib", IMPORTS + """
+        @ForeignInterface interface Lib {
+          @WString String get();
+          void set(@WString String value);
+        }
+        """));
+    var composed = compile(forSourceString("test.Lib", IMPORTS + """
+        @WString
+        @Target(ElementType.TYPE_USE) @Retention(RetentionPolicy.CLASS)
+        @interface WideString {}
+        @ForeignInterface interface Lib {
+          @WideString String get();
+          void set(@WideString String value);
+        }
+        """));
+    assertThat(direct).succeeded();
+    assertThat(composed).succeeded();
+    assertThat(composed).generatedSourceFile("test.LibFFM")
+        .hasSourceEquivalentTo(
+            direct.generatedSourceFile("test.LibFFM").orElseThrow());
   }
 
   @Test
