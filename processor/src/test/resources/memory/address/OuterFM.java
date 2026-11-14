@@ -55,18 +55,18 @@ public final class OuterFM {
   }
 
   public static void toMemorySegment$F(
+      java.lang.foreign.SegmentAllocator allocator,
       Outer source,
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator) {
-    box(memorySegment, allocator, source.box());
-    intBox(memorySegment, allocator, source.intBox());
+      java.lang.foreign.MemorySegment memorySegment) {
+    box(allocator, memorySegment, source.box());
+    intBox(allocator, memorySegment, source.intBox());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
       java.lang.foreign.SegmentAllocator allocator,
       Outer source) {
     var memorySegment = allocate$F(allocator);
-    toMemorySegment$F(source, memorySegment, allocator);
+    toMemorySegment$F(allocator, source, memorySegment);
     return memorySegment;
   }
 
@@ -88,14 +88,14 @@ public final class OuterFM {
   }
 
   public static void box(
-      java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, pkg.PairBox value) {
+      java.lang.foreign.SegmentAllocator allocator, java.lang.foreign.MemorySegment memorySegment, pkg.PairBox value) {
     var memoryLayout =
         MemoryLayout$F.select(box$PathElement$F);
     var slice = memorySegment.asSlice(
         MemoryLayout$F.byteOffset(box$PathElement$F),
         memoryLayout.byteSize());
     pkg.PairBoxFM.toMemorySegment$F(
-        value, slice, allocator);
+        allocator, value, slice);
   }
 
   public static final java.lang.foreign.MemoryLayout.PathElement
@@ -109,13 +109,13 @@ public final class OuterFM {
   }
 
   public static void intBox(
-      java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, pkg.IntBox value) {
+      java.lang.foreign.SegmentAllocator allocator, java.lang.foreign.MemorySegment memorySegment, pkg.IntBox value) {
     var memoryLayout =
         MemoryLayout$F.select(intBox$PathElement$F);
     var slice = memorySegment.asSlice(
         MemoryLayout$F.byteOffset(intBox$PathElement$F),
         memoryLayout.byteSize());
     pkg.IntBoxFM.toMemorySegment$F(
-        value, slice, allocator);
+        allocator, value, slice);
   }
 }

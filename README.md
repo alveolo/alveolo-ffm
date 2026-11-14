@@ -41,6 +41,7 @@ NativeMathFFM.INSTANCE$F.scale(values, 10);
 - `@Struct` and `@Union` memory wrappers.
 - Persisted `@Fields` ordering and append-only interface-struct inheritance.
 - Reusable native error-state capture with `@CallState`.
+- Native callback descriptors and upcall stubs with `@Callback`.
 - `@DispatchTable` wrappers and `@Struct(vtable = true)` virtual calls.
 - C name mapping with `@Symbol`.
 - Native library lookup with `@Library`.
@@ -58,6 +59,8 @@ Generated names are intentionally predictable:
 
 - `NativeMath` -> `NativeMathFFM`
 - `NativeMathSpec` -> `NativeMath`
+- `Completion` -> `CompletionF`
+- `CompletionSpec` -> `Completion`
 - `timeval` -> `timevalFM`
 - `Pair` -> `PairFM`
 
@@ -189,6 +192,36 @@ var length = LibCFFM.INSTANCE$F.stringLength("hello");
 Default and static methods are ignored by the processor, so the interface can
 still contain ordinary Java helpers. Abstract native methods may be declared
 directly on the annotated interface or inherited from parent interfaces.
+
+## Native Callbacks
+
+Declare a functional interface with `@Callback` when a native API accepts a
+function pointer:
+
+```java
+@Callback
+interface CompletionSpec {
+  void invoke(MemorySegment context, int status, MemorySegment result);
+}
+```
+
+The generated `Completion` class exposes the shared descriptor and creates the
+stub in an explicit arena:
+
+```java
+var stub = Completion.upcallStub$F(arena, this::completed);
+nativeApi.register(stub, context);
+```
+
+Callback returns and parameters may be unannotated primitives or
+`MemorySegment`; `void` is also supported as a return. Native carrier
+annotations such as `@SizeT` are not yet supported. The generated helper does
+not register the callback, own the arena, choose a thread, or translate
+exceptions.
+The caller must unregister or drain native callbacks before closing the arena,
+and the callback implementation must not let exceptions escape into native
+code. `Completion.FunctionDescriptor$F` is public so tests and other direct FFM
+calls can use the exact same signature.
 
 ## Platform C Scalar Types
 

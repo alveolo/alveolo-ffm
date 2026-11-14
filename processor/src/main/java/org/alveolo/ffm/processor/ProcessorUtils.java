@@ -27,6 +27,7 @@ import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 
 import org.alveolo.ffm.CallState;
+import org.alveolo.ffm.Callback;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.ForeignInterface;
 import org.alveolo.ffm.Library;
@@ -120,6 +121,18 @@ final class ProcessorUtils {
   static String foreignMemoryClassName(TypeElement element, Elements elements) {
     String simpleName = foreignMemorySimpleClassName(element);
     return qualifyName(packageName(element, elements), simpleName);
+  }
+
+  static String callbackClassName(TypeElement element, Elements elements) {
+    return qualifyName(packageName(element, elements),
+        callbackSimpleClassName(element));
+  }
+
+  static String callbackSimpleClassName(TypeElement element) {
+    var callback = element.getAnnotation(Callback.class);
+    var override = callback == null ? "" : callback.name();
+
+    return generatedSimpleClassName(element, override, "F");
   }
 
   static String foreignMemorySimpleClassName(TypeElement element) {

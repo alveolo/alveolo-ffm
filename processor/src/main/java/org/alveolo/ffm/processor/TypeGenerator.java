@@ -332,7 +332,7 @@ sealed class TypeGenerator permits VariableGenerator {
     return layout;
   }
 
-  private static String primitiveLayout(TypeKind kind) {
+  static String primitiveLayout(TypeKind kind) {
     return switch (kind) {
       case BOOLEAN -> "java.lang.foreign.ValueLayout.JAVA_BOOLEAN";
       case BYTE -> "java.lang.foreign.ValueLayout.JAVA_BYTE";

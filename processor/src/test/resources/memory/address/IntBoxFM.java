@@ -54,17 +54,17 @@ public final class IntBoxFM {
   }
 
   public static void toMemorySegment$F(
+      java.lang.foreign.SegmentAllocator allocator,
       IntBox source,
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator) {
-    value(memorySegment, allocator, source.value());
+      java.lang.foreign.MemorySegment memorySegment) {
+    value(allocator, memorySegment, source.value());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
       java.lang.foreign.SegmentAllocator allocator,
       IntBox source) {
     var memorySegment = allocate$F(allocator);
-    toMemorySegment$F(source, memorySegment, allocator);
+    toMemorySegment$F(allocator, source, memorySegment);
     return memorySegment;
   }
 
@@ -87,7 +87,7 @@ public final class IntBoxFM {
   }
 
   public static void value(
-      java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, int value) {
+      java.lang.foreign.SegmentAllocator allocator, java.lang.foreign.MemorySegment memorySegment, int value) {
     var address = allocator.allocate(org.alveolo.ffm.NativeType.WCHAR_T.layout);
     org.alveolo.ffm.NativeType.setWCharT(address, 0L, value);
     value$VarHandle$F.set(memorySegment, address);

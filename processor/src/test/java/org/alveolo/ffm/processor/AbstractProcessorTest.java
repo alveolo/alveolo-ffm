@@ -15,6 +15,7 @@ import javax.tools.JavaFileObject;
 
 import org.alveolo.ffm.Address;
 import org.alveolo.ffm.CallState;
+import org.alveolo.ffm.Callback;
 import org.alveolo.ffm.DispatchTable;
 import org.alveolo.ffm.FirstVariadicArg;
 import org.alveolo.ffm.Fields;
@@ -44,6 +45,7 @@ abstract class AbstractProcessorTest {
   private static final Class<?>[] CORE_CLASSES = {
     Address.class,
     CallState.class,
+    Callback.class,
     CFString.class,
     CFSupport.class,
     DispatchTable.class,
@@ -86,6 +88,7 @@ abstract class AbstractProcessorTest {
         .withOptions("-sourcepath", "")
         .withProcessors(
             new CallStateProcessor(),
+            new CallbackProcessor(),
             new DispatchTableProcessor(),
             new ForeignInterfaceProcessor(),
             new ForeignMemoryProcessor())

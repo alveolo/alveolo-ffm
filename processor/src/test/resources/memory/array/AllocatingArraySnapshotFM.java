@@ -55,17 +55,17 @@ public final class AllocatingArraySnapshotFM {
   }
 
   public static void toMemorySegment$F(
+      java.lang.foreign.SegmentAllocator allocator,
       AllocatingArraySnapshot source,
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator) {
-    values(memorySegment, allocator, source.values());
+      java.lang.foreign.MemorySegment memorySegment) {
+    values(allocator, memorySegment, source.values());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
       java.lang.foreign.SegmentAllocator allocator,
       AllocatingArraySnapshot source) {
     var memorySegment = allocate$F(allocator);
-    toMemorySegment$F(source, memorySegment, allocator);
+    toMemorySegment$F(allocator, source, memorySegment);
     return memorySegment;
   }
 
@@ -120,11 +120,11 @@ public final class AllocatingArraySnapshotFM {
   }
 
   public static void values(
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator, long index0$f,
+      java.lang.foreign.SegmentAllocator allocator,
+      java.lang.foreign.MemorySegment memorySegment, long index0$f,
       pkg.ArrayAddressValue value) {
     pkg.ArrayAddressValueFM.toMemorySegment$F(
-        value, valuesAsMemorySegment$F(memorySegment, index0$f), allocator);
+        allocator, value, valuesAsMemorySegment$F(memorySegment, index0$f));
   }
 
   public static pkg.ArrayAddressValue[] valuesToArray$F(
@@ -145,8 +145,8 @@ public final class AllocatingArraySnapshotFM {
   }
 
   public static void values(
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator, pkg.ArrayAddressValue[] value) {
+      java.lang.foreign.SegmentAllocator allocator,
+      java.lang.foreign.MemorySegment memorySegment, pkg.ArrayAddressValue[] value) {
     java.util.Objects.requireNonNull(value, "value");
     if (value.length != values$Sequence0Dimension$F) {
       throw new IllegalArgumentException(
@@ -155,7 +155,7 @@ public final class AllocatingArraySnapshotFM {
     }
     for (long index = 0;
         index < value.length; index++) {
-      values(memorySegment, allocator, index,
+      values(allocator, memorySegment, index,
           value[(int) index]);
     }
   }

@@ -113,9 +113,9 @@ final class ForeignMemoryAccessorGenerator {
     var toMemorySegmentTemplate = needsAllocator
         ? """
             public static void toMemorySegment$F(
+                java.lang.foreign.SegmentAllocator allocator,
                 <source> source,
-                java.lang.foreign.MemorySegment memorySegment,
-                java.lang.foreign.SegmentAllocator allocator) {
+                java.lang.foreign.MemorySegment memorySegment) {
               <toMemorySegmentFields>
             }
             """
@@ -153,7 +153,7 @@ final class ForeignMemoryAccessorGenerator {
         .replace("<toMemorySegmentMethod>", toMemorySegmentMethod)
         .replace("<source>", sourceClassName)
         .replace("<toMemorySegment>", needsAllocator
-            ? "toMemorySegment$F(source, memorySegment, allocator);"
+            ? "toMemorySegment$F(allocator, source, memorySegment);"
             : "toMemorySegment$F(source, memorySegment);")
         .replace("<fromMemorySegmentFields>", fromMemorySegmentFields));
   }
@@ -220,9 +220,10 @@ final class ForeignMemoryAccessorGenerator {
         ? analyzer.needsAllocatorWrite(field)
         : analyzer.indexedElementNeedsAllocator(indexed));
 
-    return "<name>(memorySegment, <allocator>source.<name>());"
-        .replace("<name>", name)
-        .replace("<allocator>", needsAllocator ? "allocator, " : "");
+    var arguments = needsAllocator
+        ? "allocator, memorySegment, source." + name + "()"
+        : "memorySegment, source." + name + "()";
+    return name + "(" + arguments + ");";
   }
 
   private void writeUnsupportedMethods(Writer out,
@@ -269,8 +270,8 @@ final class ForeignMemoryAccessorGenerator {
     private String staticSetterHead(boolean needsAllocator) {
       return needsAllocator
           ? "public static void <name>(\n"
-              + "      java.lang.foreign.MemorySegment memorySegment, "
-              + "java.lang.foreign.SegmentAllocator allocator,"
+              + "      java.lang.foreign.SegmentAllocator allocator, "
+              + "java.lang.foreign.MemorySegment memorySegment,"
               + " <type> value)"
           : "public static void <name>("
               + "java.lang.foreign.MemorySegment memorySegment, "
@@ -454,8 +455,8 @@ final class ForeignMemoryAccessorGenerator {
           }
 
           public static void <name>(
-              java.lang.foreign.MemorySegment memorySegment,
               java.lang.foreign.SegmentAllocator allocator,
+              java.lang.foreign.MemorySegment memorySegment,
               <type> value) {
             throw new RuntimeException("Check compile errors!");
           }

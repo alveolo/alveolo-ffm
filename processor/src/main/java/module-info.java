@@ -4,6 +4,7 @@ module org.alveolo.ffm.processor {
 
   provides javax.annotation.processing.Processor with
       org.alveolo.ffm.processor.CallStateProcessor,
+      org.alveolo.ffm.processor.CallbackProcessor,
       org.alveolo.ffm.processor.DispatchTableProcessor,
       org.alveolo.ffm.processor.ForeignInterfaceProcessor,
       org.alveolo.ffm.processor.ForeignMemoryProcessor;

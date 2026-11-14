@@ -54,17 +54,17 @@ public final class PairBoxFM {
   }
 
   public static void toMemorySegment$F(
+      java.lang.foreign.SegmentAllocator allocator,
       PairBox source,
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator) {
-    pair(memorySegment, allocator, source.pair());
+      java.lang.foreign.MemorySegment memorySegment) {
+    pair(allocator, memorySegment, source.pair());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
       java.lang.foreign.SegmentAllocator allocator,
       PairBox source) {
     var memorySegment = allocate$F(allocator);
-    toMemorySegment$F(source, memorySegment, allocator);
+    toMemorySegment$F(allocator, source, memorySegment);
     return memorySegment;
   }
 
@@ -87,7 +87,7 @@ public final class PairBoxFM {
   }
 
   public static void pair(
-      java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, pkg.Pair value) {
+      java.lang.foreign.SegmentAllocator allocator, java.lang.foreign.MemorySegment memorySegment, pkg.Pair value) {
     pair$VarHandle$F.set(memorySegment,
         value == null ? java.lang.foreign.MemorySegment.NULL
             : pkg.PairFM.toMemorySegment$F(allocator, value));

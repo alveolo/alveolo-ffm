@@ -323,9 +323,9 @@ class NativeSharedLibraryTest {
 
       var storage = PairBoxRAFM.allocate$F(arena);
       assertEquals(new PairBoxRA(null), PairBoxRAFM.fromMemorySegment$F(storage));
-      PairBoxRAFM.pair(storage, arena, new PairR(7, 11));
+      PairBoxRAFM.pair(arena, storage, new PairR(7, 11));
       assertEquals(new PairR(7, 11), PairBoxRAFM.pair(storage));
-      PairBoxRAFM.pair(storage, arena, null);
+      PairBoxRAFM.pair(arena, storage, null);
       assertNull(PairBoxRAFM.pair(storage));
     }
   }
@@ -439,8 +439,8 @@ class NativeSharedLibraryTest {
       assertThrows(NullPointerException.class,
           () -> PrimitivePointerFM.value(primitive));
       assertThrows(NullPointerException.class, () -> SizeValueFM.pointer(size));
-      PrimitivePointerFM.value(primitive, arena, 0);
-      SizeValueFM.pointer(size, arena, 0);
+      PrimitivePointerFM.value(arena, primitive, 0);
+      SizeValueFM.pointer(arena, size, 0);
       assertEquals(0, PrimitivePointerFM.value(primitive));
       assertEquals(0, SizeValueFM.pointer(size));
     }
@@ -525,7 +525,7 @@ class NativeSharedLibraryTest {
           assertThrows(ArithmeticException.class,
               () -> SizeValueFM.value(segment, invalid));
           assertThrows(ArithmeticException.class,
-              () -> SizeValueFM.pointer(segment, arena, invalid));
+              () -> SizeValueFM.pointer(arena, segment, invalid));
         }
       }
     }

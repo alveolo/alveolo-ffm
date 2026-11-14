@@ -243,8 +243,8 @@ final class IndexedFieldGenerator {
           }
 
           public static void <name>(
-              java.lang.foreign.MemorySegment memorySegment,
-              <allocator><params>,
+              <allocator>java.lang.foreign.MemorySegment memorySegment,
+              <params>,
               <type> <valueName>) {
             <body>
           }
@@ -581,8 +581,8 @@ final class IndexedFieldGenerator {
           }
 
           public static void <name>(
-              java.lang.foreign.MemorySegment memorySegment,
-              <allocatorParameter><arrayType> value) {
+              <allocatorParameter>java.lang.foreign.MemorySegment memorySegment,
+              <arrayType> value) {
             java.util.Objects.requireNonNull(value, "value");
             if (value.length != <name>$Sequence0Dimension$F) {
               throw new IllegalArgumentException(
@@ -591,7 +591,7 @@ final class IndexedFieldGenerator {
             }
             for (long index = 0;
                 index < value.length; index++) {
-              <name>(memorySegment, <allocatorArgument>index,
+              <name>(<allocatorArgument>memorySegment, index,
                   value[(int) index]);
             }
           }

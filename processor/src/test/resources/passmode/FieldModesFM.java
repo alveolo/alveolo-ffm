@@ -56,11 +56,11 @@ public final class FieldModesFM {
   }
 
   public static void toMemorySegment$F(
+      java.lang.foreign.SegmentAllocator allocator,
       FieldModes source,
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator) {
+      java.lang.foreign.MemorySegment memorySegment) {
     recordDefault(memorySegment, source.recordDefault());
-    recordTypeUseAddress(memorySegment, allocator, source.recordTypeUseAddress());
+    recordTypeUseAddress(allocator, memorySegment, source.recordTypeUseAddress());
     fieldOverridesTypeAddress(memorySegment, source.fieldOverridesTypeAddress());
   }
 
@@ -68,7 +68,7 @@ public final class FieldModesFM {
       java.lang.foreign.SegmentAllocator allocator,
       FieldModes source) {
     var memorySegment = allocate$F(allocator);
-    toMemorySegment$F(source, memorySegment, allocator);
+    toMemorySegment$F(allocator, source, memorySegment);
     return memorySegment;
   }
 
@@ -113,7 +113,7 @@ public final class FieldModesFM {
   }
 
   public static void recordTypeUseAddress(
-      java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, passmode.InnerRecord value) {
+      java.lang.foreign.SegmentAllocator allocator, java.lang.foreign.MemorySegment memorySegment, passmode.InnerRecord value) {
     recordTypeUseAddress$VarHandle$F.set(memorySegment,
         value == null ? java.lang.foreign.MemorySegment.NULL
             : passmode.InnerRecordFM.toMemorySegment$F(allocator, value));

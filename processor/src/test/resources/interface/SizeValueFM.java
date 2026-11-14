@@ -55,18 +55,18 @@ public final class SizeValueFM {
   }
 
   public static void toMemorySegment$F(
+      java.lang.foreign.SegmentAllocator allocator,
       SizeValue source,
-      java.lang.foreign.MemorySegment memorySegment,
-      java.lang.foreign.SegmentAllocator allocator) {
+      java.lang.foreign.MemorySegment memorySegment) {
     value(memorySegment, source.value());
-    pointer(memorySegment, allocator, source.pointer());
+    pointer(allocator, memorySegment, source.pointer());
   }
 
   public static java.lang.foreign.MemorySegment toMemorySegment$F(
       java.lang.foreign.SegmentAllocator allocator,
       SizeValue source) {
     var memorySegment = allocate$F(allocator);
-    toMemorySegment$F(source, memorySegment, allocator);
+    toMemorySegment$F(allocator, source, memorySegment);
     return memorySegment;
   }
 
@@ -124,7 +124,7 @@ public final class SizeValueFM {
   }
 
   public static void pointer(
-      java.lang.foreign.MemorySegment memorySegment, java.lang.foreign.SegmentAllocator allocator, long value) {
+      java.lang.foreign.SegmentAllocator allocator, java.lang.foreign.MemorySegment memorySegment, long value) {
     var address = allocator.allocate(org.alveolo.ffm.NativeType.SIZE_T.layout);
     org.alveolo.ffm.NativeType.setSizeT(address, 0L, value);
     pointer$VarHandle$F.set(memorySegment, address);

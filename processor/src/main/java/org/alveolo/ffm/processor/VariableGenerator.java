@@ -441,10 +441,10 @@ final class VariableGenerator extends TypeGenerator {
     return """
         for (var <index> = 0; <index> < <size>; <index>++) {
           <foreignClass>.toMemorySegment$F(
-              <name>[<index>],
+              <allocator><name>[<index>],
               <segment>.asSlice(
                   (long) <index> * <foreignClass>.MemoryLayout$F.byteSize(),
-                  <foreignClass>.MemoryLayout$F)<allocator>);
+                  <foreignClass>.MemoryLayout$F));
         }
         """
         .replace("<index>", indexName())
@@ -452,7 +452,8 @@ final class VariableGenerator extends TypeGenerator {
         .replace("<segment>", segmentName())
         .replace("<foreignClass>", recordForeignMemoryClassName())
         .replace("<name>", name)
-        .replace("<allocator>", withAllocator ? ", arena$f" : "")
+        .replace("<allocator>", withAllocator
+            ? "arena$f,\n              " : "")
         .stripTrailing();
   }
 

@@ -18,10 +18,13 @@ final class FieldConversions {
 
   static String writeValue(TypeGenerator field, String value, String segment,
       String byteSize, String allocator) {
-    if (field.isRecord())
-      return field.foreignMemoryClassName() + ".toMemorySegment$F(\n    "
-          + value + ", " + segment
-          + (allocator == null ? "" : ", " + allocator) + ");";
+    if (field.isRecord()) {
+      var arguments = allocator == null
+          ? value + ", " + segment
+          : allocator + ", " + value + ", " + segment;
+      return field.foreignMemoryClassName()
+          + ".toMemorySegment$F(\n    " + arguments + ");";
+    }
 
     return "java.lang.foreign.MemorySegment.copy(\n    "
         + memorySegment(field, value) + ", 0L,\n    "
