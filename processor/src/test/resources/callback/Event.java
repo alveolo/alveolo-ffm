@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.CallbackProcessor")
-public final class Event {
+final class Event {
   private static final java.lang.foreign.Linker Linker$F =
       java.lang.foreign.Linker.nativeLinker();
 

@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
 /// symbol leaves its method unavailable; calling it throws
 /// [UnsatisfiedLinkError] with the symbol name before converting arguments.
 /// Other methods remain usable.
+/// The generated class has the same public or package access as the interface.
 @Target(TYPE)
 @Retention(CLASS)
 public @interface ForeignInterface {

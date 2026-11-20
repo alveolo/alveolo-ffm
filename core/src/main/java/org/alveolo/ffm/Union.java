@@ -10,6 +10,8 @@ import java.lang.annotation.Target;
 /// accessor methods.
 /// A zero-sized union may be used by address, but not by value or as a
 /// contiguous array element.
+/// The generated class has the same public or package access as the annotated
+/// type.
 ///
 /// @see [Struct] for C structs
 /// @see [Sequence] for fixed-size inline array fields.

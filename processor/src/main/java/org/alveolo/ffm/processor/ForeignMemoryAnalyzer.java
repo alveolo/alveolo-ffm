@@ -60,7 +60,8 @@ final class ForeignMemoryAnalyzer {
     return inferFields(declaredFieldMethods(type));
   }
 
-  private static List<ExecutableElement> declaredFieldMethods(TypeElement type) {
+  private static List<ExecutableElement>
+      declaredFieldMethods(TypeElement type) {
     return type.getEnclosedElements().stream()
         .filter(ExecutableElement.class::isInstance)
         .map(ExecutableElement.class::cast)
@@ -88,8 +89,10 @@ final class ForeignMemoryAnalyzer {
         fields = declaredFieldMethods(type).stream();
       } else {
         var model = generatedTypes.struct(type).resolve();
-        if (!model.valid() || model.vtable() || model.flexible() != null) return false;
-        fields = Stream.concat(model.baseFieldMethods().stream(), model.fieldMethods().stream());
+        if (!model.valid() || model.vtable() || model.flexible() != null)
+          return false;
+        fields = Stream.concat(model.baseFieldMethods().stream(),
+            model.fieldMethods().stream());
       }
       zeroSized = fields.allMatch(
           method -> zeroSizedField(method, method.getReturnType()));
@@ -99,10 +102,12 @@ final class ForeignMemoryAnalyzer {
   }
 
   private boolean zeroSizedField(Element member, TypeMirror type) {
-    if (type instanceof ArrayType array) type = array.getComponentType();
-    return type instanceof DeclaredType
-        && isZeroSizedValue(
-            new TypeGenerator(processingEnv, generatedTypes, type, member));
+    if (type instanceof ArrayType array) {
+      type = array.getComponentType();
+    }
+
+    return type instanceof DeclaredType && isZeroSizedValue(
+        new TypeGenerator(processingEnv, generatedTypes, type, member));
   }
 
   boolean isZeroSizedValue(TypeGenerator value) {
@@ -118,7 +123,8 @@ final class ForeignMemoryAnalyzer {
     if (value.isValueStructRecordArray()) {
       var element = value.arrayComponentGenerator();
       if (isZeroSizedValue(element))
-        return "Native array elements must have nonzero size: " + element.typeName();
+        return "Native array elements must have nonzero size: "
+            + element.typeName();
     }
     return null;
   }
@@ -274,7 +280,8 @@ final class ForeignMemoryAnalyzer {
       var flexible = parameter.getAnnotation(Flexible.class) != null;
       if (flexible) {
         if (!parameter.equals(accessor.getParameters().getFirst())) {
-          messager.printError("@Flexible must be the outermost dimension", parameter);
+          messager.printError("@Flexible must be the outermost dimension",
+              parameter);
           valid = false;
         }
         if (TypeGenerator.hasSequence(parameter.asType(), parameter)) {
@@ -289,7 +296,8 @@ final class ForeignMemoryAnalyzer {
         continue;
       }
 
-      var size = flexible ? 0L : TypeGenerator.sequence(parameter.asType(), parameter);
+      var size =
+          flexible ? 0L : TypeGenerator.sequence(parameter.asType(), parameter);
       if (!flexible && size <= 0) {
         messager.printError(
             "Indexed field @Sequence value must be positive", parameter);
@@ -499,13 +507,16 @@ final class ForeignMemoryAnalyzer {
       }
       if (isZeroSizedValue(field)) {
         messager.printError(
-            "Zero-sized native types can only be used by address", field.element);
+            "Zero-sized native types can only be used by address",
+            field.element);
         continue;
       }
       field.bindingAnnotations.validate(processingEnv, type, field.element);
-      BindingAnnotations.validateNested(processingEnv, field.typeMirror, type, field.element);
+      BindingAnnotations.validateNested(processingEnv, field.typeMirror, type,
+          field.element);
       if (field.releaseMethod() != null) {
-        messager.printError("@Release is only supported on String or @Address record return types, not fields",
+        messager.printError(
+            "@Release is only supported on String or @Address record return types, not fields",
             field.element);
       }
       var canonicalError = field.canonicalScalarError();
@@ -581,15 +592,17 @@ final class ForeignMemoryAnalyzer {
     return new ValidatedFields(fields, flexible);
   }
 
-  private FlexibleArrayGenerator flexibleArray(IndexedField array, Fields fields,
-      StructInterfaceModel.Result model) {
+  private FlexibleArrayGenerator flexibleArray(IndexedField array,
+      Fields fields, StructInterfaceModel.Result model) {
     String error = null;
     if (model == null) {
-      error = "@Flexible is only allowed on the last field of a @Struct interface";
+      error =
+          "@Flexible is only allowed on the last field of a @Struct interface";
     } else if (model.baseStruct() != null) {
       error = "Physical @Struct inheritance requires fixed-size structs";
     } else if (array.element() != fields.fields().getLast()) {
-      error = "@Flexible is only allowed on the last field of a @Struct interface";
+      error =
+          "@Flexible is only allowed on the last field of a @Struct interface";
     } else if (!model.vtable() && fields.fields().size() == 1) {
       error = "A flexible member requires a preceding header field";
     }
@@ -602,13 +615,19 @@ final class ForeignMemoryAnalyzer {
     var annotation = declaration.getParameters().getFirst()
         .getAnnotation(Flexible.class);
     var countName = annotation.value();
-    if (countName.isEmpty()) return new FlexibleArrayGenerator(array, null);
-    var count = fields.fields().stream().filter(field -> field.name().equals(countName))
+    if (countName.isEmpty())
+      return new FlexibleArrayGenerator(array, null);
+    var count = fields.fields().stream()
+        .filter(field -> field.name().equals(countName))
         .findFirst().orElse(null);
     if (count != null && !fields.indexedFields().containsKey(countName)
         && !count.isPrimitiveAddress()) {
       switch (count.typeMirror.getKind()) {
-        case BYTE, SHORT, CHAR, INT, LONG -> { return new FlexibleArrayGenerator(array, count); }
+        case BYTE, SHORT, CHAR, INT, LONG -> {
+          return new FlexibleArrayGenerator(array, count);
+        }
+        default -> {
+        }
       }
     }
     messager.printError("@Flexible count '" + countName
@@ -623,7 +642,8 @@ final class ForeignMemoryAnalyzer {
     var indexedFields = new LinkedHashMap<>(fields.indexedFields());
     indexedFields.remove(indexed.element().name());
     var unsupported = new ArrayList<>(fields.unsupportedMethods());
-    addUnsupportedMethod(unsupported, (ExecutableElement) indexed.declaration());
+    addUnsupportedMethod(unsupported,
+        (ExecutableElement) indexed.declaration());
     return new Fields(remaining, indexedFields, unsupported);
   }
 

@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class RenamedChoice implements SimpleChoice {
+final class RenamedChoice implements SimpleChoice {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.unionLayout(
           org.alveolo.ffm.ForeignUtils.unionPad(

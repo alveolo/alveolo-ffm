@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
-public final class ZeroCallsFFM implements ZeroCalls {
+final class ZeroCallsFFM implements ZeroCalls {
   public static final ZeroCallsFFM INSTANCE$F = new ZeroCallsFFM();
 
   private ZeroCallsFFM() {}

@@ -4,6 +4,7 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.callbackClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.callbackSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
@@ -144,7 +145,7 @@ public class CallbackProcessor extends AbstractProcessor {
           """
               @javax.annotation.processing.Generated(
                   "<generator>")
-              public final class <class> {
+              <visibility>final class <class> {
                 private static final java.lang.foreign.Linker Linker$F =
                     java.lang.foreign.Linker.nativeLinker();
 
@@ -176,6 +177,7 @@ public class CallbackProcessor extends AbstractProcessor {
               }
               """
               .replace("<generator>", getClass().getCanonicalName())
+              .replace("<visibility>", generatedTypeVisibility(type))
               .replace("<class>", simpleClassName)
               .replace("<source>", sourceName)
               .replace("<descriptor>", descriptor(method))

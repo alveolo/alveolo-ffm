@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.CallbackProcessor")
-public final class BinaryF {
+final class BinaryF {
   private static final java.lang.foreign.Linker Linker$F =
       java.lang.foreign.Linker.nativeLinker();
 

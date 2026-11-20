@@ -41,7 +41,7 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void generatesEmptyFFM() {
+  void preservesPackagePrivateVisibility() {
     var c = compile("interface/Empty.java");
     assertThat(c).succeeded();
     assertGenerated(c, "pkg.EmptyFFM", "interface/EmptyFFM.java");

@@ -194,6 +194,10 @@ final class ProcessorUtils {
     return elements.getPackageOf(element).getQualifiedName().toString();
   }
 
+  static String generatedTypeVisibility(TypeElement source) {
+    return source.getModifiers().contains(Modifier.PUBLIC) ? "public " : "";
+  }
+
   static String sourceMethodSignature(ExecutableElement method) {
     return "public " + sourceType(method.getReturnType()) + " "
         + method.getSimpleName()

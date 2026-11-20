@@ -21,6 +21,8 @@ import java.lang.annotation.Target;
 /// sequential calls, but each call overwrites its previous value. It must be
 /// inspected before another call uses the same instance and must not be used
 /// concurrently.
+/// The generated class has the same public or package access as the annotated
+/// type.
 @Target(TYPE)
 @Retention(CLASS)
 public @interface CallState {

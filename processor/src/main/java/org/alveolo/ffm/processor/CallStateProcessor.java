@@ -5,6 +5,7 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
@@ -133,7 +134,7 @@ public class CallStateProcessor extends AbstractProcessor {
           """
               @javax.annotation.processing.Generated(
                   "<generator>")
-              public final class <class> implements <source> {
+              <visibility>final class <class> implements <source> {
                 public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
                     java.lang.foreign.Linker.Option.captureStateLayout();
 
@@ -180,6 +181,7 @@ public class CallStateProcessor extends AbstractProcessor {
               }
               """
               .replace("<generator>", getClass().getCanonicalName())
+              .replace("<visibility>", generatedTypeVisibility(type))
               .replace("<class>", simpleClassName)
               .replace("<source>", sourceName)
               .replace("<state>", elements.getConstantExpression(callState.value()))

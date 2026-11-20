@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public final class ArrayUnionFM implements ArrayUnion {
+final class ArrayUnionFM implements ArrayUnion {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.unionLayout(
           org.alveolo.ffm.ForeignUtils.unionPad(

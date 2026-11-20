@@ -12,6 +12,8 @@ import java.lang.annotation.Target;
 /// type and parameters must be primitive types or `MemorySegment`; `void` is
 /// also supported as the return type. The generated helper exposes the native
 /// function descriptor and creates an upcall stub in a caller-provided arena.
+/// The generated helper has the same public or package access as the annotated
+/// type.
 ///
 /// Exceptions must not escape from a callback invoked by native code. The
 /// callback implementation is responsible for handling them according to the

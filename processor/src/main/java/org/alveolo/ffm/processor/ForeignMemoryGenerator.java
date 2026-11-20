@@ -2,6 +2,7 @@ package org.alveolo.ffm.processor;
 
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.vtableImplementationSimpleClassName;
 
@@ -125,12 +126,13 @@ final class ForeignMemoryGenerator {
       out.write("""
           @javax.annotation.processing.Generated(
               "<generator>")
-          <modifier> class <declaration> {
+          <visibility><finality>class <declaration> {
           """
           .replace("<generator>",
               ForeignMemoryProcessor.class.getCanonicalName())
-          .replace("<modifier>", source.getKind() == ElementKind.INTERFACE
-              && kind.equals("struct") && flexible == null ? "public" : "public final")
+          .replace("<visibility>", generatedTypeVisibility(source))
+          .replace("<finality>", source.getKind() == ElementKind.INTERFACE
+              && kind.equals("struct") && flexible == null ? "" : "final ")
           .replace("<declaration>", declaration));
 
       writeLayout(out, fields, kind, vtable && baseStruct == null,

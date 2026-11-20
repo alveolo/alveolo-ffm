@@ -5,6 +5,7 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignInterfaceSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
@@ -99,13 +100,14 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
       out.write("""
           @javax.annotation.processing.Generated(
               "<generator>")
-          public final class <name> implements <interface> {
+          <visibility>final class <name> implements <interface> {
             public static final <name> INSTANCE$F = new <name>();
 
             private <name>() {}
 
           """
           .replace("<generator>", getClass().getCanonicalName())
+          .replace("<visibility>", generatedTypeVisibility(iface))
           .replace("<name>", simpleClassName)
           .replace("<interface>", ifaceSimpleName));
 

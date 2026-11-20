@@ -4,6 +4,7 @@ import static javax.lang.model.SourceVersion.RELEASE_25;
 import static org.alveolo.ffm.processor.ProcessorUtils.abstractMethods;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.dispatchTableSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
@@ -97,7 +98,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
       out.write("""
           @javax.annotation.processing.Generated(
               "<generator>")
-          public final class <name> implements <interface> {
+          <visibility>final class <name> implements <interface> {
             private static final java.lang.foreign.Linker Linker$F =
                 java.lang.foreign.Linker.nativeLinker();
 
@@ -115,6 +116,7 @@ public class DispatchTableProcessor extends AbstractProcessor {
 
           """
           .replace("<generator>", getClass().getCanonicalName())
+          .replace("<visibility>", generatedTypeVisibility(iface))
           .replace("<name>", simpleClassName)
           .replace("<interface>", ifaceSimpleName)
           .replace("<slotCount>", Long.toString(slotCount(methods))));

@@ -17,6 +17,15 @@ class CallbackProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void preservesPublicCallbackAccess() {
+    var c = compile("callback/PublicCallback.java");
+
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.PublicCallbackF",
+        "callback/PublicCallbackF.java");
+  }
+
+  @Test
   void supportsInheritedMethodAndNameOverride() {
     var c = compile("callback/Inherited.java");
 

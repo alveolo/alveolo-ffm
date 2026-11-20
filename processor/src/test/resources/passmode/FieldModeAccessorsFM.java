@@ -2,7 +2,7 @@ package passmode;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignMemoryProcessor")
-public class FieldModeAccessorsFM implements FieldModeAccessors {
+class FieldModeAccessorsFM implements FieldModeAccessors {
   public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
       java.lang.foreign.MemoryLayout.structLayout(
           org.alveolo.ffm.ForeignUtils.structPad(

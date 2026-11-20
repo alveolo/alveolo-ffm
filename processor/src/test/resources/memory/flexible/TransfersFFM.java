@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.ForeignInterfaceProcessor")
-public final class TransfersFFM implements Transfers {
+final class TransfersFFM implements Transfers {
   public static final TransfersFFM INSTANCE$F = new TransfersFFM();
 
   private TransfersFFM() {}

@@ -9,6 +9,8 @@ import java.lang.annotation.Target;
 /// Marks an interface as a native dispatch table definition.
 ///
 /// Each abstract method must declare its vtable pointer index with [Slot].
+/// The generated class has the same public or package access as the annotated
+/// type.
 ///
 /// @see [Slot]
 @Target(TYPE)

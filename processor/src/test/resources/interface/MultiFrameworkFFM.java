@@ -18,11 +18,11 @@ public final class MultiFrameworkFFM implements MultiFramework {
         MultiFramework.class,
         Linker$F.defaultLookup(),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
-            "CoreFoundation", "",
+            "Security", "",
             new org.alveolo.ffm.Library.OS[] {},
             org.alveolo.ffm.Library.Kind.FRAMEWORK),
         new org.alveolo.ffm.ForeignUtils.LibrarySpec(
-            "IOKit", "",
+            "Accelerate", "",
             new org.alveolo.ffm.Library.OS[] {},
             org.alveolo.ffm.Library.Kind.FRAMEWORK));
   }

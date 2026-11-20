@@ -2,7 +2,7 @@ package passmode;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.DispatchTableProcessor")
-public final class FunctionsFD implements Functions {
+final class FunctionsFD implements Functions {
   private static final java.lang.foreign.Linker Linker$F =
       java.lang.foreign.Linker.nativeLinker();
 

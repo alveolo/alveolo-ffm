@@ -2,7 +2,7 @@ package test;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.CallbackProcessor")
-public final class Renamed {
+final class Renamed {
   private static final java.lang.foreign.Linker Linker$F =
       java.lang.foreign.Linker.nativeLinker();
 

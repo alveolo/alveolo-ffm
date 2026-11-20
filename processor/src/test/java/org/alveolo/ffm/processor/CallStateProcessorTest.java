@@ -21,6 +21,15 @@ class CallStateProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
+  void preservesPackageCallStateAccess() {
+    var c = compile("memory/callstate/PackageStateSpec.java");
+
+    assertThat(c).succeeded();
+    assertGenerated(c, "pkg.PackageState",
+        "memory/callstate/PackageState.java");
+  }
+
+  @Test
   void rejectsNonInterfaceCallState() {
     var source = forSourceString("test.Bad", """
         package test;

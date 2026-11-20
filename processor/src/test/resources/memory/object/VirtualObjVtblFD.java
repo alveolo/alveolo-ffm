@@ -2,7 +2,7 @@ package pkg;
 
 @javax.annotation.processing.Generated(
     "org.alveolo.ffm.processor.DispatchTableProcessor")
-public final class VirtualObjVtblFD implements VirtualObjVtbl {
+final class VirtualObjVtblFD implements VirtualObjVtbl {
   private static final java.lang.foreign.Linker Linker$F =
       java.lang.foreign.Linker.nativeLinker();
 
