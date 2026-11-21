@@ -20,10 +20,10 @@ interface Packet {
 @Struct
 interface Transfer {
   int packetsOrStreamId();
-  @Value PacketFM packets(@Flexible long index);
+  @Value PacketF packets(@Flexible long index);
 }
 
 @ForeignInterface
 interface Transfers {
-  Names submit(Transfer transfer, Names source, NamesFM destination);
+  Names submit(Transfer transfer, Names source, NamesF destination);
 }

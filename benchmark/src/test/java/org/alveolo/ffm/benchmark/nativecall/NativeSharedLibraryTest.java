@@ -68,7 +68,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void releasesOwnedStringsExactlyOnceAndSkipsNull() {
-    var api = OwnedTextApiFFM.INSTANCE$F;
+    var api = OwnedTextApiF.INSTANCE$F;
     var allocated = api.text_allocations();
     var released = api.text_releases();
     assertEquals("owned text", api.owned_text(0));
@@ -80,7 +80,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void releasesOwnedStringWhenCopyOutFails() {
-    var api = OwnedTextApiFFM.INSTANCE$F;
+    var api = OwnedTextApiF.INSTANCE$F;
     var released = api.text_releases();
     assertThrows(NullPointerException.class,
         () -> api.owned_text_bad_copy(new OwnedPointee[1]));
@@ -89,7 +89,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void preservesCopyOutFailureAndSuppressesReleaseFailure() {
-    var api = OwnedTextApiFFM.INSTANCE$F;
+    var api = OwnedTextApiF.INSTANCE$F;
     var released = api.text_releases();
     var failure = assertThrows(NullPointerException.class,
         () -> api.badCopyAndRelease(new OwnedPointee[1]));
@@ -100,7 +100,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void releasesOwnedStringWhenConversionFails() {
-    var api = OwnedConversionApiFFM.INSTANCE$F;
+    var api = OwnedConversionApiF.INSTANCE$F;
     var released = api.text_releases();
     var failure = assertThrows(IllegalStateException.class, () -> api.owned_text(0));
     assertEquals("conversion failed", failure.getMessage());
@@ -109,7 +109,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void checksReleaseSymbolBeforeAllocatingNativeReturn() {
-    var api = OwnedTextApiFFM.INSTANCE$F;
+    var api = OwnedTextApiF.INSTANCE$F;
     var allocated = api.text_allocations();
     var released = api.text_releases();
     assertThrows(UnsatisfiedLinkError.class, () -> api.missingRelease(0));
@@ -119,7 +119,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void releasesOwnedRecordAndPreservesCopiedFieldsAndPointerValues() {
-    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var api = OwnedRecordApiF.INSTANCE$F;
     var allocated = api.record_allocations();
     var released = api.record_releases();
     var record = api.owned_record(0);
@@ -134,7 +134,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void releasesOwnedRecordWhenConstructorOrCopyOutFails() {
-    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var api = OwnedRecordApiF.INSTANCE$F;
     var released = api.record_releases();
     var failure = assertThrows(IllegalArgumentException.class, () -> api.owned_record(1));
     assertEquals("conversion failed", failure.getMessage());
@@ -146,7 +146,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void preservesRecordConversionFailureAndSuppressesReleaseFailure() {
-    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var api = OwnedRecordApiF.INSTANCE$F;
     var released = api.record_releases();
     var failure = assertThrows(IllegalArgumentException.class, () -> api.failingRelease(1));
     assertEquals("conversion failed", failure.getMessage());
@@ -159,7 +159,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void checksReleaseSymbolBeforeAllocatingNativeRecord() {
-    var api = OwnedRecordApiFFM.INSTANCE$F;
+    var api = OwnedRecordApiF.INSTANCE$F;
     var allocated = api.record_allocations();
     var released = api.record_releases();
     assertThrows(UnsatisfiedLinkError.class, () -> api.missingRelease(0));
@@ -169,8 +169,8 @@ class NativeSharedLibraryTest {
 
   @Test
   void callsInheritedAndNewVirtualSlotsThroughDerivedWrapper() {
-    var original = (VirtualPairsFM) AffmTestFFM.INSTANCE$F.get_virtual_pairs();
-    var object = new VtableLeafFM(original.MemorySegment$F);
+    var original = (VirtualPairsF) AffmTestF.INSTANCE$F.get_virtual_pairs();
+    var object = new VtableLeafF(original.MemorySegment$F);
     try (var arena = Arena.ofConfined()) {
       var first = object.make(arena, 7, 11);
       assertEquals(7, first.left());
@@ -185,16 +185,16 @@ class NativeSharedLibraryTest {
   }
 
   static Stream<Function<MemorySegment, ?>> vtableWrappers() {
-    return Stream.of(VtableBaseFM::new, VtableMidFM::new, VtableLeafFM::new,
-        VirtualPairsFM::new, VirtualPairsFM::reinterpret$F,
-        segment -> VirtualPairsFM.at$F(segment, 0));
+    return Stream.of(VtableBaseF::new, VtableMidF::new, VtableLeafF::new,
+        VirtualPairsF::new, VirtualPairsF::reinterpret$F,
+        segment -> VirtualPairsF.at$F(segment, 0));
   }
 
   @ParameterizedTest
   @MethodSource("vtableWrappers")
   void rejectsNullVtableBeforeReadingEntries(Function<MemorySegment, ?> wrap) {
     try (var arena = Arena.ofConfined()) {
-      var storage = arena.allocate(VirtualPairsFM.MemoryLayout$F);
+      var storage = arena.allocate(VirtualPairsF.MemoryLayout$F);
       var error = assertThrows(IllegalArgumentException.class,
           () -> wrap.apply(storage));
       assertEquals("Object has a NULL vtable", error.getMessage());
@@ -203,12 +203,12 @@ class NativeSharedLibraryTest {
 
   @Test
   void returnsVirtualInterfaceStructInCallerProvidedStorage() {
-    var object = AffmTestFFM.INSTANCE$F.get_virtual_pairs();
+    var object = AffmTestF.INSTANCE$F.get_virtual_pairs();
     try (var arena = Arena.ofConfined()) {
-      var storage = PairSFM.allocate$F(arena);
+      var storage = PairSF.allocate$F(arena);
       var pair = object.make(SegmentAllocator.prefixAllocator(storage), 7, 11);
 
-      assertEquals(storage, ((PairSFM) pair).MemorySegment$F);
+      assertEquals(storage, ((PairSF) pair).MemorySegment$F);
       assertEquals(7, pair.left());
       assertEquals(11, pair.right());
     }
@@ -216,7 +216,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void capturesCallStateForVirtualInterfaceStructReturn() {
-    var object = AffmTestFFM.INSTANCE$F.get_virtual_pairs();
+    var object = AffmTestF.INSTANCE$F.get_virtual_pairs();
     try (var arena = Arena.ofConfined()) {
       var capture = new Errno(arena);
       var pair = object.makeWithError(arena, capture, 7, 11, 2468);
@@ -229,7 +229,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void copiesOutEntireVirtualArrayRegardlessOfCount() {
-    var object = AffmTestFFM.INSTANCE$F.get_array_virtual();
+    var object = AffmTestF.INSTANCE$F.get_array_virtual();
     var values = new int[] {1, 2, 3};
 
     object.fill(values, 1);
@@ -244,7 +244,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void derivesVirtualCountFromBufferWindow() {
-    var object = AffmTestFFM.INSTANCE$F.get_array_virtual();
+    var object = AffmTestF.INSTANCE$F.get_array_virtual();
     var values = new int[] {1, 2, 3, 4};
     var buffer = IntBuffer.wrap(values).position(1).limit(3);
 
@@ -257,7 +257,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void passesExplicitVirtualCountsUnchanged() {
-    var object = AffmTestFFM.INSTANCE$F.get_array_virtual();
+    var object = AffmTestF.INSTANCE$F.get_array_virtual();
     var values = new int[] {1, 2, 3};
 
     assertEquals(-1, object.count(values, -1));
@@ -271,7 +271,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void mapsNativeNullReturnsToJavaNull() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     assertNull(api.absentPair());
     assertNull(api.absentUnion());
     assertNull(api.absentWrapper());
@@ -283,33 +283,33 @@ class NativeSharedLibraryTest {
   @Test
   void distinguishesNativeNullFromHeapStorage() {
     var zeroAddress = MemorySegment.NULL.asReadOnly();
-    assertNull(PairSFM.reinterpret$F(zeroAddress));
-    assertNull(PairRFM.reinterpret$F(zeroAddress));
-    assertNull(PairRFM.reinterpret$F(zeroAddress.reinterpret(8)));
-    assertNull(VirtualPairsFM.reinterpret$F(zeroAddress));
-    assertNull(NullableUnionFM.reinterpret$F(zeroAddress));
+    assertNull(PairSF.reinterpret$F(zeroAddress));
+    assertNull(PairRF.reinterpret$F(zeroAddress));
+    assertNull(PairRF.reinterpret$F(zeroAddress.reinterpret(8)));
+    assertNull(VirtualPairsF.reinterpret$F(zeroAddress));
+    assertNull(NullableUnionF.reinterpret$F(zeroAddress));
     assertThrows(NullPointerException.class,
-        () -> PairSFM.reinterpret$F(null));
+        () -> PairSF.reinterpret$F(null));
 
     var heap = MemorySegment.ofArray(new int[] {7, 11});
     assertEquals(0, heap.address());
     assertSame(heap, ForeignUtils.requireNonNullAddress(heap));
     assertThrows(NullPointerException.class,
         () -> ForeignUtils.requireNonNullAddress(zeroAddress.reinterpret(8)));
-    assertEquals(7, new PairSFM(heap).left());
-    assertEquals(new PairR(7, 11), PairRFM.fromMemorySegment$F(heap));
+    assertEquals(7, new PairSF(heap).left());
+    assertEquals(new PairR(7, 11), PairRF.fromMemorySegment$F(heap));
     assertThrows(UnsupportedOperationException.class,
-        () -> PairSFM.reinterpret$F(heap));
+        () -> PairSF.reinterpret$F(heap));
     assertThrows(UnsupportedOperationException.class,
-        () -> PairRFM.reinterpret$F(heap));
+        () -> PairRF.reinterpret$F(heap));
   }
 
   @Test
   void handlesNullInOrdinaryPointerFields() {
     try (var arena = Arena.ofConfined()) {
-      var pair = new PairSFM(arena).left(7).right(11);
-      var box = new PairBoxIAFM(arena);
-      var wrappers = new NullableFieldsFM(arena);
+      var pair = new PairSF(arena).left(7).right(11);
+      var box = new PairBoxIAF(arena);
+      var wrappers = new NullableFieldsF(arena);
       assertNull(box.pair());
       assertNull(wrappers.pair());
       box.pair(pair);
@@ -321,18 +321,18 @@ class NativeSharedLibraryTest {
       assertNull(box.pair());
       assertNull(wrappers.pair());
 
-      var storage = PairBoxRAFM.allocate$F(arena);
-      assertEquals(new PairBoxRA(null), PairBoxRAFM.fromMemorySegment$F(storage));
-      PairBoxRAFM.pair(arena, storage, new PairR(7, 11));
-      assertEquals(new PairR(7, 11), PairBoxRAFM.pair(storage));
-      PairBoxRAFM.pair(arena, storage, null);
-      assertNull(PairBoxRAFM.pair(storage));
+      var storage = PairBoxRAF.allocate$F(arena);
+      assertEquals(new PairBoxRA(null), PairBoxRAF.fromMemorySegment$F(storage));
+      PairBoxRAF.pair(arena, storage, new PairR(7, 11));
+      assertEquals(new PairR(7, 11), PairBoxRAF.pair(storage));
+      PairBoxRAF.pair(arena, storage, null);
+      assertNull(PairBoxRAF.pair(storage));
     }
   }
 
   @Test
   void passesNullablePointers() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     assertEquals(0, api.optionalPair(null));
     assertEquals(0, api.optionalWrapper(null));
     assertEquals(0, api.optionalRecord(null));
@@ -347,7 +347,7 @@ class NativeSharedLibraryTest {
     assertEquals(1003, api.optionalString("abc"));
     assertEquals(118, api.optionalRecord(new PairR(7, 11)));
     try (var arena = Arena.ofConfined()) {
-      var pair = new PairSFM(arena).left(7).right(11);
+      var pair = new PairSF(arena).left(7).right(11);
       assertEquals(118, api.optionalPair(pair));
       assertEquals(118, api.optionalWrapper(pair));
       assertEquals(1003, api.optionalInterfaceValues(null, "abc"));
@@ -357,7 +357,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void handlesNullableValuesWithSharedAndDirectAllocation() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     for (var pair : new PairR[] {null, new PairR(7, 11)}) {
       for (var text : new String[] {null, "", "abc"}) {
         var expected = (pair == null ? 0 : 118)
@@ -382,7 +382,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void distinguishesEmptyArraysAndBuffersFromNull() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     assertEquals(97, api.optionalArray(new int[0], MemorySegment.NULL, -3));
     assertEquals(97, api.optionalFlags(new boolean[0], MemorySegment.NULL, -3));
     assertEquals(97, api.optionalRecords(new PairBoxRA[0], MemorySegment.NULL, -3));
@@ -409,7 +409,7 @@ class NativeSharedLibraryTest {
 
   @Test
   void rejectsNullByValueArguments() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     assertThrows(NullPointerException.class, () -> api.pair_sum(null));
     assertThrows(NullPointerException.class, () -> api.requiredValues(null, "abc"));
     assertThrows(NullPointerException.class, () -> api.sum_int3_value(null));
@@ -419,39 +419,39 @@ class NativeSharedLibraryTest {
     assertThrows(NullPointerException.class,
         () -> api.pair_sum_interface_value(null));
     try (var arena = Arena.ofConfined()) {
-      var box = new PairBoxIVFM(arena);
+      var box = new PairBoxIVF(arena);
       assertThrows(NullPointerException.class, () -> box.pair(null));
       assertThrows(NullPointerException.class,
-          () -> PairRFM.toMemorySegment$F(arena, null));
+          () -> PairRF.toMemorySegment$F(arena, null));
     }
   }
 
   @Test
   void rejectsNativeNullBeforePrimitivePointerAccess() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     var plain = assertThrows(NullPointerException.class, api::absentInt);
     var canonical = assertThrows(NullPointerException.class, api::absentSize);
     assertEquals("Cannot dereference a native NULL pointer", plain.getMessage());
     assertEquals(plain.getMessage(), canonical.getMessage());
     try (var arena = Arena.ofConfined()) {
-      var primitive = PrimitivePointerFM.allocate$F(arena);
-      var size = SizeValueFM.allocate$F(arena);
+      var primitive = PrimitivePointerF.allocate$F(arena);
+      var size = SizeValueF.allocate$F(arena);
       assertThrows(NullPointerException.class,
-          () -> PrimitivePointerFM.value(primitive));
-      assertThrows(NullPointerException.class, () -> SizeValueFM.pointer(size));
-      PrimitivePointerFM.value(arena, primitive, 0);
-      SizeValueFM.pointer(arena, size, 0);
-      assertEquals(0, PrimitivePointerFM.value(primitive));
-      assertEquals(0, SizeValueFM.pointer(size));
+          () -> PrimitivePointerF.value(primitive));
+      assertThrows(NullPointerException.class, () -> SizeValueF.pointer(size));
+      PrimitivePointerF.value(arena, primitive, 0);
+      SizeValueF.pointer(arena, size, 0);
+      assertEquals(0, PrimitivePointerF.value(primitive));
+      assertEquals(0, SizeValueF.pointer(size));
     }
   }
 
   @Test
   void callsAvailableFunctionDespiteMissingSymbols() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     assertEquals(42, api.add_ints(19, 23));
     assertEquals(java.util.Optional.empty(),
-        AffmTestFFM.SymbolLookup$F.find("affm_missing_function"));
+        AffmTestF.SymbolLookup$F.find("affm_missing_function"));
 
     var values = new int[] {7};
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -469,23 +469,23 @@ class NativeSharedLibraryTest {
 
   @Test
   void adaptsCanonicalCScalarsWithoutChangingJavaCarriers() {
-    assertEquals(-123L, AffmTestFFM.INSTANCE$F.echo_slong(-123L));
+    assertEquals(-123L, AffmTestF.INSTANCE$F.echo_slong(-123L));
     assertEquals(0xffff_ffffL,
-        AffmTestFFM.INSTANCE$F.echo_ulong(0xffff_ffffL));
+        AffmTestF.INSTANCE$F.echo_ulong(0xffff_ffffL));
     assertEquals(0xffff_ffffL,
-        AffmTestFFM.INSTANCE$F.echo_size_t(0xffff_ffffL));
-    assertEquals(0xffff, AffmTestFFM.INSTANCE$F.echo_wchar(0xffff));
+        AffmTestF.INSTANCE$F.echo_size_t(0xffff_ffffL));
+    assertEquals(0xffff, AffmTestF.INSTANCE$F.echo_wchar(0xffff));
   }
 
   @Test
   void combinesAddressWithCanonicalScalarPointees() {
-    assertEquals(321L, AffmTestFFM.INSTANCE$F.read_c_long(321L));
-    assertEquals(123L, AffmTestFFM.INSTANCE$F.c_long_address());
+    assertEquals(321L, AffmTestF.INSTANCE$F.read_c_long(321L));
+    assertEquals(123L, AffmTestF.INSTANCE$F.c_long_address());
   }
 
   @Test
   void adaptsSizeTCallsAndPointersToNativeWidth() {
-    var api = AffmTestFFM.INSTANCE$F;
+    var api = AffmTestF.INSTANCE$F;
     var maximum = NativeType.SIZE_T.layout.byteSize() == 4
         ? 0xffff_ffffL : -1L;
     assertEquals(maximum, api.size_t_address());
@@ -512,20 +512,20 @@ class NativeSharedLibraryTest {
         ? 0xffff_ffffL : -1L;
     SizeValue snapshot;
     try (var arena = Arena.ofConfined()) {
-      var field = new SizeFieldFM(arena);
+      var field = new SizeFieldF(arena);
       field.value(maximum);
       assertEquals(maximum, field.value());
       var value = new SizeValue(maximum, maximum);
-      var segment = SizeValueFM.toMemorySegment$F(arena, value);
-      snapshot = SizeValueFM.fromMemorySegment$F(segment);
+      var segment = SizeValueF.toMemorySegment$F(arena, value);
+      snapshot = SizeValueF.fromMemorySegment$F(segment);
       assertEquals(value, snapshot);
       if (NativeType.SIZE_T.layout.byteSize() == 4) {
         for (var invalid : new long[] {-1, 0x1_0000_0000L}) {
           assertThrows(ArithmeticException.class, () -> field.value(invalid));
           assertThrows(ArithmeticException.class,
-              () -> SizeValueFM.value(segment, invalid));
+              () -> SizeValueF.value(segment, invalid));
           assertThrows(ArithmeticException.class,
-              () -> SizeValueFM.pointer(arena, segment, invalid));
+              () -> SizeValueF.pointer(arena, segment, invalid));
         }
       }
     }
@@ -535,15 +535,15 @@ class NativeSharedLibraryTest {
 
   @Test
   void callsSpecializedVariadicFunctionWithAndWithoutTailArguments() {
-    assertEquals(0, AffmTestFFM.INSTANCE$F.variadic_sum(0));
-    assertEquals(42, AffmTestFFM.INSTANCE$F.variadic_sum(3, 10, 12, 20));
+    assertEquals(0, AffmTestF.INSTANCE$F.variadic_sum(0));
+    assertEquals(42, AffmTestF.INSTANCE$F.variadic_sum(3, 10, 12, 20));
   }
 
   @Test
   void passesUtf8String() {
-    assertEquals(0L, AffmTestFFM.INSTANCE$F.utf8_bytes(""));
-    assertEquals(6L, AffmTestFFM.INSTANCE$F.utf8_bytes("ASCII!"));
-    assertEquals(12L, AffmTestFFM.INSTANCE$F.utf8_bytes("Юникод"));
+    assertEquals(0L, AffmTestF.INSTANCE$F.utf8_bytes(""));
+    assertEquals(6L, AffmTestF.INSTANCE$F.utf8_bytes("ASCII!"));
+    assertEquals(12L, AffmTestF.INSTANCE$F.utf8_bytes("Юникод"));
   }
 
   @Test
@@ -551,12 +551,12 @@ class NativeSharedLibraryTest {
     try (var arena = Arena.ofConfined()) {
       var capture = new Errno(arena);
 
-      assertEquals(23, AffmTestFFM.INSTANCE$F
+      assertEquals(23, AffmTestF.INSTANCE$F
           .checked_errno_return(capture, 23, 1234));
       assertEquals(1234, capture.errno());
 
       var exception = assertThrows(IllegalStateException.class,
-          () -> AffmTestFFM.INSTANCE$F
+          () -> AffmTestF.INSTANCE$F
               .checked_errno_return(capture, -1, 4321));
       assertEquals("native error: 4321", exception.getMessage());
     }
@@ -567,7 +567,7 @@ class NativeSharedLibraryTest {
     try (var arena = Arena.ofConfined()) {
       var capture = new Errno(arena);
 
-      var pair = AffmTestFFM.INSTANCE$F
+      var pair = AffmTestF.INSTANCE$F
           .make_pair_and_set_errno(capture, 7, 11, 2468);
 
       assertEquals(new PairR(7, 11), pair);
@@ -577,27 +577,27 @@ class NativeSharedLibraryTest {
 
   @Test
   void returnsRecordStructByValue() {
-    var pair = AffmTestFFM.INSTANCE$F.make_pair_record(7, 11);
+    var pair = AffmTestF.INSTANCE$F.make_pair_record(7, 11);
     assertEquals(7, pair.left());
     assertEquals(11, pair.right());
   }
 
   @Test
   void passesRecordStructByValue() {
-    assertEquals(18, AffmTestFFM.INSTANCE$F
+    assertEquals(18, AffmTestF.INSTANCE$F
         .pair_sum(new PairR(7, 11)));
   }
 
   @Test
   void passesRecordStructByAddress() {
-    assertEquals(18, AffmTestFFM.INSTANCE$F
+    assertEquals(18, AffmTestF.INSTANCE$F
         .pair_ptr_sum_record(new PairR(7, 11)));
   }
 
   @Test
   void returnsInterfaceStructWithAllocator() {
     try (var arena = Arena.ofConfined()) {
-      var pair = AffmTestFFM.INSTANCE$F.make_pair(arena, 7, 11);
+      var pair = AffmTestF.INSTANCE$F.make_pair(arena, 7, 11);
       assertEquals(7, pair.left());
       assertEquals(11, pair.right());
     }
@@ -606,8 +606,8 @@ class NativeSharedLibraryTest {
   @Test
   void passesInterfaceStructByValue() {
     try (var arena = Arena.ofConfined()) {
-      var pair = new PairSFM(arena).left(7).right(11);
-      assertEquals(18, AffmTestFFM.INSTANCE$F
+      var pair = new PairSF(arena).left(7).right(11);
+      assertEquals(18, AffmTestF.INSTANCE$F
           .pair_sum_interface_value(pair));
     }
   }
@@ -615,22 +615,22 @@ class NativeSharedLibraryTest {
   @Test
   void passesInterfaceStructByAddress() {
     try (var arena = Arena.ofConfined()) {
-      var pair = new PairSFM(arena).left(7).right(11);
-      assertEquals(18, AffmTestFFM.INSTANCE$F
+      var pair = new PairSF(arena).left(7).right(11);
+      assertEquals(18, AffmTestF.INSTANCE$F
           .pair_ptr_sum_interface(pair));
     }
   }
 
   @Test
   void passesNestedRecordStructByValue() {
-    assertEquals(18, AffmTestFFM.INSTANCE$F
+    assertEquals(18, AffmTestF.INSTANCE$F
         .pair_box_record_value_sum(
             new PairBoxRV(new PairR(7, 11))));
   }
 
   @Test
   void passesNestedRecordStructByAddress() {
-    assertEquals(18, AffmTestFFM.INSTANCE$F
+    assertEquals(18, AffmTestF.INSTANCE$F
         .pair_box_record_address_sum(
             new PairBoxRA(new PairR(7, 11))));
   }
@@ -638,18 +638,18 @@ class NativeSharedLibraryTest {
   @Test
   void passesNestedInterfaceStructByAddress() {
     try (var arena = Arena.ofConfined()) {
-      var pair = new PairSFM(arena).left(7).right(11);
-      assertEquals(18, AffmTestFFM.INSTANCE$F
-          .pair_box_interface_address_sum(new PairBoxIAFM(arena).pair(pair)));
+      var pair = new PairSF(arena).left(7).right(11);
+      assertEquals(18, AffmTestF.INSTANCE$F
+          .pair_box_interface_address_sum(new PairBoxIAF(arena).pair(pair)));
     }
   }
 
   @Test
   void passesNestedInterfaceStructByValue() {
     try (var arena = Arena.ofConfined()) {
-      var pair = new PairSFM(arena).left(7).right(11);
-      assertEquals(18, AffmTestFFM.INSTANCE$F
-          .pair_box_interface_value_sum(new PairBoxIVFM(arena).pair(pair)));
+      var pair = new PairSF(arena).left(7).right(11);
+      assertEquals(18, AffmTestF.INSTANCE$F
+          .pair_box_interface_value_sum(new PairBoxIVF(arena).pair(pair)));
     }
   }
 
@@ -657,7 +657,7 @@ class NativeSharedLibraryTest {
   void preservesArrayContentsNotModifiedByNativeCall() {
     var values = new int[] {1, 2, 3, 4};
 
-    AffmTestFFM.INSTANCE$F.scale_ints(values, 2, 10);
+    AffmTestF.INSTANCE$F.scale_ints(values, 2, 10);
 
     assertArrayEquals(new int[] {10, 20, 3, 4}, values);
   }
@@ -666,7 +666,7 @@ class NativeSharedLibraryTest {
   void transfersArrayWhenNativeCountIsZero() {
     var values = new int[] {1, 2, 3};
 
-    AffmTestFFM.INSTANCE$F.scale_ints(values, 0, 10);
+    AffmTestF.INSTANCE$F.scale_ints(values, 0, 10);
 
     assertArrayEquals(new int[] {1, 2, 3}, values);
   }
@@ -675,10 +675,10 @@ class NativeSharedLibraryTest {
   void derivesNativeCountFromEntireArray() {
     var values = new int[] {1, 2, 3};
 
-    AffmTestFFM.INSTANCE$F.scale_ints(values, 10);
+    AffmTestF.INSTANCE$F.scale_ints(values, 10);
 
     assertArrayEquals(new int[] {10, 20, 30}, values);
-    AffmTestFFM.INSTANCE$F.scale_ints(new int[0], 10);
+    AffmTestF.INSTANCE$F.scale_ints(new int[0], 10);
   }
 
   @Test
@@ -688,7 +688,7 @@ class NativeSharedLibraryTest {
       new PairR(1, 2), new PairR(3, 4), untouched
     };
 
-    AffmTestFFM.INSTANCE$F.offset_pairs(values, 2, 10);
+    AffmTestF.INSTANCE$F.offset_pairs(values, 2, 10);
 
     assertArrayEquals(new PairR[] {
       new PairR(11, 12), new PairR(13, 14), untouched
@@ -700,7 +700,7 @@ class NativeSharedLibraryTest {
   void derivesRecordOutputCountFromArrayLength() {
     var values = new PairR[3];
 
-    AffmTestFFM.INSTANCE$F.fill_pairs(values, 20);
+    AffmTestF.INSTANCE$F.fill_pairs(values, 20);
 
     assertArrayEquals(new PairR[] {
       new PairR(20, 21), new PairR(22, 23), new PairR(24, 25)
@@ -710,13 +710,13 @@ class NativeSharedLibraryTest {
   @Test
   void mutatesNativeMatrixInlineRecordsAndNullablePointers() {
     try (var arena = Arena.ofConfined()) {
-      var values = new NativeArraysFM(arena)
+      var values = new NativeArraysF(arena)
           .matrix(1, 2, 5)
           .points(1, new PairR(1, 2))
           .pointers(arena, 0, new PairR(3, 4))
           .pointersAsAddress$F(1, java.lang.foreign.MemorySegment.NULL);
 
-      AffmTestFFM.INSTANCE$F.mutate_native_arrays(values);
+      AffmTestF.INSTANCE$F.mutate_native_arrays(values);
 
       assertEquals(105, values.matrix(1, 2));
       assertEquals(77, values.matrix(0, 1));
@@ -730,7 +730,7 @@ class NativeSharedLibraryTest {
   void copiesInArrayParameterOnlyWhenAnnotatedIn() {
     var values = new int[] {1, 2, 3};
 
-    assertEquals(6, AffmTestFFM.INSTANCE$F.sum_three_and_clobber(values));
+    assertEquals(6, AffmTestF.INSTANCE$F.sum_three_and_clobber(values));
 
     assertArrayEquals(new int[] {1, 2, 3}, values);
   }
@@ -739,7 +739,7 @@ class NativeSharedLibraryTest {
   void passesPrimitiveArrayByValue() {
     var values = new int[] {1, 2, 3};
 
-    assertEquals(6, AffmTestFFM.INSTANCE$F.sum_int3_value(values));
+    assertEquals(6, AffmTestF.INSTANCE$F.sum_int3_value(values));
 
     assertArrayEquals(new int[] {1, 2, 3}, values);
   }
@@ -750,7 +750,7 @@ class NativeSharedLibraryTest {
         .order(ByteOrder.nativeOrder()).asIntBuffer();
     values.put(0, 1).put(1, 2).put(2, 3);
 
-    assertEquals(6, AffmTestFFM.INSTANCE$F.sum_int3_buffer_value(values));
+    assertEquals(6, AffmTestF.INSTANCE$F.sum_int3_buffer_value(values));
 
     assertEquals(1, values.get(0));
     assertEquals(2, values.get(1));
@@ -761,7 +761,7 @@ class NativeSharedLibraryTest {
   void copiesOutArrayParameterOnlyWhenAnnotatedOut() {
     var values = new int[] {100, 200};
 
-    AffmTestFFM.INSTANCE$F.fill_two_ints(values, 7);
+    AffmTestF.INSTANCE$F.fill_two_ints(values, 7);
 
     assertArrayEquals(new int[] {7, 8}, values);
   }
@@ -771,7 +771,7 @@ class NativeSharedLibraryTest {
     var values = new int[] {100};
 
     assertThrows(IllegalArgumentException.class,
-        () -> AffmTestFFM.INSTANCE$F.fill_two_ints(values, 7));
+        () -> AffmTestF.INSTANCE$F.fill_two_ints(values, 7));
   }
 
   @Test
@@ -779,7 +779,7 @@ class NativeSharedLibraryTest {
     var values = ByteBuffer.wrap(new byte[] {1, 2, 3});
     values.position(1);
 
-    AffmTestFFM.INSTANCE$F.increment_bytes(values);
+    AffmTestF.INSTANCE$F.increment_bytes(values);
 
     assertEquals(1, values.get(0));
     assertEquals(3, values.get(1));
@@ -795,7 +795,7 @@ class NativeSharedLibraryTest {
     values.put(2, (byte) 3);
     values.position(1);
 
-    AffmTestFFM.INSTANCE$F.increment_bytes(values, 1);
+    AffmTestF.INSTANCE$F.increment_bytes(values, 1);
 
     assertEquals(1, values.get(0));
     assertEquals(3, values.get(1));
@@ -808,7 +808,7 @@ class NativeSharedLibraryTest {
     var bytes = new byte[] {1, 2, 3};
     var values = ByteBuffer.wrap(bytes).position(1).limit(1);
 
-    AffmTestFFM.INSTANCE$F.increment_bytes(values);
+    AffmTestF.INSTANCE$F.increment_bytes(values);
 
     assertArrayEquals(new byte[] {1, 2, 3}, bytes);
     assertEquals(1, values.position());
@@ -819,7 +819,7 @@ class NativeSharedLibraryTest {
   void copiesOutHeapTypedBufferWhenAnnotatedOut() {
     var values = IntBuffer.allocate(2);
 
-    AffmTestFFM.INSTANCE$F.fill_two_int_buffer(values, 19);
+    AffmTestF.INSTANCE$F.fill_two_int_buffer(values, 19);
 
     assertEquals(19, values.get(0));
     assertEquals(20, values.get(1));
@@ -834,7 +834,7 @@ class NativeSharedLibraryTest {
     values.position(1);
 
     var window = values.duplicate().limit(3);
-    AffmTestFFM.INSTANCE$F.scale_int_buffer(window, 10);
+    AffmTestF.INSTANCE$F.scale_int_buffer(window, 10);
     assertEquals(1, window.position());
     assertEquals(3, window.limit());
 
@@ -855,9 +855,9 @@ class NativeSharedLibraryTest {
     var readOnly = IntBuffer.allocate(2).asReadOnlyBuffer();
 
     assertThrows(IllegalArgumentException.class,
-        () -> AffmTestFFM.INSTANCE$F.fill_two_int_buffer(wrongOrder, 1));
+        () -> AffmTestF.INSTANCE$F.fill_two_int_buffer(wrongOrder, 1));
     assertThrows(IllegalArgumentException.class,
-        () -> AffmTestFFM.INSTANCE$F.fill_two_int_buffer(readOnly, 1));
+        () -> AffmTestF.INSTANCE$F.fill_two_int_buffer(readOnly, 1));
   }
 
   @Test
@@ -870,7 +870,7 @@ class NativeSharedLibraryTest {
     var readOnly = writable.asReadOnlyBuffer();
 
     assertEquals(6,
-        AffmTestFFM.INSTANCE$F.sum_three_int_buffer(readOnly));
+        AffmTestF.INSTANCE$F.sum_three_int_buffer(readOnly));
     assertEquals(777, writable.get(0));
   }
 

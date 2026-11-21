@@ -47,19 +47,19 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void generatesDispatchTableFD() {
+  void generatesDispatchTableF() {
     var c = compile("dispatch/XyzVtbl.java",
         "memory/callstate/NativeErrorSpec.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.XyzVtblFD", "dispatch/XyzVtblFD.java");
+    assertGenerated(c, "pkg.XyzVtblF", "dispatch/XyzVtblF.java");
   }
 
   @Test
   void generatesInheritedDispatchTableMethods() {
     var c = compile("dispatch/InheritedVtbl.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.InheritedVtblFD",
-        "dispatch/InheritedVtblFD.java");
+    assertGenerated(c, "pkg.InheritedVtblF",
+        "dispatch/InheritedVtblF.java");
   }
 
   @Test
@@ -87,14 +87,14 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
   void generatesDispatchTableNameOverrideInSourcePackage() {
     var c = compile("dispatch/RenamedVtbl.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.RenamedVtblFD", "dispatch/RenamedVtblFD.java");
+    assertGenerated(c, "pkg.RenamedVtblF", "dispatch/RenamedVtblF.java");
   }
 
   @Test
   void failsQualifiedDispatchTableNameOverride() {
     var source = forSourceString("test.BadVtbl", """
         package test;
-        @org.alveolo.ffm.DispatchTable(name = "other.BadVtblFD")
+        @org.alveolo.ffm.DispatchTable(name = "other.BadVtblF")
         public interface BadVtbl {
           @org.alveolo.ffm.Slot(0) void bad();
         }
@@ -215,7 +215,7 @@ class DispatchTableProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadVtblUse {
-          Class<?> generatedClass = BadVtblFD.class;
+          Class<?> generatedClass = BadVtblF.class;
         }
         """);
 

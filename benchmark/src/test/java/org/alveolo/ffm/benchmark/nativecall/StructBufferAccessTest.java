@@ -18,7 +18,7 @@ class StructBufferAccessTest {
   @Test
   void usesNativeByteOrderForTypedBufferView() {
     try (var arena = Arena.ofConfined()) {
-      var struct = new NativeIntsFM(arena);
+      var struct = new NativeIntsF(arena);
 
       struct.valuesFromArray$F(new int[] {0x01020304, 2, 3});
 
@@ -38,7 +38,7 @@ class StructBufferAccessTest {
   @Test
   void accessesMatricesInlineRecordsAndPointerSlots() {
     try (var arena = Arena.ofConfined()) {
-      var struct = new NativeArraysFM(arena)
+      var struct = new NativeArraysF(arena)
           .matrix(1, 2, 42)
           .points(0, new PairR(1, 2))
           .pointersAsAddress$F(0, MemorySegment.NULL)
@@ -61,34 +61,34 @@ class StructBufferAccessTest {
       var source = new NativeHeader(
           new byte[] {1, 2, 3},
           new PairR[] {new PairR(4, 5), new PairR(6, 7)});
-      var segment = NativeHeaderFM.toMemorySegment$F(arena, source);
-      var snapshot = NativeHeaderFM.fromMemorySegment$F(segment);
+      var segment = NativeHeaderF.toMemorySegment$F(arena, source);
+      var snapshot = NativeHeaderF.fromMemorySegment$F(segment);
 
       assertArrayEquals(source.id(), snapshot.id());
       assertArrayEquals(source.points(), snapshot.points());
 
       source.id()[0] = 99;
       snapshot.points()[0] = new PairR(99, 99);
-      var reread = NativeHeaderFM.fromMemorySegment$F(segment);
+      var reread = NativeHeaderF.fromMemorySegment$F(segment);
       assertArrayEquals(new byte[] {1, 2, 3}, reread.id());
       assertArrayEquals(
           new PairR[] {new PairR(4, 5), new PairR(6, 7)},
           reread.points());
 
       assertThrows(IllegalArgumentException.class,
-          () -> NativeHeaderFM.toMemorySegment$F(arena,
+          () -> NativeHeaderF.toMemorySegment$F(arena,
               new NativeHeader(new byte[2], source.points())));
 
-      var pairs = PairRFM.allocateSequence$F(arena, 2);
-      var pairSize = PairRFM.MemoryLayout$F.byteSize();
-      PairRFM.toMemorySegment$F(
+      var pairs = PairRF.allocateSequence$F(arena, 2);
+      var pairSize = PairRF.MemoryLayout$F.byteSize();
+      PairRF.toMemorySegment$F(
           new PairR(10, 20), pairs.asSlice(0, pairSize));
-      PairRFM.toMemorySegment$F(
+      PairRF.toMemorySegment$F(
           new PairR(30, 40), pairs.asSlice(pairSize, pairSize));
-      assertEquals(new PairR(10, 20), PairRFM.at$F(pairs, 0));
-      assertEquals(new PairR(30, 40), PairRFM.at$F(pairs, 1));
+      assertEquals(new PairR(10, 20), PairRF.at$F(pairs, 0));
+      assertEquals(new PairR(30, 40), PairRF.at$F(pairs, 1));
       assertThrows(IndexOutOfBoundsException.class,
-          () -> PairRFM.at$F(pairs, 2));
+          () -> PairRF.at$F(pairs, 2));
     }
   }
 }

@@ -6,10 +6,10 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.alveolo.ffm.benchmark.affm.AffmLibC;
-import org.alveolo.ffm.benchmark.affm.AffmLibCFFM;
-import org.alveolo.ffm.benchmark.affm.div_t_SFM;
-import org.alveolo.ffm.benchmark.affm.ldiv_t_SFM;
-import org.alveolo.ffm.benchmark.affm.lldiv_t_SFM;
+import org.alveolo.ffm.benchmark.affm.AffmLibCF;
+import org.alveolo.ffm.benchmark.affm.div_t_SF;
+import org.alveolo.ffm.benchmark.affm.ldiv_t_SF;
+import org.alveolo.ffm.benchmark.affm.lldiv_t_SF;
 import org.alveolo.ffm.benchmark.jna.JnaLibC;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -33,7 +33,7 @@ import com.sun.jna.NativeLong;
 @Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class DivBenchmark {
-  private static final AffmLibC affm = AffmLibCFFM.INSTANCE$F;
+  private static final AffmLibC affm = AffmLibCF.INSTANCE$F;
   private static final JnaLibC jna = JnaLibC.INSTANCE;
 
   // JNR does not support struct-by-value passing:
@@ -54,7 +54,7 @@ public class DivBenchmark {
     public void allocate() {
       arena = Arena.ofConfined();
       allocator = SegmentAllocator.prefixAllocator(
-          arena.allocate(div_t_SFM.MemoryLayout$F));
+          arena.allocate(div_t_SF.MemoryLayout$F));
     }
 
     @Setup(Level.Iteration)
@@ -84,7 +84,7 @@ public class DivBenchmark {
     public void allocate() {
       arena = Arena.ofConfined();
       allocator = SegmentAllocator.prefixAllocator(
-          arena.allocate(ldiv_t_SFM.MemoryLayout$F));
+          arena.allocate(ldiv_t_SF.MemoryLayout$F));
     }
 
     @Setup(Level.Iteration)
@@ -114,7 +114,7 @@ public class DivBenchmark {
     public void allocate() {
       arena = Arena.ofConfined();
       allocator = SegmentAllocator.prefixAllocator(
-          arena.allocate(lldiv_t_SFM.MemoryLayout$F));
+          arena.allocate(lldiv_t_SF.MemoryLayout$F));
     }
 
     @Setup(Level.Iteration)

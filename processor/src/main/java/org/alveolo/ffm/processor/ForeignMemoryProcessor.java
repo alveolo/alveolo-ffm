@@ -8,6 +8,7 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassN
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSingleGenerator;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
@@ -90,6 +91,10 @@ public class ForeignMemoryProcessor extends AbstractProcessor {
           type);
       return;
     }
+    if (struct != null && !validateSingleGenerator(
+        processingEnv, type, Struct.class)) return;
+    if (union != null && !validateSingleGenerator(
+        processingEnv, type, Union.class)) return;
 
     switch (type.getKind()) {
       case INTERFACE, RECORD -> {

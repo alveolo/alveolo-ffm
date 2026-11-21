@@ -20,6 +20,6 @@ import java.lang.annotation.Target;
 public @interface Union {
   /// Override the generated simple class name. The generated class stays in the
   /// same package as the annotated type. By default, a trailing `Spec` is removed
-  /// from an interface name; otherwise the type name is suffixed with `FM`.
+  /// from an interface name; otherwise the type name is suffixed with `F`.
   String name() default "";
 }

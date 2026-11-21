@@ -44,55 +44,55 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   void preservesPackagePrivateVisibility() {
     var c = compile("interface/Empty.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.EmptyFFM", "interface/EmptyFFM.java");
+    assertGenerated(c, "pkg.EmptyF", "interface/EmptyF.java");
   }
 
   @Test
-  void generatesNameOverrideFFM() {
+  void generatesNameOverrideF() {
     var c = compile("interface/LibraryApi.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.RenamedLibraryFFM",
-        "interface/RenamedLibraryFFM.java");
+    assertGenerated(c, "pkg.RenamedLibraryF",
+        "interface/RenamedLibraryF.java");
   }
 
   @Test
-  void generatesBasicFFM() {
+  void generatesBasicF() {
     var c = compile("interface/LibC.java",
         "value/div_t.java", "value/ldiv_t.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.LibCFFM", "interface/LibCFFM.java");
-    assertGenerated(c, "pkg.div_tFM", "value/div_tFM.java");
-    assertGenerated(c, "pkg.ldiv_tFM", "value/ldiv_tFM.java");
+    assertGenerated(c, "pkg.LibCF", "interface/LibCF.java");
+    assertGenerated(c, "pkg.div_tF", "value/div_tF.java");
+    assertGenerated(c, "pkg.ldiv_tF", "value/ldiv_tF.java");
   }
 
   @Test
   void adaptsSizeTCallsPointersAndFields() {
     var c = compile("interface/Sizes.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.SizesFFM", "interface/SizesFFM.java");
-    assertGenerated(c, "pkg.SizeValueFM", "interface/SizeValueFM.java");
-    assertGenerated(c, "pkg.SizeFieldFM", "interface/SizeFieldFM.java");
+    assertGenerated(c, "pkg.SizesF", "interface/SizesF.java");
+    assertGenerated(c, "pkg.SizeValueF", "interface/SizeValueF.java");
+    assertGenerated(c, "pkg.SizeFieldF", "interface/SizeFieldF.java");
   }
 
   @Test
   void generatesOwnedRecordReturnCleanup() {
     var c = compile("interface/OwnedRecords.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.OwnedRecordsFFM", "interface/OwnedRecordsFFM.java");
+    assertGenerated(c, "pkg.OwnedRecordsF", "interface/OwnedRecordsF.java");
   }
 
   @Test
   void generatesNullablePointerConversions() {
     var c = compile("interface/NullableCalls.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.NullableCallsFFM", "interface/NullableCallsFFM.java");
+    assertGenerated(c, "pkg.NullableCallsF", "interface/NullableCallsF.java");
   }
 
   @Test
   void generatesInheritedInterfaceMethods() {
     var c = compile("interface/Inherited.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.InheritedFFM", "interface/InheritedFFM.java");
+    assertGenerated(c, "pkg.InheritedF", "interface/InheritedF.java");
   }
 
   @Test
@@ -178,11 +178,11 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void generatesArrayParameterFFM() {
+  void generatesArrayParameterF() {
     var c = compile("interface/arrays/ArrayParameters.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.ArrayParametersFFM",
-        "interface/arrays/ArrayParametersFFM.java");
+    assertGenerated(c, "pkg.ArrayParametersF",
+        "interface/arrays/ArrayParametersF.java");
   }
 
   @Test
@@ -264,59 +264,59 @@ class ForeignInterfaceProcessorTest extends AbstractProcessorTest {
   }
 
   @Test
-  void generatesMacFrameworkFFM() {
+  void generatesMacFrameworkF() {
     var c = compile("interface/CoreFramework.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.CoreFrameworkFFM",
-        "interface/CoreFrameworkFFM.java");
+    assertGenerated(c, "pkg.CoreFrameworkF",
+        "interface/CoreFrameworkF.java");
   }
 
   @Test
-  void generatesCFStringFFM() {
+  void generatesCFStringF() {
     var c = compile("interface/CoreStrings.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.CoreStringsFFM",
-        "interface/CoreStringsFFM.java");
+    assertGenerated(c, "pkg.CoreStringsF",
+        "interface/CoreStringsF.java");
   }
 
   @Test
-  void generatesWindowsStringsFFM() {
+  void generatesWindowsStringsF() {
     var c = compile("interface/WindowsStrings.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.WindowsStringsFFM",
-        "interface/WindowsStringsFFM.java");
+    assertGenerated(c, "pkg.WindowsStringsF",
+        "interface/WindowsStringsF.java");
   }
 
   @Test
-  void generatesLibraryFFM() {
+  void generatesLibraryF() {
     var c = compile("interface/NativeTest.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.NativeTestFFM",
-        "interface/NativeTestFFM.java");
+    assertGenerated(c, "pkg.NativeTestF",
+        "interface/NativeTestF.java");
   }
 
   @Test
-  void generatesLibraryLookupFFM() {
+  void generatesLibraryLookupF() {
     var c = compile("interface/NativeLookupTest.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.NativeLookupTestFFM",
-        "interface/NativeLookupTestFFM.java");
+    assertGenerated(c, "pkg.NativeLookupTestF",
+        "interface/NativeLookupTestF.java");
   }
 
   @Test
-  void generatesRepeatableLibraryFFM() {
+  void generatesRepeatableLibraryF() {
     var c = compile("interface/MultiLibrary.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.MultiLibraryFFM",
-        "interface/MultiLibraryFFM.java");
+    assertGenerated(c, "pkg.MultiLibraryF",
+        "interface/MultiLibraryF.java");
   }
 
   @Test
-  void generatesMultiMacFrameworkFFM() {
+  void generatesMultiMacFrameworkF() {
     var c = compile("interface/MultiFramework.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.MultiFrameworkFFM",
-        "interface/MultiFrameworkFFM.java");
+    assertGenerated(c, "pkg.MultiFrameworkF",
+        "interface/MultiFrameworkF.java");
   }
 
   @Test

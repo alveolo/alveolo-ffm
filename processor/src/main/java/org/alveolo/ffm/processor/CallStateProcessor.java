@@ -10,7 +10,9 @@ import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedNamesAvailable;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSingleGenerator;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
@@ -53,6 +55,8 @@ public class CallStateProcessor extends AbstractProcessor {
     try {
       var annotation = type.getAnnotation(CallState.class);
       if (annotation == null) return;
+      if (!validateSingleGenerator(processingEnv, type, CallState.class))
+          return;
 
       if (type.getKind() != ElementKind.INTERFACE) {
         messager.printError(
@@ -69,7 +73,9 @@ public class CallStateProcessor extends AbstractProcessor {
       validateTopLevelType(type, annotation);
 
       var accessor = validate(type, annotation);
-      if (accessor != null) {
+      if (accessor != null && validateGeneratedNamesAvailable(
+          processingEnv, type, foreignMemoryClassName(
+              type, processingEnv.getElementUtils()))) {
         write(type, annotation, accessor);
       }
     } catch (Throwable e) {

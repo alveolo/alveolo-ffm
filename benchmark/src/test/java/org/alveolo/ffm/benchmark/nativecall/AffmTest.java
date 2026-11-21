@@ -35,7 +35,7 @@ public interface AffmTest {
 
   @Symbol("null_pointer") PairS absentPair();
   @Symbol("null_pointer") NullableUnion absentUnion();
-  @Symbol("null_pointer") PairSFM absentWrapper();
+  @Symbol("null_pointer") PairSF absentWrapper();
   @Symbol("null_pointer") @Address PairR absentRecord();
   @Symbol("null_pointer") VirtualPairs absentVirtual();
   @Symbol("null_pointer") String absentString();
@@ -43,7 +43,7 @@ public interface AffmTest {
   @Symbol("null_pointer") @Address @SizeT long absentSize();
 
   @Symbol("nullable_pair") int optionalPair(PairS value);
-  @Symbol("nullable_pair") int optionalWrapper(PairSFM value);
+  @Symbol("nullable_pair") int optionalWrapper(PairSF value);
   @Symbol("nullable_pair") int optionalRecord(@Address PairR value);
   @Symbol("nullable_string") int optionalString(String value);
   @Symbol("nullable_values")

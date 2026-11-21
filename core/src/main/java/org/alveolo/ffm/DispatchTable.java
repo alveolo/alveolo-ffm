@@ -18,6 +18,6 @@ import java.lang.annotation.Target;
 public @interface DispatchTable {
   /// Override the generated simple class name. By default, a trailing `Spec` is
   /// removed from an interface name; otherwise the type name is suffixed with
-  /// `FD`.
+  /// `F`.
   String name() default "";
 }

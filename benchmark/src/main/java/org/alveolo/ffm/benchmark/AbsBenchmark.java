@@ -5,13 +5,13 @@ import java.lang.foreign.SegmentAllocator;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import org.alveolo.ffm.benchmark.affm.AffmLibCFFM;
+import org.alveolo.ffm.benchmark.affm.AffmLibCF;
 import org.alveolo.ffm.benchmark.affm.CLongR;
-import org.alveolo.ffm.benchmark.affm.CLongSFM;
+import org.alveolo.ffm.benchmark.affm.CLongSF;
 import org.alveolo.ffm.benchmark.affm.IntR;
-import org.alveolo.ffm.benchmark.affm.IntSFM;
+import org.alveolo.ffm.benchmark.affm.IntSF;
 import org.alveolo.ffm.benchmark.affm.LongR;
-import org.alveolo.ffm.benchmark.affm.LongSFM;
+import org.alveolo.ffm.benchmark.affm.LongSF;
 import org.alveolo.ffm.benchmark.jna.CLongV;
 import org.alveolo.ffm.benchmark.jna.IntV;
 import org.alveolo.ffm.benchmark.jna.JnaLibC;
@@ -39,16 +39,16 @@ import com.sun.jna.NativeLong;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
 public class AbsBenchmark {
-  private static final AffmLibCFFM affm = AffmLibCFFM.INSTANCE$F;
+  private static final AffmLibCF affm = AffmLibCF.INSTANCE$F;
   private static final JnaLibC jna = JnaLibC.INSTANCE;
   private static final JnrLibC jnr = JnrLibC.INSTANCE;
 
   private Random random = new Random(42);
 
   private Arena arena;
-  private IntSFM intS;
-  private CLongSFM cLongS;
-  private LongSFM longS;
+  private IntSF intS;
+  private CLongSF cLongS;
+  private LongSF longS;
   private SegmentAllocator intSAllocator;
   private SegmentAllocator cLongSAllocator;
   private SegmentAllocator longSAllocator;
@@ -58,15 +58,15 @@ public class AbsBenchmark {
   @Setup(Level.Trial)
   public void allocate() {
     arena = Arena.ofConfined();
-    intS = new IntSFM(arena);
-    cLongS = new CLongSFM(arena);
-    longS = new LongSFM(arena);
+    intS = new IntSF(arena);
+    cLongS = new CLongSF(arena);
+    longS = new LongSF(arena);
     intSAllocator = SegmentAllocator.prefixAllocator(
-        arena.allocate(IntSFM.MemoryLayout$F));
+        arena.allocate(IntSF.MemoryLayout$F));
     cLongSAllocator = SegmentAllocator.prefixAllocator(
-        arena.allocate(CLongSFM.MemoryLayout$F));
+        arena.allocate(CLongSF.MemoryLayout$F));
     longSAllocator = SegmentAllocator.prefixAllocator(
-        arena.allocate(LongSFM.MemoryLayout$F));
+        arena.allocate(LongSF.MemoryLayout$F));
   }
 
   @Setup(Level.Iteration)

@@ -83,9 +83,9 @@ interface VirtualStructSpec {
 interface Functions {
   @Slot(0)
   int generatedInterfaces(
-      DefaultStructFM defaultValue,
-      ValueStructFM value,
-      AddressStructFM address);
+      DefaultStructF defaultValue,
+      ValueStructF value,
+      AddressStructF address);
 
   @Slot(1)
   int generatedCircular(
@@ -101,8 +101,8 @@ interface Functions {
 
   @Slot(3)
   int generatedOverrides(
-      @Value AddressStructFM interfaceValue,
-      @Address ValueStructFM interfaceAddress);
+      @Value AddressStructF interfaceValue,
+      @Address ValueStructF interfaceAddress);
 }
 
 @ForeignInterface
@@ -113,9 +113,9 @@ public interface PassMode {
       AddressStruct address);
 
   int generatedInterfaces(
-      DefaultStructFM defaultValue,
-      ValueStructFM value,
-      AddressStructFM address);
+      DefaultStructF defaultValue,
+      ValueStructF value,
+      AddressStructF address);
 
   int originalCircular(
       CircularDefaultSpec defaultValue,
@@ -140,8 +140,8 @@ public interface PassMode {
       @Address ValueRecord recordAddress);
 
   int generatedOverrides(
-      @Value AddressStructFM interfaceValue,
-      @Address ValueStructFM interfaceAddress);
+      @Value AddressStructF interfaceValue,
+      @Address ValueStructF interfaceAddress);
 
   DefaultRecord originalRecordReturn(DefaultRecord value);
 

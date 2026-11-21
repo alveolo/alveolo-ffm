@@ -85,9 +85,9 @@ the equivalent allocation shape:
 
 ```java
 try (var arena = Arena.ofConfined()) {
-  return ResultFM.fromMemorySegment$F((MemorySegment) handle.invokeExact(
+  return ResultF.fromMemorySegment$F((MemorySegment) handle.invokeExact(
       (SegmentAllocator) arena,
-      ArgumentFM.toMemorySegment$F(arena, argument)));
+      ArgumentF.toMemorySegment$F(arena, argument)));
 }
 ```
 
@@ -99,10 +99,10 @@ equivalent of:
 try (var arena = Arena.ofConfined()) {
   var memory = arena.allocate(requiredSize, requiredAlignment);
   var argumentMemory = memory.asSlice(argumentOffset, argumentLayout);
-  ArgumentFM.toMemorySegment$F(argument, argumentMemory);
+  ArgumentF.toMemorySegment$F(argument, argumentMemory);
   var resultMemory = memory.asSlice(resultOffset, resultLayout);
 
-  return ResultFM.fromMemorySegment$F((MemorySegment) handle.invokeExact(
+  return ResultF.fromMemorySegment$F((MemorySegment) handle.invokeExact(
       (SegmentAllocator) SegmentAllocator.prefixAllocator(resultMemory),
       argumentMemory));
 }

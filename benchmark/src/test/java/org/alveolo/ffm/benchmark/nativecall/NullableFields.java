@@ -6,7 +6,7 @@ import org.alveolo.ffm.Union;
 
 @Struct
 interface NullableFields {
-  PairSFM pair();
+  PairSF pair();
 }
 
 @Struct

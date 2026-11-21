@@ -20,7 +20,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
       "@Struct record Recursive(@Sequence(2) Recursive[] children) {}",
       """
       @Struct interface A { @Value B child(); }
-      @Union interface B { @Value AFM parent(@Sequence(2) int index); }
+      @Union interface B { @Value AF parent(@Sequence(2) int index); }
       """,
       """
       @Struct interface Base { @Value Derived child(); }
@@ -63,7 +63,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         class SpecNames {
           Point point;
           Value value;
-          SnapshotSpecFM snapshot;
+          SnapshotSpecF snapshot;
         }
         """);
 
@@ -99,7 +99,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         }
 
         class UseSpec {
-          SpecFM value;
+          SpecF value;
         }
         """);
 
@@ -119,14 +119,24 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
 
         class UseNativeObject {
           NativeObject object;
-          NativeObjectVtbl vtable;
+          NativeObjectV vtable;
         }
         """);
 
     var c = compile(source);
 
     assertThat(c).succeeded();
-    assertThat(c).generatedSourceFile("test.NativeObjectVtblSpec");
+    assertThat(c).generatedSourceFile("test.NativeObjectVSpec");
+  }
+
+  @Test
+  void explicitStructNameOwnsVtableNames() {
+    var c = compile("memory/object/ExplicitVtable.java");
+
+    assertThat(c).succeeded();
+    assertGenerated(c, "test.Other", "memory/object/Other.java");
+    assertGenerated(c, "test.OtherV", "memory/object/OtherV.java");
+    assertGenerated(c, "test.OtherVF", "memory/object/OtherVF.java");
   }
 
   @Test
@@ -207,7 +217,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   void generatesStructClass() {
     var c = compile("memory/struct/timeval.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.timevalFM", "memory/struct/timevalFM.java");
+    assertGenerated(c, "pkg.timevalF", "memory/struct/timevalF.java");
   }
 
   @Test
@@ -250,33 +260,33 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         "memory/struct/multiple/StructB.java");
     assertThat(c).succeeded();
     assertGenerated(c,
-        "pkg.StructAFM", "memory/struct/multiple/StructAFM.java");
+        "pkg.StructAF", "memory/struct/multiple/StructAF.java");
     assertGenerated(c,
-        "pkg.StructBFM", "memory/struct/multiple/StructBFM.java");
+        "pkg.StructBF", "memory/struct/multiple/StructBF.java");
   }
 
   @Test
   void generatesUnionClass() {
     var c = compile("memory/union/Union.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.UnionFM", "memory/union/UnionFM.java");
+    assertGenerated(c, "pkg.UnionF", "memory/union/UnionF.java");
   }
 
   @Test
   void generatesNestedStruct() {
     var c = compile("memory/nested/Inner.java", "memory/nested/Outer.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.InnerFM", "memory/nested/InnerFM.java");
-    assertGenerated(c, "pkg.OuterFM", "memory/nested/OuterFM.java");
+    assertGenerated(c, "pkg.InnerF", "memory/nested/InnerF.java");
+    assertGenerated(c, "pkg.OuterF", "memory/nested/OuterF.java");
   }
 
   @Test
   void generatesInheritedStructFields() {
     var c = compile("memory/inheritance/Derived.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.BaseFM", "memory/inheritance/BaseFM.java");
-    assertGenerated(c, "pkg.DerivedFM",
-        "memory/inheritance/DerivedFM.java");
+    assertGenerated(c, "pkg.BaseF", "memory/inheritance/BaseF.java");
+    assertGenerated(c, "pkg.DerivedF",
+        "memory/inheritance/DerivedF.java");
   }
 
   @Test
@@ -284,8 +294,8 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile("memory/inheritance/IndexedDerived.java");
 
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.IndexedDerivedFM",
-        "memory/inheritance/IndexedDerivedFM.java");
+    assertGenerated(c, "pkg.IndexedDerivedF",
+        "memory/inheritance/IndexedDerivedF.java");
   }
 
   @Test
@@ -303,8 +313,8 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile(source);
 
     assertThat(c).succeeded();
-    assertGenerated(c, "test.BinaryDerivedFM",
-        "memory/inheritance/BinaryDerivedFM.java");
+    assertGenerated(c, "test.BinaryDerivedF",
+        "memory/inheritance/BinaryDerivedF.java");
   }
 
   @Test
@@ -459,9 +469,9 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
 
         final class ArrayFieldsUse {
           static void exercise(Arena arena) {
-            var fields = new ArrayFieldsFM(arena);
-            var union = new ArrayUnionFM(arena);
-            var interfaceElement = new ArrayCellFM(arena).value(9);
+            var fields = new ArrayFieldsF(arena);
+            var union = new ArrayUnionF(arena);
+            var interfaceElement = new ArrayCellF(arena).value(9);
             union.words(3, (short) 9);
             fields.flags(0, true)
                 .matrix(1, 2, 7)
@@ -487,26 +497,26 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
                 new byte[] {1, 2, 3, 4},
                 new ArrayPoint[] {
                     new ArrayPoint(5, 6), new ArrayPoint(7, 8)});
-            var snapshotMemory = ArraySnapshotFM.toMemorySegment$F(
+            var snapshotMemory = ArraySnapshotF.toMemorySegment$F(
                 arena, snapshot);
-            ArraySnapshot detached = ArraySnapshotFM.fromMemorySegment$F(
+            ArraySnapshot detached = ArraySnapshotF.fromMemorySegment$F(
                 snapshotMemory);
 
-            var pointArray = ArrayPointFM.allocateSequence$F(arena, 2);
-            ArrayPoint first = ArrayPointFM.at$F(pointArray, 0);
-            MemorySegment bounded = ArrayPointFM.reinterpretSequence$F(
+            var pointArray = ArrayPointF.allocateSequence$F(arena, 2);
+            ArrayPoint first = ArrayPointF.at$F(pointArray, 0);
+            MemorySegment bounded = ArrayPointF.reinterpretSequence$F(
                 pointArray, 2);
           }
         }
         """);
     var c = compile(forTestResource("memory/array/ArrayFields.java"), use);
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.ArrayFieldsFM", "memory/array/ArrayFieldsFM.java");
-    assertGenerated(c, "pkg.ArraySnapshotFM",
-        "memory/array/ArraySnapshotFM.java");
-    assertGenerated(c, "pkg.ArrayUnionFM", "memory/array/ArrayUnionFM.java");
-    assertGenerated(c, "pkg.AllocatingArraySnapshotFM",
-        "memory/array/AllocatingArraySnapshotFM.java");
+    assertGenerated(c, "pkg.ArrayFieldsF", "memory/array/ArrayFieldsF.java");
+    assertGenerated(c, "pkg.ArraySnapshotF",
+        "memory/array/ArraySnapshotF.java");
+    assertGenerated(c, "pkg.ArrayUnionF", "memory/array/ArrayUnionF.java");
+    assertGenerated(c, "pkg.AllocatingArraySnapshotF",
+        "memory/array/AllocatingArraySnapshotF.java");
   }
 
   @Test
@@ -546,7 +556,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
 
         final class NamedIndicesUse {
           static void exercise(java.lang.foreign.Arena arena) {
-            new NamedIndicesFM(arena)
+            new NamedIndicesF(arena)
                 .values(0, 1)
                 .pointers(arena, 0, new Point(2, 3));
           }
@@ -600,7 +610,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package pkg;
 
         class BufferStructUse {
-          Class<?> generatedClass = BufferStructFM.class;
+          Class<?> generatedClass = BufferStructF.class;
         }
         """);
     var c = compile(source, generatedUse);
@@ -734,7 +744,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadStructUse {
-          Class<?> generatedClass = BadStructFM.class;
+          Class<?> generatedClass = BadStructF.class;
         }
         """);
 
@@ -751,9 +761,9 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
     var c = compile("memory/address/TransitiveRecords.java");
 
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.PairBoxFM", "memory/address/PairBoxFM.java");
-    assertGenerated(c, "pkg.IntBoxFM", "memory/address/IntBoxFM.java");
-    assertGenerated(c, "pkg.OuterFM", "memory/address/OuterFM.java");
+    assertGenerated(c, "pkg.PairBoxF", "memory/address/PairBoxF.java");
+    assertGenerated(c, "pkg.IntBoxF", "memory/address/IntBoxF.java");
+    assertGenerated(c, "pkg.OuterF", "memory/address/OuterF.java");
   }
 
   @Test
@@ -786,7 +796,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadStructUse {
-          Class<?> generatedClass = BadStructFM.class;
+          Class<?> generatedClass = BadStructF.class;
         }
         """);
 
@@ -812,7 +822,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   void failsQualifiedStructNameOverride() {
     var source = forSourceString("test.BadStruct", """
         package test;
-        @org.alveolo.ffm.Struct(name = "other.BadStructFM")
+        @org.alveolo.ffm.Struct(name = "other.BadStructF")
         public interface BadStruct {
           int value();
         }
@@ -828,7 +838,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   void failsQualifiedUnionNameOverride() {
     var source = forSourceString("test.BadUnion", """
         package test;
-        @org.alveolo.ffm.Union(name = "other.BadUnionFM")
+        @org.alveolo.ffm.Union(name = "other.BadUnionF")
         public interface BadUnion {
           int value();
         }
@@ -844,31 +854,31 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
   void placesVirtualReturnAllocatorBeforeReceiver() {
     var c = compile("memory/object/VirtualPairs.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.VirtualPairsVtbl",
-        "memory/object/VirtualPairsVtbl.java");
+    assertGenerated(c, "pkg.VirtualPairsV",
+        "memory/object/VirtualPairsV.java");
   }
 
   @Test
   void generatesVirtualArrayBridgesWithDefaultConvenienceMethods() {
     var c = compile("memory/object/ArrayVirtual.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.ArrayVirtualVtbl",
-        "memory/object/ArrayVirtualVtbl.java");
+    assertGenerated(c, "pkg.ArrayVirtualV",
+        "memory/object/ArrayVirtualV.java");
   }
 
   @Test
   void generatesVtableHierarchyWithoutAllocationHelpers() {
     var c = compile("memory/object/VtableHierarchy.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.VtableBaseFM", "memory/object/VtableBaseFM.java");
-    assertGenerated(c, "pkg.VtableMidFM", "memory/object/VtableMidFM.java");
-    assertGenerated(c, "pkg.VtableLeafFM", "memory/object/VtableLeafFM.java");
-    assertGenerated(c, "pkg.VtableMidVtbl", "memory/object/VtableMidVtbl.java");
-    assertGenerated(c, "pkg.VtableLeafVtbl", "memory/object/VtableLeafVtbl.java");
+    assertGenerated(c, "pkg.VtableBaseF", "memory/object/VtableBaseF.java");
+    assertGenerated(c, "pkg.VtableMidF", "memory/object/VtableMidF.java");
+    assertGenerated(c, "pkg.VtableLeafF", "memory/object/VtableLeafF.java");
+    assertGenerated(c, "pkg.VtableMidV", "memory/object/VtableMidV.java");
+    assertGenerated(c, "pkg.VtableLeafV", "memory/object/VtableLeafV.java");
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"VtableBaseFM", "VtableMidFM", "VtableLeafFM"})
+  @ValueSource(strings = {"VtableBaseF", "VtableMidF", "VtableLeafF"})
   void rejectsVtableAllocation(String wrapper) {
     var use = forSourceString("pkg.Allocation", """
         package pkg;
@@ -894,13 +904,13 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         "memory/object/Obj.java",
         "memory/object/VirtualObj.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.ObjFM", "memory/object/ObjFM.java");
-    assertGenerated(c, "pkg.VirtualObjFM",
-        "memory/object/VirtualObjFM.java");
-    assertGenerated(c, "pkg.VirtualObjVtbl",
-        "memory/object/VirtualObjVtbl.java");
-    assertGenerated(c, "pkg.VirtualObjVtblFD",
-        "memory/object/VirtualObjVtblFD.java");
+    assertGenerated(c, "pkg.ObjF", "memory/object/ObjF.java");
+    assertGenerated(c, "pkg.VirtualObjF",
+        "memory/object/VirtualObjF.java");
+    assertGenerated(c, "pkg.VirtualObjV",
+        "memory/object/VirtualObjV.java");
+    assertGenerated(c, "pkg.VirtualObjVF",
+        "memory/object/VirtualObjVF.java");
   }
 
   @Test
@@ -1189,7 +1199,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1212,7 +1222,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1235,7 +1245,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadRecordUse {
-          Class<?> generatedClass = BadRecordFM.class;
+          Class<?> generatedClass = BadRecordF.class;
         }
         """);
 
@@ -1258,7 +1268,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1283,7 +1293,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1308,7 +1318,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1336,7 +1346,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1362,7 +1372,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1388,7 +1398,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1413,7 +1423,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadUse {
-          Class<?> generatedClass = BadFM.class;
+          Class<?> generatedClass = BadF.class;
         }
         """);
 
@@ -1436,7 +1446,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadRecordUse {
-          Class<?> generatedClass = BadRecordFM.class;
+          Class<?> generatedClass = BadRecordF.class;
         }
         """);
 
@@ -1458,7 +1468,7 @@ class ForeignMemoryProcessorTest extends AbstractProcessorTest {
         package test;
 
         class BadRecordUse {
-          Class<?> generatedClass = BadRecordFM.class;
+          Class<?> generatedClass = BadRecordF.class;
         }
         """);
 

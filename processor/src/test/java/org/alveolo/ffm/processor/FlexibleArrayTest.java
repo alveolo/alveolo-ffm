@@ -12,9 +12,9 @@ class FlexibleArrayTest extends AbstractProcessorTest {
   void generatesCountedRowsAndExternallySizedPackets() {
     var c = compile("memory/flexible/FlexibleFields.java");
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.NamesFM", "memory/flexible/NamesFM.java");
-    assertGenerated(c, "pkg.TransferFM", "memory/flexible/TransferFM.java");
-    assertGenerated(c, "pkg.TransfersFFM", "memory/flexible/TransfersFFM.java");
+    assertGenerated(c, "pkg.NamesF", "memory/flexible/NamesF.java");
+    assertGenerated(c, "pkg.TransferF", "memory/flexible/TransferF.java");
+    assertGenerated(c, "pkg.TransfersF", "memory/flexible/TransfersF.java");
   }
 
   @Test
@@ -55,7 +55,7 @@ class FlexibleArrayTest extends AbstractProcessorTest {
           int preserved();
         }
         class Use {
-          int read(MixedFM value) {
+          int read(MixedF value) {
             return value.header() + value.preserved();
           }
         }
@@ -91,11 +91,11 @@ class FlexibleArrayTest extends AbstractProcessorTest {
       @Struct interface Prefix { int n(); } @Struct interface Bad extends Prefix { byte tail(@Flexible long i); } | inheritance requires fixed-size structs
       @Struct interface Prefix { int n(); } @Struct interface Bad extends Prefix { byte tail(@Flexible("n") long i); } | inheritance requires fixed-size structs
       @Struct interface Bad { @Value Tail data(); } | cannot be used by value
-      @Struct interface Bad { @Value TailFM data(@Sequence(2) long i); } | cannot be used by value
+      @Struct interface Bad { @Value TailF data(@Sequence(2) long i); } | cannot be used by value
       @Struct interface Bad { int n(); @Value Tail data(@Flexible long i); } | cannot be used by value
       @Struct interface Bad { int n(); @Value Empty data(@Flexible long i); } | nonzero size
       @Struct interface Bad { Tail pointer(); } | explicit flexibleLength
-      @ForeignInterface interface Bad { TailFM get(); } | explicit flexibleLength
+      @ForeignInterface interface Bad { TailF get(); } | explicit flexibleLength
       @ForeignInterface interface Bad { void send(@Value Tail value); } | cannot be used by value
       @ForeignInterface interface Bad { @Value Tail get(java.lang.foreign.SegmentAllocator allocator); } | cannot be used by value
       """)

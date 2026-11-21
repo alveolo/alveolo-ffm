@@ -45,8 +45,8 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
         """));
     assertThat(direct).succeeded();
     assertThat(composed).succeeded();
-    assertThat(composed).generatedSourceFile("test.LibFFM")
-        .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibFFM").orElseThrow());
+    assertThat(composed).generatedSourceFile("test.LibF")
+        .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibF").orElseThrow());
   }
 
   @Test
@@ -68,9 +68,9 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
         """));
     assertThat(direct).succeeded();
     assertThat(composed).succeeded();
-    assertThat(composed).generatedSourceFile("test.LibFFM")
+    assertThat(composed).generatedSourceFile("test.LibF")
         .hasSourceEquivalentTo(
-            direct.generatedSourceFile("test.LibFFM").orElseThrow());
+            direct.generatedSourceFile("test.LibF").orElseThrow());
   }
 
   @Test
@@ -90,8 +90,8 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
           """));
       assertThat(direct).succeeded();
       assertThat(composed).succeeded();
-      assertThat(composed).generatedSourceFile("test.LibFFM")
-          .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibFFM").orElseThrow());
+      assertThat(composed).generatedSourceFile("test.LibF")
+          .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibF").orElseThrow());
       if (!conversion.isEmpty()) {
         var owned = compile(forSourceString("test.Lib", IMPORTS + """
             @ForeignInterface interface Lib extends CFSupport {
@@ -99,8 +99,8 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
             }
             """));
         assertThat(owned).succeeded();
-        assertThat(owned).generatedSourceFile("test.LibFFM")
-            .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibFFM").orElseThrow());
+        assertThat(owned).generatedSourceFile("test.LibF")
+            .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibF").orElseThrow());
       }
     }
   }
@@ -131,8 +131,8 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
         """));
     assertThat(inherited).succeeded();
     assertThat(direct).succeeded();
-    assertThat(inherited).generatedSourceFile("test.LibFFM")
-        .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibFFM").orElseThrow());
+    assertThat(inherited).generatedSourceFile("test.LibF")
+        .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibF").orElseThrow());
   }
 
   @Test
@@ -311,8 +311,8 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
         """));
     assertThat(direct).succeeded();
     assertThat(composed).succeeded();
-    assertThat(composed).generatedSourceFile("test.LibFD")
-        .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibFD").orElseThrow());
+    assertThat(composed).generatedSourceFile("test.LibF")
+        .hasSourceEquivalentTo(direct.generatedSourceFile("test.LibF").orElseThrow());
   }
 
   @Test
@@ -361,7 +361,7 @@ class BindingAnnotationsTest extends AbstractProcessorTest {
       var methodAnnotation = compile(forSourceString("test.Lib", IMPORTS + support.replace(
           "@Target(ElementType.TYPE_USE)", "@Target(ElementType.METHOD)")));
       assertThat(methodAnnotation).succeeded();
-      for (var generated : new String[] {"test.LibFM", "test.LibVtbl", "test.LibVtblFD"}) {
+      for (var generated : new String[] {"test.LibF", "test.LibV", "test.LibVF"}) {
         assertThat(methodAnnotation).generatedSourceFile(generated)
             .hasSourceEquivalentTo(direct.generatedSourceFile(generated).orElseThrow());
         assertThat(composed).generatedSourceFile(generated)

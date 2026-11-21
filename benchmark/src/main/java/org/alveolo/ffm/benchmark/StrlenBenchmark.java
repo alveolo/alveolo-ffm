@@ -4,7 +4,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.concurrent.TimeUnit;
 
-import org.alveolo.ffm.benchmark.affm.AffmLibCFFM;
+import org.alveolo.ffm.benchmark.affm.AffmLibCF;
 import org.alveolo.ffm.benchmark.jna.JnaLibC;
 import org.alveolo.ffm.benchmark.jnr.JnrLibC;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -24,7 +24,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @State(Scope.Thread)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class StrlenBenchmark {
-  private static final AffmLibCFFM affm = AffmLibCFFM.INSTANCE$F;
+  private static final AffmLibCF affm = AffmLibCF.INSTANCE$F;
   private static final JnaLibC jna = JnaLibC.INSTANCE;
   private static final JnrLibC jnr = JnrLibC.INSTANCE;
 

@@ -23,7 +23,7 @@ global, assign that address bounds matching the native declaration before
 accessing it:
 
 ```java
-var storage = NativeApiFFM.SymbolLookup$F
+var storage = NativeApiF.SymbolLookup$F
     .findOrThrow("counter")
     .reinterpret(ValueLayout.JAVA_INT.byteSize());
 
@@ -54,7 +54,7 @@ interface AddressCell {
 }
 ```
 
-`IntCellFM` and `AddressCellFM` are ordinary generated wrappers. Their memory
+`IntCellF` and `AddressCellF` are ordinary generated wrappers. Their memory
 layouts are respectively one native Java `int` and one native address.
 
 ## Binding Recipes
@@ -64,8 +64,8 @@ layouts are respectively one native Java `int` and one native address.
 For declarations such as `extern int counter`, wrap the symbol address itself:
 
 ```java
-var counter = IntCellFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F.findOrThrow("counter"));
+var counter = IntCellF.reinterpret$F(
+    NativeApiF.SymbolLookup$F.findOrThrow("counter"));
 
 int current = counter.value();
 counter.value(current + 1);
@@ -78,8 +78,8 @@ For native data that must not be changed through this binding, make the symbol
 segment read-only before wrapping it:
 
 ```java
-var version = IntCellFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F
+var version = IntCellF.reinterpret$F(
+    NativeApiF.SymbolLookup$F
         .findOrThrow("library_version_number")
         .asReadOnly());
 
@@ -98,8 +98,8 @@ For declarations such as `extern FILE *stdout`, `extern char **environ`, or
 The cell must be wrapped first, and its value then read:
 
 ```java
-var standardOutputCell = AddressCellFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F.findOrThrow("stdout"));
+var standardOutputCell = AddressCellF.reinterpret$F(
+    NativeApiF.SymbolLookup$F.findOrThrow("stdout"));
 
 MemorySegment standardOutput = standardOutputCell.value();
 ```
@@ -107,12 +107,12 @@ MemorySegment standardOutput = standardOutputCell.value();
 The identical cell shape reads `environ` or an exported object constant:
 
 ```java
-MemorySegment environment = AddressCellFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F.findOrThrow("environ"))
+MemorySegment environment = AddressCellF.reinterpret$F(
+    NativeApiF.SymbolLookup$F.findOrThrow("environ"))
     .value();
 
-MemorySegment booleanTrue = AddressCellFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F.findOrThrow("kCFBooleanTrue"))
+MemorySegment booleanTrue = AddressCellF.reinterpret$F(
+    NativeApiF.SymbolLookup$F.findOrThrow("kCFBooleanTrue"))
     .value();
 ```
 
@@ -148,8 +148,8 @@ interface Point {
   int y();
 }
 
-var point = PointFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F.findOrThrow("global_point"));
+var point = PointF.reinterpret$F(
+    NativeApiF.SymbolLookup$F.findOrThrow("global_point"));
 
 int x = point.x();
 point.y(42);
@@ -165,8 +165,8 @@ interface NumberValue {
   double decimal();
 }
 
-var number = NumberValueFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F.findOrThrow("global_number"));
+var number = NumberValueF.reinterpret$F(
+    NativeApiF.SymbolLookup$F.findOrThrow("global_number"));
 
 double value = number.decimal();
 ```
@@ -190,8 +190,8 @@ interface Matrix2x3 {
       @Sequence(3) long column);
 }
 
-var matrix = Matrix2x3FM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F.findOrThrow("matrix"));
+var matrix = Matrix2x3F.reinterpret$F(
+    NativeApiF.SymbolLookup$F.findOrThrow("matrix"));
 
 int item = matrix.value(1, 2);
 matrix.value(1, 2, item + 1);
@@ -211,7 +211,7 @@ the string:
 
 ```java
 long maximumVersionBytes = 128L; // bound guaranteed by the native API
-var version = NativeApiFFM.SymbolLookup$F
+var version = NativeApiF.SymbolLookup$F
     .findOrThrow("version")
     .reinterpret(maximumVersionBytes)
     .asReadOnly();
@@ -222,8 +222,8 @@ String text = version.getString(0L);
 For `extern const char *version`, first read the pointer cell:
 
 ```java
-var versionCell = AddressCellFM.reinterpret$F(
-    NativeApiFFM.SymbolLookup$F
+var versionCell = AddressCellF.reinterpret$F(
+    NativeApiF.SymbolLookup$F
         .findOrThrow("version")
         .asReadOnly());
 
@@ -242,14 +242,14 @@ arena is not sufficient.
 ### Function-pointer cells
 
 For `extern int (*operation)(int, int)`, read the stored address through
-`AddressCellFM` and create the downcall handle explicitly:
+`AddressCellF` and create the downcall handle explicitly:
 
 ```java
 static int invokeOperation() throws Throwable {
-  var operationCell = AddressCellFM.reinterpret$F(
-      NativeApiFFM.SymbolLookup$F.findOrThrow("operation"));
+  var operationCell = AddressCellF.reinterpret$F(
+      NativeApiF.SymbolLookup$F.findOrThrow("operation"));
 
-  var handle = NativeApiFFM.Linker$F.downcallHandle(
+  var handle = NativeApiF.Linker$F.downcallHandle(
       operationCell.value(),
       FunctionDescriptor.of(
           ValueLayout.JAVA_INT,

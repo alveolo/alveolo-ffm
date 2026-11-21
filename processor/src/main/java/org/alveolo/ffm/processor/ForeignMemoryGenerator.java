@@ -4,7 +4,10 @@ import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemoryClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.foreignMemorySimpleClassName;
 import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
+import static org.alveolo.ffm.processor.ProcessorUtils.qualifyName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedNamesAvailable;
 import static org.alveolo.ffm.processor.ProcessorUtils.vtableImplementationSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.vtableSpecificationSimpleClassName;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -58,8 +61,6 @@ final class ForeignMemoryGenerator {
         source, objectMethods);
     if (preparedObjectMethods == null) return;
 
-    objectGenerator.writeDispatchTable(source, preparedObjectMethods);
-
     var fields = model == null
         ? analyzer.inferFields(source)
         : analyzer.inferFields(model.fieldMethods());
@@ -73,6 +74,20 @@ final class ForeignMemoryGenerator {
     }
     var zeroSized = analyzer.hasZeroSizedLayout(source);
 
+    var elements = processingEnv.getElementUtils();
+    var generatedClassNames = new ArrayList<String>();
+    generatedClassNames.add(foreignMemoryClassName(source, elements));
+    if (preparedObjectMethods.hasUsableVirtualMethods()) {
+      var packageName = packageName(source, elements);
+      generatedClassNames.add(qualifyName(packageName,
+          vtableSpecificationSimpleClassName(source)));
+      generatedClassNames.add(qualifyName(packageName,
+          vtableImplementationSimpleClassName(source)));
+    }
+    if (!validateGeneratedNamesAvailable(processingEnv, source,
+        generatedClassNames.toArray(String[]::new))) return;
+
+    objectGenerator.writeDispatchTable(source, preparedObjectMethods);
     writeSource(source, kind, effectiveVtable, fields,
         baseFields, flexible, zeroSized, preparedObjectMethods,
         model == null ? null : model.baseStruct());

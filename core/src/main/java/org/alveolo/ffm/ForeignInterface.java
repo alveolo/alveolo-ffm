@@ -18,6 +18,6 @@ import java.lang.annotation.Target;
 public @interface ForeignInterface {
   /// Override the generated simple class name. By default, a trailing `Spec` is
   /// removed from an interface name; otherwise the type name is suffixed with
-  /// `FFM`.
+  /// `F`.
   String name() default "";
 }

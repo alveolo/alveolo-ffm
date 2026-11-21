@@ -34,7 +34,7 @@ public @interface Struct {
   /// Override the generated simple class name. The generated class stays in the
   /// same package as the annotated type. By default, a trailing `Spec` is removed
   /// from an interface name; other interfaces and all records use type name +
-  /// `FM`.
+  /// `F`.
   String name() default "";
 
   /// Reserve the first struct field for a native dispatch table pointer.
@@ -43,6 +43,9 @@ public @interface Struct {
   /// constructor or `allocate$F` helpers. Wrapping an object with a NULL vtable
   /// throws [IllegalArgumentException]. Virtual entries are bound when wrapping;
   /// the object must remain alive and its dispatch table stable while in use.
+  /// For `Name`, the generated vtable specification and implementation are
+  /// `NameV` and `NameVF`; for `NameSpec`, they are `NameVSpec` and `NameV`.
+  /// An explicit generated name `Other` uses `OtherV` and `OtherVF`.
   boolean vtable() default false;
 
   /// Foreign interface that owns direct native symbols used by this struct.

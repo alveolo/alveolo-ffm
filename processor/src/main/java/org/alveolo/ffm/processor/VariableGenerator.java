@@ -77,11 +77,11 @@ final class VariableGenerator extends TypeGenerator {
   /// * `argX` for primitive types or directly passed `MemorySegment` or
   ///   `SegmentAllocator`
   /// * `argX.MemorySegment$F` for a struct/union implementation by reference
-  /// * `((StructFM) argX).MemorySegment$F` for an interface by reference
+  /// * `((StructF) argX).MemorySegment$F` for an interface by reference
   /// * `arena$f.allocateFrom(argX)` for Java `String` to C `char*` conversion
   /// * `argX$MemorySegment$f` for Java `@WString String` conversion
   /// * `argX$CFString$f` for Java `@CFString String` conversion
-  /// * `StructFM.toMemorySegment$F(arena$f, argX)` for records conversion
+  /// * `StructF.toMemorySegment$F(arena$f, argX)` for records conversion
   String invoke() {
     if (isPrimitiveAddress())
       return segmentName();

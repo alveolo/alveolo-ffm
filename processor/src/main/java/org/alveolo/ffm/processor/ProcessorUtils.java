@@ -9,8 +9,11 @@ import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
+import javax.annotation.processing.FilerException;
 import javax.annotation.processing.Messager;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -35,6 +38,14 @@ import org.alveolo.ffm.Struct;
 import org.alveolo.ffm.Union;
 
 final class ProcessorUtils {
+  private static final Set<String> GENERATORS = Set.of(
+      CallState.class.getCanonicalName(),
+      Callback.class.getCanonicalName(),
+      DispatchTable.class.getCanonicalName(),
+      ForeignInterface.class.getCanonicalName(),
+      Struct.class.getCanonicalName(),
+      Union.class.getCanonicalName());
+
   private ProcessorUtils() {}
 
   /// Validation errors point to their offending element; unexpected failures
@@ -42,6 +53,8 @@ final class ProcessorUtils {
   static void reportError(Messager messager, Throwable error, Element type) {
     if (error instanceof ProcessorError validation) {
       messager.printError(validation.getMessage(), validation.element);
+    } else if (error instanceof FilerException) {
+      messager.printError(error.getMessage(), type);
     } else {
       var trace = new StringWriter();
       error.printStackTrace(new PrintWriter(trace));
@@ -55,6 +68,46 @@ final class ProcessorUtils {
     return ElementFilter.methodsIn(elements.getAllMembers(type)).stream()
         .filter(method -> method.getModifiers().contains(Modifier.ABSTRACT))
         .toList();
+  }
+
+  static boolean validateSingleGenerator(
+      ProcessingEnvironment processingEnv,
+      TypeElement source, Class<? extends Annotation> annotation) {
+    var annotations = source.getAnnotationMirrors().stream()
+        .map(value -> value.getAnnotationType().toString())
+        .filter(GENERATORS::contains)
+        .sorted()
+        .toList();
+    if (annotations.size() <= 1) return true;
+
+    if (annotations.getFirst().equals(annotation.getCanonicalName())) {
+      processingEnv.getMessager().printError(
+          "Only one generating annotation is allowed: "
+              + annotations.stream()
+                  .map(ProcessorUtils::simpleAnnotation)
+                  .collect(joining(", ")),
+          source);
+    }
+    return false;
+  }
+
+  static boolean validateGeneratedNamesAvailable(
+      ProcessingEnvironment processingEnv,
+      TypeElement source,
+      String... classNames) {
+    var valid = true;
+    var elements = processingEnv.getElementUtils();
+    for (var className : classNames) {
+      var existing = elements.getTypeElement(className);
+      if (existing == null) continue;
+
+      processingEnv.getMessager().printError(
+          "Generated class name conflicts with existing type "
+              + existing.getQualifiedName() + ": " + className,
+          source);
+      valid = false;
+    }
+    return valid;
   }
 
   static <T extends Annotation> void validateSimpleClassName(
@@ -132,23 +185,23 @@ final class ProcessorUtils {
     var callback = element.getAnnotation(Callback.class);
     var override = callback == null ? "" : callback.name();
 
-    return generatedSimpleClassName(element, override, "F");
+    return generatedSimpleClassName(element, override);
   }
 
   static String foreignMemorySimpleClassName(TypeElement element) {
     var callState = element.getAnnotation(CallState.class);
     if (callState != null)
-      return generatedSimpleClassName(element, callState.name(), "FM");
+      return generatedSimpleClassName(element, callState.name());
 
     var struct = element.getAnnotation(Struct.class);
     if (struct != null)
-      return generatedSimpleClassName(element, struct.name(), "FM");
+      return generatedSimpleClassName(element, struct.name());
 
     var union = element.getAnnotation(Union.class);
     if (union != null)
-      return generatedSimpleClassName(element, union.name(), "FM");
+      return generatedSimpleClassName(element, union.name());
 
-    return generatedSimpleClassName(element, "", "FM");
+    return generatedSimpleClassName(element, "");
   }
 
   static String foreignInterfaceClassName(
@@ -161,7 +214,7 @@ final class ProcessorUtils {
     var foreignInterface = element.getAnnotation(ForeignInterface.class);
     String override = foreignInterface == null ? "" : foreignInterface.name();
 
-    return generatedSimpleClassName(element, override, "FFM");
+    return generatedSimpleClassName(element, override);
   }
 
   static String dispatchTableClassName(TypeElement element, Elements elements) {
@@ -173,21 +226,27 @@ final class ProcessorUtils {
     var dispatchTable = element.getAnnotation(DispatchTable.class);
     var override = dispatchTable == null ? "" : dispatchTable.name();
 
-    return generatedSimpleClassName(element, override, "FD");
+    return generatedSimpleClassName(element, override);
   }
 
   static String vtableSpecificationSimpleClassName(TypeElement element) {
-    if (hasSpecSuffix(element))
-      return foreignMemorySimpleClassName(element) + "VtblSpec";
+    var struct = element.getAnnotation(Struct.class);
+    if (struct != null && !struct.name().isEmpty())
+      return struct.name() + "V";
 
-    return element.getSimpleName() + "Vtbl";
+    var sourceName = element.getSimpleName().toString();
+    return hasSpecSuffix(element)
+        ? sourceName.substring(0, sourceName.length() - "Spec".length())
+            + "VSpec"
+        : sourceName + "V";
   }
 
   static String vtableImplementationSimpleClassName(TypeElement element) {
-    if (hasSpecSuffix(element))
-      return foreignMemorySimpleClassName(element) + "Vtbl";
-
-    return element.getSimpleName() + "VtblFD";
+    var specification = vtableSpecificationSimpleClassName(element);
+    return specification.endsWith("Spec")
+        ? specification.substring(0,
+            specification.length() - "Spec".length())
+        : specification + "F";
   }
 
   static String packageName(TypeElement element, Elements elements) {
@@ -243,13 +302,17 @@ final class ProcessorUtils {
   }
 
   private static String generatedSimpleClassName(
-      TypeElement element, String override, String suffix) {
+      TypeElement element, String override) {
     if (!override.isEmpty()) return override;
 
     var sourceName = element.getSimpleName().toString();
     return hasSpecSuffix(element)
         ? sourceName.substring(0, sourceName.length() - "Spec".length())
-        : sourceName + suffix;
+        : sourceName + "F";
+  }
+
+  private static String simpleAnnotation(String name) {
+    return "@" + name.substring(name.lastIndexOf('.') + 1);
   }
 
   private static boolean hasSpecSuffix(TypeElement element) {

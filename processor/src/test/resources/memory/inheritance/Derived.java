@@ -25,8 +25,8 @@ public interface Derived extends Base, OrderedPosition {
 }
 
 final class DerivedUse {
-  static DerivedFM create(java.lang.foreign.SegmentAllocator allocator) {
-    return new DerivedFM(allocator)
+  static DerivedF create(java.lang.foreign.SegmentAllocator allocator) {
+    return new DerivedF(allocator)
         .base((short) 1)
         .y(2)
         .own(3);

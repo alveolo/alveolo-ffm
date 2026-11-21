@@ -8,7 +8,9 @@ import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedNamesAvailable;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSingleGenerator;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
@@ -57,6 +59,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
     try {
       var annotation = type.getAnnotation(DispatchTable.class);
       if (annotation == null) return;
+      if (!validateSingleGenerator(processingEnv, type, DispatchTable.class))
+          return;
 
       validateSimpleClassName(type, annotation, annotation.name());
       validateGeneratedClassName(type, annotation,
@@ -87,6 +91,8 @@ public class DispatchTableProcessor extends AbstractProcessor {
     String ifaceSimpleName = iface.getSimpleName().toString();
     String className = dispatchTableClassName(iface, elements);
     String simpleClassName = dispatchTableSimpleClassName(iface);
+    if (!validateGeneratedNamesAvailable(processingEnv, iface, className))
+        return;
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 

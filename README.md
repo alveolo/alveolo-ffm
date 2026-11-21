@@ -24,13 +24,13 @@ public interface NativeMath {
 }
 ```
 
-The processor generates `NativeMathFFM`, with a ready-to-use singleton:
+The processor generates `NativeMathF`, with a ready-to-use singleton:
 
 ```java
-var sum = NativeMathFFM.INSTANCE$F.add_ints(19, 23);
+var sum = NativeMathF.INSTANCE$F.add_ints(19, 23);
 
 var values = new int[] {1, 2, 3};
-NativeMathFFM.INSTANCE$F.scale(values, 10);
+NativeMathF.INSTANCE$F.scale(values, 10);
 // values == {10, 20, 30}
 ```
 
@@ -57,19 +57,19 @@ NativeMathFFM.INSTANCE$F.scale(values, 10);
 
 Generated names are intentionally predictable:
 
-- `NativeMath` -> `NativeMathFFM`
+- `NativeMath` -> `NativeMathF`
 - `NativeMathSpec` -> `NativeMath`
 - `Completion` -> `CompletionF`
 - `CompletionSpec` -> `Completion`
-- `timeval` -> `timevalFM`
-- `Pair` -> `PairFM`
+- `timeval` -> `timevalF`
+- `Pair` -> `PairF`
 
 For annotated interfaces, a trailing `Spec` is removed instead of adding the
 usual generated-class suffix. Records always retain their full declared name
 and use the normal generated-class suffix. An explicitly configured generated
 name still takes precedence. Generated vtable specifications follow the same
-rule: a `NativeObjectSpec` struct produces `NativeObjectVtblSpec`, whose
-generated dispatch-table class is `NativeObjectVtbl`.
+rule: a `NativeObjectSpec` struct produces `NativeObjectVSpec`, whose
+generated dispatch-table class is `NativeObjectV`.
 
 Identifiers consumed by the processor must not end in the reserved `$F` or
 `$f` suffix. Generated infrastructure and additional public helpers use `$F`;
@@ -186,7 +186,7 @@ Generated code uses `Linker.nativeLinker()` and `downcallHandle(...)`.
 Methods on the source interface become methods on the generated implementation:
 
 ```java
-var length = LibCFFM.INSTANCE$F.stringLength("hello");
+var length = LibCF.INSTANCE$F.stringLength("hello");
 ```
 
 Default and static methods are ignored by the processor, so the interface can
@@ -361,7 +361,7 @@ public interface NativeApi {
 
 try (var arena = Arena.ofConfined()) {
   var capture = new NativeError(arena);
-  NativeApiFFM.INSTANCE$F.close(capture, descriptor);
+  NativeApiF.INSTANCE$F.close(capture, descriptor);
 }
 ```
 
@@ -427,7 +427,7 @@ calls to an unavailable method. This also applies to direct `@Symbol` methods on
 struct wrappers.
 
 To check availability, use the generated lookup, for example
-`AffmTestFFM.SymbolLookup$F.find("add_ints").isPresent()`. Missing libraries and
+`AffmTestF.SymbolLookup$F.find("add_ints").isPresent()`. Missing libraries and
 other linking errors still fail initialization; only absent symbols are tolerated.
 
 ## Dispatch Tables
@@ -442,7 +442,7 @@ public interface XyzVtbl {
 }
 ```
 
-The generated `XyzVtblFD` wrapper reads function pointers from address-sized
+The generated `XyzVtblF` wrapper reads function pointers from address-sized
 slots and exposes Java methods with the declared signatures. Abstract methods
 may be inherited from parent interfaces; every method must declare its `@Slot`.
 
@@ -470,7 +470,7 @@ Vtable structs wrap objects already initialized by the foreign library. Their
 generated wrappers, including derived wrappers, provide neither a
 `SegmentAllocator` constructor nor `allocate$F(...)` helpers. Obtain an initialized
 object pointer from the library and wrap it with
-`NativeObjectFM.reinterpret$F(pointer)`, or use the `MemorySegment` constructor
+`NativeObjectF.reinterpret$F(pointer)`, or use the `MemorySegment` constructor
 when the segment already has sufficient bounds. A NULL object pointer maps to
 Java `null` through `reinterpret$F`; a non-null object with a NULL vtable throws
 `IllegalArgumentException` before any table entries are read.
@@ -595,16 +595,16 @@ interface Message extends Header, NativeCoordinates {
 }
 ```
 
-`MessageFM` therefore uses `HeaderFM.MemoryLayout$F`, followed by `y`, `x`, and
+`MessageF` therefore uses `HeaderF.MemoryLayout$F`, followed by `y`, `x`, and
 `payload`. Multiple ordinary abstraction parents are allowed, but multiple
-physical struct bases are rejected. `MessageFM` overrides inherited fluent
-setters with a covariant `MessageFM` return type, so a chain can set base and
-derived fields without falling back to `HeaderFM`.
+physical struct bases are rejected. `MessageF` overrides inherited fluent
+setters with a covariant `MessageF` return type, so a chain can set base and
+derived fields without falling back to `HeaderF`.
 
 Declare each scalar native field with a zero-argument getter only. Inline array
 fields use the indexed getter form described below. Do not declare setter or
 generated-helper overloads on the source interface; the processor rejects
-those signatures. The generated `*FM` implementation adds fluent setters for
+those signatures. The generated `*F` implementation adds fluent setters for
 supported fields, which is why the following code can call `tv_sec(int)` and
 `tv_usec(int)` even though they are not interface methods.
 
@@ -612,7 +612,7 @@ Generated usage:
 
 ```java
 try (var arena = Arena.ofConfined()) {
-  var tv = new timevalFM(arena)
+  var tv = new timevalF(arena)
       .tv_sec(1)
       .tv_usec(500);
 }
@@ -702,30 +702,30 @@ interface Names {
   byte rows(@Flexible("count") long row, @Sequence(10) int column);
 }
 
-var names = new NamesFM(arena, 3);             // initializes count to 3
+var names = new NamesF(arena, 3);             // initializes count to 3
 names.rows(2, 9, (byte) 'x');
-var existing = new NamesFM(boundedSegment);    // reads count from the header
-var nativeNames = NamesFM.reinterpret$F(ptr);
+var existing = new NamesF(boundedSegment);    // reads count from the header
+var nativeNames = NamesF.reinterpret$F(ptr);
 ```
 
-`new NamesFM(boundedSegment, n)` preserves the header count and stores the
+`new NamesF(boundedSegment, n)` preserves the header count and stores the
 supplied segment in `MemorySegment$F` with its original bounds. To initialize
 a new struct in caller-provided storage, use
-`new NamesFM(SegmentAllocator.prefixAllocator(boundedSegment), n)`.
+`new NamesF(SegmentAllocator.prefixAllocator(boundedSegment), n)`.
 The count must be nonnegative and fit the header field, index type and Java
 `long`. Plain `byte`, `short`, `int` and `long` are signed. `char` is unsigned.
 Platform scalars such as `@SizeT` use their ABI range. Constructor and allocator
 lengths use the count field's Java type.
 
 When the length comes from elsewhere, omit the field name, e.g.
-`@Value PacketFM packets(@Flexible long index)`. Pass the length to
-`new TransferFM(arena, n)`, `new TransferFM(segment, n)`,
-`TransferFM.allocateFlexible$F(allocator, n)` or
-`TransferFM.reinterpretFlexible$F(ptr, n)` as a `long`. This also supports
+`@Value PacketF packets(@Flexible long index)`. Pass the length to
+`new TransferF(arena, n)`, `new TransferF(segment, n)`,
+`TransferF.allocateFlexible$F(allocator, n)` or
+`TransferF.reinterpretFlexible$F(ptr, n)` as a `long`. This also supports
 counts decoded with `Integer.toUnsignedLong` from a native `uint32_t`.
 
 When a native API supplies the complete object size in bytes rather than an
-element count, use `TransferFM.reinterpret$F(ptr, byteSize)`. Like
+element count, use `TransferF.reinterpret$F(ptr, byteSize)`. Like
 `MemorySegment.reinterpret(long)`, the argument is a byte size. The generated
 wrapper bounds `MemorySegment$F` to that extent and derives the available
 flexible tail. This overload is generated only without a linked count; a linked
@@ -737,7 +737,7 @@ Both forms expose the tail as a public final `MemorySegment`. For `Names`,
 `names.rows$MemorySegment$F` starts at the first row and spans exactly
 `10 * n` bytes, even if the header count later changes. A count of zero gives
 an empty tail. Indexed accessors and the public tail handle use this segment.
-`NamesFM.rows$VarHandle$F.get(names.rows$MemorySegment$F, 1L, 2L)` reads
+`NamesF.rows$VarHandle$F.get(names.rows$MemorySegment$F, 1L, 2L)` reads
 column 2 of row 1 at byte offset 12 within the tail.
 
 A native call passes `MemorySegment$F` directly. The caller must ensure the
@@ -761,8 +761,8 @@ arrays:
 record Point(int x, int y) {}
 
 try (var arena = Arena.ofConfined()) {
-  var points = PointFM.allocateSequence$F(arena, 3);
-  var first = PointFM.at$F(points, 0);
+  var points = PointF.allocateSequence$F(arena, 3);
+  var first = PointF.at$F(points, 0);
 }
 ```
 
@@ -818,7 +818,7 @@ interface directly. It is address-like by default, just like its source
 interface; use `@Value` to override that pass mode:
 
 ```java
-int tcgetattr(int fd, termiosFM value);
+int tcgetattr(int fd, termiosF value);
 ```
 
 Returning a memory-backed struct or union by value requires a `SegmentAllocator`
@@ -839,7 +839,7 @@ preallocated struct-return storage.
 data. For foreign-call arguments, the generated wrapper uses call-scoped
 temporary storage when it has to materialize pointed-to data; the Java method
 signature does not need an allocator for that. Explicit allocator-taking APIs
-are generated on `*FM` conversion helpers and setters when a record struct
+are generated on `*F` conversion helpers and setters when a record struct
 contains `@Address` components and the generated code must allocate pointed-to
 native storage. Memory-backed interface structs reject scalar primitive-address
 and record-address fields because an accessor-only wrapper has no hidden
@@ -1221,6 +1221,6 @@ Portal namespace, token, GPG signing, dry-run, and publish steps.
 
 This project targets Java 25 and is intentionally small. The generated code is
 plain Java source, so when something looks surprising, inspect the generated
-`*FFM` and `*FM` classes first. The library is most useful when you want FFM's
+`*F` classes first. The library is most useful when you want FFM's
 native performance and ownership model, but you do not want every binding file
 to hand-write the same boilerplate.

@@ -8,7 +8,9 @@ import static org.alveolo.ffm.processor.ProcessorUtils.generatedTypeVisibility;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedNamesAvailable;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSingleGenerator;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
@@ -58,6 +60,7 @@ public class CallbackProcessor extends AbstractProcessor {
     try {
       var annotation = type.getAnnotation(Callback.class);
       if (annotation == null) return;
+      if (!validateSingleGenerator(processingEnv, type, Callback.class)) return;
 
       if (type.getKind() != ElementKind.INTERFACE) {
         messager.printError(
@@ -74,7 +77,11 @@ public class CallbackProcessor extends AbstractProcessor {
       validateTopLevelType(type, annotation);
 
       var method = validate(type);
-      if (method != null) write(type, method);
+      if (method != null && validateGeneratedNamesAvailable(
+          processingEnv, type, callbackClassName(
+              type, processingEnv.getElementUtils()))) {
+        write(type, method);
+      }
     } catch (Throwable e) {
       reportError(messager, e, type);
     }

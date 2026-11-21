@@ -11,10 +11,10 @@ class ZeroSizedLayoutTest extends AbstractProcessorTest {
     var c = compile("memory/zero/ZeroSized.java");
 
     assertThat(c).succeeded();
-    assertGenerated(c, "pkg.OpaqueFM", "memory/zero/OpaqueFM.java");
-    assertGenerated(c, "pkg.EmptyUnionFM", "memory/zero/EmptyUnionFM.java");
-    assertGenerated(c, "pkg.EmptyRecordFM", "memory/zero/EmptyRecordFM.java");
-    assertGenerated(c, "pkg.ZeroCallsFFM", "memory/zero/ZeroCallsFFM.java");
+    assertGenerated(c, "pkg.OpaqueF", "memory/zero/OpaqueF.java");
+    assertGenerated(c, "pkg.EmptyUnionF", "memory/zero/EmptyUnionF.java");
+    assertGenerated(c, "pkg.EmptyRecordF", "memory/zero/EmptyRecordF.java");
+    assertGenerated(c, "pkg.ZeroCallsF", "memory/zero/ZeroCallsF.java");
   }
 
   @Test
@@ -63,7 +63,7 @@ class ZeroSizedLayoutTest extends AbstractProcessorTest {
         @Struct record Batch(
             int preserved, @Sequence(2) EmptyRecord[] values) {}
         class Use {
-          int read(ScalarFM scalar, FixedFM fixed) {
+          int read(ScalarF scalar, FixedF fixed) {
             return scalar.preserved() + fixed.preserved();
           }
         }

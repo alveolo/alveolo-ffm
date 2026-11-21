@@ -10,14 +10,14 @@ class PassModeTest extends AbstractProcessorTest {
     var compilation = compile("passmode/PassMode.java");
 
     assertThat(compilation).succeeded();
-    assertGenerated(compilation, "passmode.PassModeFFM",
-        "passmode/PassModeFFM.java");
-    assertGenerated(compilation, "passmode.FunctionsFD",
-        "passmode/FunctionsFD.java");
-    assertGenerated(compilation, "passmode.VirtualStructVtblSpec",
-        "passmode/VirtualStructVtblSpec.java");
-    assertGenerated(compilation, "passmode.VirtualStructVtbl",
-        "passmode/VirtualStructVtbl.java");
+    assertGenerated(compilation, "passmode.PassModeF",
+        "passmode/PassModeF.java");
+    assertGenerated(compilation, "passmode.FunctionsF",
+        "passmode/FunctionsF.java");
+    assertGenerated(compilation, "passmode.VirtualStructVSpec",
+        "passmode/VirtualStructVSpec.java");
+    assertGenerated(compilation, "passmode.VirtualStructV",
+        "passmode/VirtualStructV.java");
     assertGenerated(compilation, "passmode.CircularDefault",
         "passmode/CircularDefault.java");
     assertGenerated(compilation, "passmode.CircularValue",
@@ -31,9 +31,9 @@ class PassModeTest extends AbstractProcessorTest {
     var compilation = compile("passmode/FieldModes.java");
 
     assertThat(compilation).succeeded();
-    assertGenerated(compilation, "passmode.FieldModesFM",
-        "passmode/FieldModesFM.java");
-    assertGenerated(compilation, "passmode.FieldModeAccessorsFM",
-        "passmode/FieldModeAccessorsFM.java");
+    assertGenerated(compilation, "passmode.FieldModesF",
+        "passmode/FieldModesF.java");
+    assertGenerated(compilation, "passmode.FieldModeAccessorsF",
+        "passmode/FieldModeAccessorsF.java");
   }
 }

@@ -1,0 +1,123 @@
+package pkg;
+
+@javax.annotation.processing.Generated(
+    "org.alveolo.ffm.processor.ForeignMemoryProcessor")
+public class VirtualObjF implements VirtualObj {
+  public static final java.lang.foreign.MemoryLayout MemoryLayout$F =
+      java.lang.foreign.MemoryLayout.structLayout(
+          org.alveolo.ffm.ForeignUtils.structPad(
+              new java.lang.foreign.MemoryLayout [] {
+        java.lang.foreign.ValueLayout.ADDRESS.withName("vtable$F"),
+        java.lang.foreign.ValueLayout.JAVA_INT.withName("field"),
+      }));
+
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      vtable$F$PathElement$F =
+          java.lang.foreign.MemoryLayout.PathElement
+              .groupElement("vtable$F");
+
+  public static final java.lang.invoke.VarHandle
+      vtable$F$VarHandle$F =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          MemoryLayout$F.varHandle(vtable$F$PathElement$F), 1, 0L);
+
+  public static VirtualObjF reinterpret$F(
+      java.lang.foreign.MemorySegment memorySegment) {
+    return memorySegment.equals(java.lang.foreign.MemorySegment.NULL)
+        ? null : new VirtualObjF(memorySegment.reinterpret(MemoryLayout$F.byteSize()));
+  }
+
+  public static java.lang.foreign.MemorySegment reinterpretSequence$F(
+      java.lang.foreign.MemorySegment memorySegment, long count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("count must be non-negative");
+    }
+    return memorySegment.reinterpret(Math.multiplyExact(
+        MemoryLayout$F.byteSize(), count));
+  }
+
+  private static java.lang.foreign.MemorySegment elementAt$F(
+      java.lang.foreign.MemorySegment array, long index) {
+    if (index < 0) {
+      throw new IndexOutOfBoundsException(index);
+    }
+    return array.asSlice(Math.multiplyExact(
+        index, MemoryLayout$F.byteSize()), MemoryLayout$F.byteSize());
+  }
+
+  public static VirtualObjF at$F(
+      java.lang.foreign.MemorySegment array, long index) {
+    return new VirtualObjF(elementAt$F(array, index));
+  }
+
+  public final java.lang.foreign.MemorySegment MemorySegment$F;
+
+  private final VirtualObjVF Vtable$F;
+
+  public VirtualObjF(java.lang.foreign.MemorySegment memorySegment) {
+    this.MemorySegment$F = memorySegment;
+    var vtable$f = (java.lang.foreign.MemorySegment)
+        vtable$F$VarHandle$F.get(MemorySegment$F);
+    if (vtable$f.equals(java.lang.foreign.MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Object has a NULL vtable");
+    }
+    this.Vtable$F = VirtualObjVF.reinterpret$F(vtable$f);
+  }
+
+  private VirtualObjVF Vtable$F() {
+    return Vtable$F;
+  }
+
+  public static final java.lang.foreign.MemoryLayout.PathElement
+      field$PathElement$F = java.lang.foreign.MemoryLayout.PathElement
+          .groupElement("field");
+
+  public static final java.lang.invoke.VarHandle field$VarHandle$F =
+      java.lang.invoke.MethodHandles.insertCoordinates(
+          MemoryLayout$F.varHandle(field$PathElement$F), 1, 0L);
+
+  public int field() {
+    return (int) field$VarHandle$F.get(MemorySegment$F);
+  }
+
+  public VirtualObjF field(int value) {
+    field$VarHandle$F.set(MemorySegment$F, value);
+    return this;
+  }
+
+  private static final java.lang.invoke.MethodHandle SymbolMethodHandle$0$F =
+      pkg.NativeApiF.SymbolLookup$F.find("native_symbol")
+          .map(address$f -> pkg.NativeApiF.Linker$F.downcallHandle(
+              address$f,
+              java.lang.foreign.FunctionDescriptor.of(
+                  java.lang.foreign.ValueLayout.JAVA_INT,
+                  java.lang.foreign.ValueLayout.ADDRESS,
+                  java.lang.foreign.ValueLayout.JAVA_INT),
+              java.lang.foreign.Linker.Option.firstVariadicArg(2)))
+          .orElse(null);
+
+  public int method(
+      long arg) {
+    return Vtable$F().method(this, arg);
+  }
+
+  public int sum(
+      @org.alveolo.ffm.In @org.alveolo.ffm.Sequence(3L) int[] values) {
+    return Vtable$F().sum(this, values);
+  }
+
+  public int call(
+      int arg) {
+    if (SymbolMethodHandle$0$F == null)
+      throw new UnsatisfiedLinkError("Native symbol not found: native_symbol");
+    try {
+      return (int) SymbolMethodHandle$0$F.invokeExact(
+          this.MemorySegment$F,
+          arg);
+    } catch (RuntimeException|Error exception$f) {
+      throw exception$f;
+    } catch (Throwable throwable$f) {
+      throw new AssertionError(throwable$f);
+    }
+  }
+}

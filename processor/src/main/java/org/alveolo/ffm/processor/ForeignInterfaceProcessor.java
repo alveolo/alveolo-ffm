@@ -10,7 +10,9 @@ import static org.alveolo.ffm.processor.ProcessorUtils.osArray;
 import static org.alveolo.ffm.processor.ProcessorUtils.packageName;
 import static org.alveolo.ffm.processor.ProcessorUtils.reportError;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateGeneratedNamesAvailable;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateSimpleClassName;
+import static org.alveolo.ffm.processor.ProcessorUtils.validateSingleGenerator;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateTopLevelType;
 import static org.alveolo.ffm.processor.ProcessorUtils.validateUserIdentifiers;
 
@@ -57,6 +59,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
     try {
       var annotation = type.getAnnotation(ForeignInterface.class);
       if (annotation == null) return;
+      if (!validateSingleGenerator(processingEnv, type, ForeignInterface.class))
+          return;
 
       validateSimpleClassName(type, annotation, annotation.name());
       validateGeneratedClassName(type, annotation,
@@ -89,6 +93,8 @@ public class ForeignInterfaceProcessor extends AbstractProcessor {
 
     var libraries = List.of(iface.getAnnotationsByType(Library.class));
     if (!validateLibraries(iface, libraries)) return;
+    if (!validateGeneratedNamesAvailable(processingEnv, iface, className))
+        return;
 
     var file = processingEnv.getFiler().createSourceFile(className, iface);
 

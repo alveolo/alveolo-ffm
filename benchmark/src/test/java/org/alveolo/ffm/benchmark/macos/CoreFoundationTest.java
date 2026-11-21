@@ -22,7 +22,7 @@ class CoreFoundationTest {
   void getsCFStringLengthFromJavaString() {
     assumeMac();
 
-    var coreFoundation = CoreFoundationFFM.INSTANCE$F;
+    var coreFoundation = CoreFoundationF.INSTANCE$F;
 
     assertEquals(5L, coreFoundation.CFStringGetLength("ASCII"));
     assertEquals(6L, coreFoundation.CFStringGetLength("Юникод"));
@@ -32,7 +32,7 @@ class CoreFoundationTest {
   void convertsOwnedCFStringReturnToJavaString() {
     assumeMac();
 
-    var coreFoundation = CoreFoundationFFM.INSTANCE$F;
+    var coreFoundation = CoreFoundationF.INSTANCE$F;
 
     assertEquals("ASCII!", coreFoundation.create(MemorySegment.NULL,
         "ASCII!", CFSupport.kCFStringEncodingUTF8));
@@ -43,16 +43,16 @@ class CoreFoundationTest {
   @Test
   void preservesUtf16CodeUnitsInBothDirections() {
     assumeMac();
-    var coreFoundation = CoreFoundationFFM.INSTANCE$F;
+    var coreFoundation = CoreFoundationF.INSTANCE$F;
     for (var value : new String[] {"", "\u0000", "A\u0000B", "\u0000start",
         "end\u0000", "Юникод", "A😀B", "A\uD800B", "A\uDC00B"}) {
       assertEquals(value.length(), coreFoundation.CFStringGetLength(value));
-      var nativeValue = CoreFoundationFFM.INSTANCE$F.toCFString(value);
+      var nativeValue = CoreFoundationF.INSTANCE$F.toCFString(value);
       try {
         assertNotEquals(0L, nativeValue.address());
-        assertEquals(value, CoreFoundationFFM.INSTANCE$F.fromCFString(nativeValue));
+        assertEquals(value, CoreFoundationF.INSTANCE$F.fromCFString(nativeValue));
       } finally {
-        CoreFoundationFFM.INSTANCE$F.CFRelease(nativeValue);
+        CoreFoundationF.INSTANCE$F.CFRelease(nativeValue);
       }
       assertEquals(value, coreFoundation.createCharacters(MemorySegment.NULL,
           value.toCharArray(), value.length()));
@@ -69,7 +69,7 @@ class CoreFoundationTest {
 
     try (var arena = Arena.ofConfined()) {
       var range = new CFRange(arena).location(0).length(value.length());
-      var converted = CoreFoundationFFM.INSTANCE$F.CFStringGetBytes(value,
+      var converted = CoreFoundationF.INSTANCE$F.CFStringGetBytes(value,
           range, CFSupport.kCFStringEncodingUTF8,
           (byte) 0, false, buffer, buffer.length, used);
       assertEquals(value.length(), converted);
@@ -81,7 +81,7 @@ class CoreFoundationTest {
   @Test
   void passesMemoryBackedRangesByValue() {
     assumeMac();
-    var coreFoundation = CoreFoundationFFM.INSTANCE$F;
+    var coreFoundation = CoreFoundationF.INSTANCE$F;
     var text = "A\u0000Б😀\uD800Z";
     var value = coreFoundation.toCFString(text);
     try (var arena = Arena.ofConfined()) {
@@ -109,7 +109,7 @@ class CoreFoundationTest {
   @Test
   void overridesDefaultValueRangeWithAddressForSearchResult() {
     assumeMac();
-    var coreFoundation = CoreFoundationFFM.INSTANCE$F;
+    var coreFoundation = CoreFoundationF.INSTANCE$F;
     var text = "prefix Б😀 suffix";
     var search = new CFRange(MemorySegment.ofArray(
         new long[] {7, text.length() - 7}).asReadOnly());
@@ -127,9 +127,9 @@ class CoreFoundationTest {
   @Test
   void preservesNullStrings() {
     assumeMac();
-    assertEquals(MemorySegment.NULL, CoreFoundationFFM.INSTANCE$F.toCFString(null));
-    assertNull(CoreFoundationFFM.INSTANCE$F.fromCFString(MemorySegment.NULL));
-    assertNull(CoreFoundationFFM.INSTANCE$F.fromCFString(null));
+    assertEquals(MemorySegment.NULL, CoreFoundationF.INSTANCE$F.toCFString(null));
+    assertNull(CoreFoundationF.INSTANCE$F.fromCFString(MemorySegment.NULL));
+    assertNull(CoreFoundationF.INSTANCE$F.fromCFString(null));
   }
 
   private static void assumeMac() {
